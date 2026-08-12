@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Core Colors - Section 5.1 */
+  --background: #F8FAFC;
+  --surface: #FFFFFF;
+  --surface-muted: #F1F5F9;
+  --border: #E2E8F0;
+  --border-strong: #CBD5E1;
+  --primary-text: #0F172A;
+  --secondary-text: #475569;
+  --muted-text: #64748B;
+  --primary-brand: #1D4ED8;
+  --primary-hover: #1E40AF;
+  --primary-soft: #EFF6FF;
+
+  /* Semantic Colors - Section 5.2 */
+  --success: #047857;
+  --success-soft: #ECFDF5;
+  --warning: #B45309;
+  --warning-soft: #FFFBEB;
+  --error: #B91C1C;
+  --error-soft: #FEF2F2;
+  --info: #0369A1;
+  --info-soft: #F0F9FF;
+  --neutral: #475569;
+
+  /* Confidence Threshold Color Mappings - Section 5.3 */
+  --confidence-high: var(--success);
+  --confidence-high-bg: var(--success-soft);
+  --confidence-medium: var(--warning);
+  --confidence-medium-bg: var(--warning-soft);
+  --confidence-low: var(--error);
+  --confidence-low-bg: var(--error-soft);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--primary-text);
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Utilities for Confidence Badges & Data Displays */
+@layer components {
+  .confidence-high {
+    color: var(--confidence-high);
+    background-color: var(--confidence-high-bg);
+    border: 1px solid var(--confidence-high);
+  }
+  .confidence-medium {
+    color: var(--confidence-medium);
+    background-color: var(--confidence-medium-bg);
+    border: 1px solid var(--confidence-medium);
+  }
+  .confidence-low {
+    color: var(--confidence-low);
+    background-color: var(--confidence-low-bg);
+    border: 1px solid var(--confidence-low);
+  }
+}
