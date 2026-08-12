@@ -52,7 +52,7 @@ export default function MarketingLandingPage() {
 
           <div className="flex items-center gap-3">
             <Link
-              href="/dashboard"
+              href="/login"
               className="text-sm font-medium text-slate-700 hover:text-[#1D4ED8] px-3 py-2 rounded-md transition-colors"
             >
               Sign In
