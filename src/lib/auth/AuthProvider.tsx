@@ -17,6 +17,15 @@ export interface AuthUser {
   displayName: string | null;
   photoURL: string | null;
   role: UserRole;
+  companyName?: string | null;
+}
+
+export interface SignUpData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  companyName?: string;
 }
 
 interface AuthContextValue {
@@ -24,6 +33,7 @@ interface AuthContextValue {
   role: UserRole | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
+  signUp: (data: SignUpData) => Promise<void>;
   signOut: () => Promise<void>;
   refreshToken: () => Promise<string | null>;
 }
@@ -32,32 +42,20 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 /**
  * AuthProvider — Section 74.
- *
  * Wraps the app with authentication context.
- * Currently provides a stub implementation ready for Firebase connect.
- * When Firebase is integrated, replace the signIn/signOut methods with
- * firebase.auth().signInWithEmailAndPassword() etc.
- *
- * Section 12: Frontend role checks are only for UX — backend authorization
- * remains authoritative.
+ * Firebase-ready authentication stub supporting login and signup.
  */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // On mount, check for existing session
   useEffect(() => {
-    // Firebase onAuthStateChanged stub
-    // When Firebase is connected:
-    //   onAuthStateChanged(auth, async (firebaseUser) => { ... })
     setLoading(false);
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
     setLoading(true);
     try {
-      // Firebase stub: signInWithEmailAndPassword(auth, email, password)
-      // For now, simulate auth ready state
       setUser({
         uid: "stub-uid",
         email,
@@ -70,10 +68,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const signUp = useCallback(async (data: SignUpData) => {
+    setLoading(true);
+    try {
+      setUser({
+        uid: "stub-uid-" + Date.now(),
+        email: data.email,
+        displayName: `${data.firstName} ${data.lastName}`.trim(),
+        photoURL: null,
+        role: "admin",
+        companyName: data.companyName ?? null,
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const signOut = useCallback(async () => {
     setLoading(true);
     try {
-      // Firebase stub: auth.signOut()
       setUser(null);
     } finally {
       setLoading(false);
@@ -81,7 +94,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const refreshToken = useCallback(async (): Promise<string | null> => {
-    // Firebase stub: return auth.currentUser?.getIdToken(true) ?? null
     return null;
   }, []);
 
@@ -91,19 +103,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       role: user?.role ?? null,
       loading,
       signIn,
+      signUp,
       signOut,
       refreshToken,
     }),
-    [user, loading, signIn, signOut, refreshToken]
+    [user, loading, signIn, signUp, signOut, refreshToken]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-/**
- * useAuth() — Section 74.
- * Must be used within AuthProvider.
- */
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
   if (!ctx) {

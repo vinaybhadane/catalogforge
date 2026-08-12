@@ -58,7 +58,7 @@ export default function MarketingLandingPage() {
               Sign In
             </Link>
             <Link
-              href="/upload"
+              href="/signup"
               className="text-sm font-medium text-white bg-[#1D4ED8] hover:bg-[#1E40AF] px-4 py-2 rounded-md transition-colors shadow-sm flex items-center gap-2"
             >
               <span>Get Started</span>
@@ -86,7 +86,7 @@ export default function MarketingLandingPage() {
 
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link
-            href="/upload"
+            href="/signup"
             className="w-full sm:w-auto px-6 py-3.5 bg-[#1D4ED8] hover:bg-[#1E40AF] text-white font-semibold text-sm rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2"
           >
             <span>Start Enrichment</span>
