@@ -1,0 +1,25 @@
+{
+  "name": "@unihack/contracts",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Shared TypeScript Domain Contracts, Enums, DTOs, and API interfaces for UniHack",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rimraf dist",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "contracts",
+    "types",
+    "unihack",
+    "domain-models"
+  ],
+  "author": "UniHack Engineering Team",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "rimraf": "^5.0.5",
+    "typescript": "^5.3.3"
+  }
+}

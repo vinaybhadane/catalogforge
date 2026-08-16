@@ -1,0 +1,33 @@
+{
+  "name": "unihack-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "UniHack AI Product Intelligence Platform - Enterprise Backend",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "dev": "npm run dev --workspace=@unihack/api",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "clean": "npm run clean --workspaces --if-present"
+  },
+  "keywords": [
+    "unihack",
+    "fastify",
+    "azure-sql",
+    "product-intelligence",
+    "service-bus"
+  ],
+  "author": "UniHack Engineering Team",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "rimraf": "^5.0.5",
+    "tsx": "^4.7.1",
+    "typescript": "^5.3.3"
+  }
+}

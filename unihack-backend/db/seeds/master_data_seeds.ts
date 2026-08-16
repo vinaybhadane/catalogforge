@@ -1,0 +1,236 @@
+/**
+ * Master Reference Data Seed Dataset
+ * Supplies industrial manufacturers, brands, UOM mappings, and fraction conversion tables
+ */
+
+export const UOM_SEEDS = [
+  // Length
+  { raw_symbol: 'IN', standard_uom: 'in', uom_category: 'length', conversion_factor: 1.0 },
+  { raw_symbol: 'INCH', standard_uom: 'in', uom_category: 'length', conversion_factor: 1.0 },
+  { raw_symbol: 'INCHES', standard_uom: 'in', uom_category: 'length', conversion_factor: 1.0 },
+  { raw_symbol: '"', standard_uom: 'in', uom_category: 'length', conversion_factor: 1.0 },
+  { raw_symbol: 'FT', standard_uom: 'ft', uom_category: 'length', conversion_factor: 12.0 },
+  { raw_symbol: 'FEET', standard_uom: 'ft', uom_category: 'length', conversion_factor: 12.0 },
+  { raw_symbol: "'", standard_uom: 'ft', uom_category: 'length', conversion_factor: 12.0 },
+  { raw_symbol: 'MM', standard_uom: 'mm', uom_category: 'length', conversion_factor: 0.0393701 },
+  { raw_symbol: 'CM', standard_uom: 'cm', uom_category: 'length', conversion_factor: 0.393701 },
+  { raw_symbol: 'M', standard_uom: 'm', uom_category: 'length', conversion_factor: 39.3701 },
+
+  // Weight
+  { raw_symbol: 'LB', standard_uom: 'lb', uom_category: 'weight', conversion_factor: 1.0 },
+  { raw_symbol: 'LBS', standard_uom: 'lb', uom_category: 'weight', conversion_factor: 1.0 },
+  { raw_symbol: 'POUND', standard_uom: 'lb', uom_category: 'weight', conversion_factor: 1.0 },
+  { raw_symbol: 'POUNDS', standard_uom: 'lb', uom_category: 'weight', conversion_factor: 1.0 },
+  { raw_symbol: 'OZ', standard_uom: 'oz', uom_category: 'weight', conversion_factor: 0.0625 },
+  { raw_symbol: 'KG', standard_uom: 'kg', uom_category: 'weight', conversion_factor: 2.20462 },
+  { raw_symbol: 'G', standard_uom: 'g', uom_category: 'weight', conversion_factor: 0.00220462 },
+
+  // Electrical
+  { raw_symbol: 'V', standard_uom: 'V', uom_category: 'electrical', conversion_factor: 1.0 },
+  { raw_symbol: 'VOLT', standard_uom: 'V', uom_category: 'electrical', conversion_factor: 1.0 },
+  { raw_symbol: 'VOLTS', standard_uom: 'V', uom_category: 'electrical', conversion_factor: 1.0 },
+  { raw_symbol: 'VAC', standard_uom: 'VAC', uom_category: 'electrical', conversion_factor: 1.0 },
+  { raw_symbol: 'VDC', standard_uom: 'VDC', uom_category: 'electrical', conversion_factor: 1.0 },
+  { raw_symbol: 'A', standard_uom: 'A', uom_category: 'electrical', conversion_factor: 1.0 },
+  { raw_symbol: 'AMP', standard_uom: 'A', uom_category: 'electrical', conversion_factor: 1.0 },
+  { raw_symbol: 'AMPS', standard_uom: 'A', uom_category: 'electrical', conversion_factor: 1.0 },
+  { raw_symbol: 'W', standard_uom: 'W', uom_category: 'power', conversion_factor: 1.0 },
+  { raw_symbol: 'WATT', standard_uom: 'W', uom_category: 'power', conversion_factor: 1.0 },
+  { raw_symbol: 'WATTS', standard_uom: 'W', uom_category: 'power', conversion_factor: 1.0 },
+  { raw_symbol: 'HP', standard_uom: 'HP', uom_category: 'power', conversion_factor: 745.7 },
+];
+
+export const FRACTION_SEEDS = [
+  { fraction_pattern: '1/16', decimal_value: 0.0625 },
+  { fraction_pattern: '1/8', decimal_value: 0.125 },
+  { fraction_pattern: '3/16', decimal_value: 0.1875 },
+  { fraction_pattern: '1/4', decimal_value: 0.25 },
+  { fraction_pattern: '5/16', decimal_value: 0.3125 },
+  { fraction_pattern: '3/8', decimal_value: 0.375 },
+  { fraction_pattern: '7/16', decimal_value: 0.4375 },
+  { fraction_pattern: '1/2', decimal_value: 0.5 },
+  { fraction_pattern: '9/16', decimal_value: 0.5625 },
+  { fraction_pattern: '5/8', decimal_value: 0.625 },
+  { fraction_pattern: '11/16', decimal_value: 0.6875 },
+  { fraction_pattern: '3/4', decimal_value: 0.75 },
+  { fraction_pattern: '13/16', decimal_value: 0.8125 },
+  { fraction_pattern: '7/8', decimal_value: 0.875 },
+  { fraction_pattern: '15/16', decimal_value: 0.9375 },
+];
+
+export const MANUFACTURER_SEEDS = [
+  {
+    name: 'Square D',
+    slug: 'square-d',
+    aliases: JSON.stringify(['Square D by Schneider Electric', 'Schneider Electric Square D', 'SQD']),
+    website_domain: 'se.com',
+  },
+  {
+    name: 'Eaton',
+    slug: 'eaton',
+    aliases: JSON.stringify(['Eaton Cutler-Hammer', 'Cutler Hammer', 'Eaton Electrical']),
+    website_domain: 'eaton.com',
+  },
+  {
+    name: 'Siemens',
+    slug: 'siemens',
+    aliases: JSON.stringify(['Siemens Energy & Automation', 'Siemens Industry']),
+    website_domain: 'siemens.com',
+  },
+  {
+    name: 'Hubbell',
+    slug: 'hubbell',
+    aliases: JSON.stringify(['Hubbell Wiring Device-Kellems', 'Hubbell Incorporated', 'Kellems']),
+    website_domain: 'hubbell.com',
+  },
+  {
+    name: 'Leviton',
+    slug: 'leviton',
+    aliases: JSON.stringify(['Leviton Manufacturing Co.', 'Leviton Mfg']),
+    website_domain: 'leviton.com',
+  },
+  {
+    name: 'Klein Tools',
+    slug: 'klein-tools',
+    aliases: JSON.stringify(['Klein', 'Klein Tools Inc']),
+    website_domain: 'kleintools.com',
+  },
+  {
+    name: 'Milwaukee Tool',
+    slug: 'milwaukee-tool',
+    aliases: JSON.stringify(['Milwaukee', 'Milwaukee Electric Tool']),
+    website_domain: 'milwaukeetool.com',
+  },
+  {
+    name: 'DeWalt',
+    slug: 'dewalt',
+    aliases: JSON.stringify(['DeWalt Industrial Tool Co', 'Stanley Black & Decker DeWalt']),
+    website_domain: 'dewalt.com',
+  },
+];
+
+export const BRAND_SEEDS = [
+  { name: 'Square D', manufacturer_name: 'Square D', slug: 'square-d' },
+  { name: 'Homeline', manufacturer_name: 'Square D', slug: 'homeline' },
+  { name: 'QO', manufacturer_name: 'Square D', slug: 'qo' },
+  { name: 'Cutler-Hammer', manufacturer_name: 'Eaton', slug: 'cutler-hammer' },
+  { name: 'B-Line', manufacturer_name: 'Eaton', slug: 'b-line' },
+  { name: 'Pass & Seymour', manufacturer_name: 'Legrand', slug: 'pass-and-seymour' },
+  { name: 'Wiremold', manufacturer_name: 'Legrand', slug: 'wiremold' },
+  { name: 'M18', manufacturer_name: 'Milwaukee Tool', slug: 'm18' },
+  { name: 'M12', manufacturer_name: 'Milwaukee Tool', slug: 'm12' },
+];
+
+export const FIELD_DEFINITION_SEEDS = [
+  {
+    field_key: 'partNumber',
+    label: 'Part Number',
+    field_type: 'text',
+    field_group: 'Basic',
+    editable: false,
+    char_limit: 50,
+    required: true,
+    help_text: 'Unique distributor/internal part identifier',
+  },
+  {
+    field_key: 'manufacturerName',
+    label: 'Manufacturer Name',
+    field_type: 'lov',
+    field_group: 'Basic',
+    editable: true,
+    char_limit: 255,
+    required: true,
+    help_text: 'Resolved official manufacturer from UniCat vocabulary',
+  },
+  {
+    field_key: 'brandName',
+    label: 'Brand Name',
+    field_type: 'lov',
+    field_group: 'Basic',
+    editable: true,
+    char_limit: 255,
+    required: false,
+    help_text: 'Resolved product brand associated with manufacturer',
+  },
+  {
+    field_key: 'manufacturerPartNumber',
+    label: 'Manufacturer Part Number (MPN)',
+    field_type: 'text',
+    field_group: 'Basic',
+    editable: true,
+    char_limit: 100,
+    required: false,
+    help_text: 'Exact manufacturer catalog number or model code',
+  },
+  {
+    field_key: 'classpath',
+    label: 'Taxonomy Classpath',
+    field_type: 'lov',
+    field_group: 'Basic',
+    editable: true,
+    char_limit: 500,
+    required: true,
+    help_text: '3-tier Dept > Class > Fine taxonomy categorization',
+  },
+  {
+    field_key: 'shortDesc',
+    label: 'Short Description',
+    field_type: 'text',
+    field_group: 'Descriptions',
+    editable: true,
+    char_limit: 150,
+    required: true,
+    help_text: 'Concise, noun-first technical specification description (max 150 chars)',
+  },
+  {
+    field_key: 'mobileDesc',
+    label: 'Mobile Description',
+    field_type: 'text',
+    field_group: 'Descriptions',
+    editable: true,
+    char_limit: 80,
+    required: false,
+    help_text: 'Ultra-compact mobile app summary description (max 80 chars)',
+  },
+  {
+    field_key: 'invoiceDesc',
+    label: 'Invoice Description',
+    field_type: 'text',
+    field_group: 'Descriptions',
+    editable: true,
+    char_limit: 40,
+    required: false,
+    help_text: 'ERP invoice & packing slip format (max 40 chars)',
+  },
+  {
+    field_key: 'longDesc1',
+    label: 'Long Description',
+    field_type: 'textarea',
+    field_group: 'Descriptions',
+    editable: true,
+    char_limit: 4000,
+    required: false,
+    help_text: 'Comprehensive technical specification text',
+  },
+  {
+    field_key: 'retailDesc',
+    label: 'Retail Description',
+    field_type: 'textarea',
+    field_group: 'Descriptions',
+    editable: true,
+    char_limit: 4000,
+    required: false,
+    help_text: 'Consumer-friendly retail catalog overview',
+  },
+];
+
+export const DEFAULT_CONFIG_SEEDS = [
+  { config_key: 'review.confidenceThreshold', config_value: '0.85', value_type: 'number' },
+  { config_key: 'review.autoPublishThreshold', config_value: '0.90', value_type: 'number' },
+  { config_key: 'upload.maxFileSizeBytes', config_value: '52428800', value_type: 'number' }, // 50MB
+  { config_key: 'upload.allowedExtensions', config_value: JSON.stringify(['csv', 'xlsx', 'pdf']), value_type: 'json' },
+  { config_key: 'upload.maxRowsPerFile', config_value: '10000', value_type: 'number' },
+  { config_key: 'features.enableAutoPublish', config_value: 'true', value_type: 'boolean' },
+  { config_key: 'features.enableDomainAllowlist', config_value: 'true', value_type: 'boolean' },
+  { config_key: 'features.enableStrictLov', config_value: 'true', value_type: 'boolean' },
+];
