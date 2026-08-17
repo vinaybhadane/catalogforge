@@ -9,6 +9,7 @@ import {
   Loader2,
   AlertCircle,
   Zap,
+  Layers,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthProvider";
 
@@ -71,26 +72,26 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#E2E6E9] p-4 py-12">
+    <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] p-4 py-12 text-[#000000]">
       <div className="w-full max-w-md">
         {/* Brand Logo & Title */}
         <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl neu-btn-accent text-[#FFFFE3] flex items-center justify-center mx-auto mb-4 shadow-sm">
-            <Zap className="w-7 h-7" />
+          <div className="w-14 h-14 rounded-2xl bg-[#2563EB] text-white flex items-center justify-center mx-auto mb-4 border border-[#1D4ED8]">
+            <Layers className="w-7 h-7" />
           </div>
-          <h1 className="text-2xl font-extrabold text-[#4A4A4A] tracking-tight">
+          <h1 className="text-2xl font-black text-[#000000] tracking-tight">
             Get Started with CatalogForge
           </h1>
-          <p className="text-xs text-[#6D8196] font-bold mt-1">
+          <p className="text-xs text-[#0284C7] font-bold mt-1">
             Create your account to start enriching raw product catalogs
           </p>
         </div>
 
-        {/* Neumorphic Extruded SignUp Card */}
-        <div className="neu-card rounded-3xl p-7 space-y-5">
+        {/* Clean Flat SignUp Card (Zero Shadows) */}
+        <div className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-3xl p-7 space-y-5">
           {error && (
-            <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-800">
-              <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
               <span>{error}</span>
             </div>
           )}
@@ -101,7 +102,7 @@ export default function SignUpPage() {
               <div>
                 <label
                   htmlFor="signup-firstname"
-                  className="block text-xs font-extrabold text-[#4A4A4A] mb-1.5"
+                  className="block text-xs font-black text-[#000000] mb-1.5"
                 >
                   First Name <span className="text-rose-500">*</span>
                 </label>
@@ -113,14 +114,14 @@ export default function SignUpPage() {
                   placeholder="Jane"
                   required
                   suppressHydrationWarning
-                  className="w-full px-3.5 py-2.5 text-sm neu-input placeholder:text-[#4A4A4A]/50 transition-colors"
+                  className="w-full px-3.5 py-2.5 text-sm bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl text-[#000000] placeholder:text-[#000000]/40 focus:outline-none focus:border-[#2563EB] transition-colors font-medium"
                 />
               </div>
 
               <div>
                 <label
                   htmlFor="signup-lastname"
-                  className="block text-xs font-extrabold text-[#4A4A4A] mb-1.5"
+                  className="block text-xs font-black text-[#000000] mb-1.5"
                 >
                   Last Name <span className="text-rose-500">*</span>
                 </label>
@@ -132,7 +133,7 @@ export default function SignUpPage() {
                   placeholder="Doe"
                   required
                   suppressHydrationWarning
-                  className="w-full px-3.5 py-2.5 text-sm neu-input placeholder:text-[#4A4A4A]/50 transition-colors"
+                  className="w-full px-3.5 py-2.5 text-sm bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl text-[#000000] placeholder:text-[#000000]/40 focus:outline-none focus:border-[#2563EB] transition-colors font-medium"
                 />
               </div>
             </div>
@@ -141,7 +142,7 @@ export default function SignUpPage() {
             <div>
               <label
                 htmlFor="signup-email"
-                className="block text-xs font-extrabold text-[#4A4A4A] mb-1.5"
+                className="block text-xs font-black text-[#000000] mb-1.5"
               >
                 Work Email Address <span className="text-rose-500">*</span>
               </label>
@@ -154,7 +155,7 @@ export default function SignUpPage() {
                 autoComplete="email"
                 required
                 suppressHydrationWarning
-                className="w-full px-3.5 py-2.5 text-sm neu-input placeholder:text-[#4A4A4A]/50 transition-colors"
+                className="w-full px-3.5 py-2.5 text-sm bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl text-[#000000] placeholder:text-[#000000]/40 focus:outline-none focus:border-[#2563EB] transition-colors font-medium"
               />
             </div>
 
@@ -163,11 +164,11 @@ export default function SignUpPage() {
               <div className="flex items-center justify-between mb-1.5">
                 <label
                   htmlFor="signup-company"
-                  className="block text-xs font-extrabold text-[#4A4A4A]"
+                  className="block text-xs font-black text-[#000000]"
                 >
                   Company Name
                 </label>
-                <span className="text-[10px] text-[#6D8196] font-bold">Optional</span>
+                <span className="text-[10px] text-[#0284C7] font-bold">Optional</span>
               </div>
               <input
                 id="signup-company"
@@ -176,7 +177,7 @@ export default function SignUpPage() {
                 onChange={(e) => setCompanyName(e.target.value)}
                 placeholder="Acme Industrial Supply"
                 suppressHydrationWarning
-                className="w-full px-3.5 py-2.5 text-sm neu-input placeholder:text-[#4A4A4A]/50 transition-colors"
+                className="w-full px-3.5 py-2.5 text-sm bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl text-[#000000] placeholder:text-[#000000]/40 focus:outline-none focus:border-[#2563EB] transition-colors font-medium"
               />
             </div>
 
@@ -184,7 +185,7 @@ export default function SignUpPage() {
             <div>
               <label
                 htmlFor="signup-password"
-                className="block text-xs font-extrabold text-[#4A4A4A] mb-1.5"
+                className="block text-xs font-black text-[#000000] mb-1.5"
               >
                 Password <span className="text-rose-500">*</span>
               </label>
@@ -199,12 +200,12 @@ export default function SignUpPage() {
                   required
                   minLength={6}
                   suppressHydrationWarning
-                  className="w-full px-3.5 py-2.5 pr-10 text-sm neu-input placeholder:text-[#4A4A4A]/50 transition-colors"
+                  className="w-full px-3.5 py-2.5 pr-10 text-sm bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl text-[#000000] placeholder:text-[#000000]/40 focus:outline-none focus:border-[#2563EB] transition-colors font-medium"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-[#4A4A4A]/60 hover:text-[#4A4A4A] transition-colors"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-[#000000]/60 hover:text-[#000000] transition-colors"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                   suppressHydrationWarning
                 >
@@ -215,7 +216,7 @@ export default function SignUpPage() {
                   )}
                 </button>
               </div>
-              <p className="text-[11px] text-[#4A4A4A]/60 mt-1 font-semibold">Must be at least 6 characters long.</p>
+              <p className="text-[11px] text-[#000000]/60 mt-1 font-semibold">Must be at least 6 characters long.</p>
             </div>
 
             {/* Submit Button */}
@@ -223,7 +224,7 @@ export default function SignUpPage() {
               type="submit"
               disabled={!isValid || submitting || authLoading}
               suppressHydrationWarning
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 neu-btn-accent text-sm font-bold tracking-wide disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm font-bold rounded-xl border border-[#1D4ED8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-2"
             >
               {submitting ? (
                 <>
@@ -238,9 +239,9 @@ export default function SignUpPage() {
 
           {/* Divider */}
           <div className="flex items-center gap-3">
-            <div className="flex-1 h-px bg-[#CBCBCB]/60" />
-            <span className="text-[11px] text-[#6D8196] uppercase tracking-wider font-extrabold">or sign up with</span>
-            <div className="flex-1 h-px bg-[#CBCBCB]/60" />
+            <div className="flex-1 h-px bg-[#E2E8F0]" />
+            <span className="text-[11px] text-[#0284C7] uppercase tracking-wider font-extrabold">or sign up with</span>
+            <div className="flex-1 h-px bg-[#E2E8F0]" />
           </div>
 
           {/* Social Sign-Up: Google */}
@@ -250,7 +251,7 @@ export default function SignUpPage() {
               disabled={submitting}
               onClick={handleGoogleSignUp}
               suppressHydrationWarning
-              className="w-full flex items-center justify-center gap-2.5 px-3 py-2.5 neu-btn text-[#4A4A4A] text-xs font-bold transition-all disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2.5 px-3 py-2.5 bg-[#FFFFFF] hover:bg-[#F8FAFC] border border-[#CBD5E1] text-[#000000] text-xs font-bold rounded-xl transition-all disabled:opacity-50"
             >
               <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
                 <path
@@ -275,12 +276,12 @@ export default function SignUpPage() {
           </div>
 
           {/* Already have an account link */}
-          <div className="text-center pt-2 border-t border-[#CBCBCB]/60">
-            <p className="text-xs text-[#4A4A4A] font-semibold">
+          <div className="text-center pt-2 border-t border-[#E2E8F0]">
+            <p className="text-xs text-[#000000] font-semibold">
               Already have an account?{" "}
               <Link
                 href="/login"
-                className="font-extrabold text-[#6D8196] hover:underline"
+                className="font-extrabold text-[#2563EB] hover:underline"
               >
                 Sign In
               </Link>
@@ -289,7 +290,7 @@ export default function SignUpPage() {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-[11px] text-[#4A4A4A]/60 mt-6 font-bold">
+        <p className="text-center text-[11px] text-[#000000]/60 mt-6 font-bold">
           CatalogForge.tech — Enterprise Product Intelligence
         </p>
       </div>

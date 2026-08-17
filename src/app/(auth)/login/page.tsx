@@ -9,6 +9,7 @@ import {
   Loader2,
   AlertCircle,
   Zap,
+  Layers,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthProvider";
 
@@ -58,27 +59,27 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#E2E6E9] p-4 py-12">
+    <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] p-4 py-12 text-[#000000]">
       <div className="w-full max-w-sm">
-        {/* Logo / Brand in Tactile Well */}
+        {/* Logo / Brand */}
         <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl neu-btn-accent text-[#FFFFE3] flex items-center justify-center mx-auto mb-4 shadow-sm">
-            <Zap className="w-7 h-7" />
+          <div className="w-14 h-14 rounded-2xl bg-[#2563EB] text-white flex items-center justify-center mx-auto mb-4 border border-[#1D4ED8]">
+            <Layers className="w-7 h-7" />
           </div>
-          <h1 className="text-2xl font-extrabold text-[#4A4A4A] tracking-tight">
+          <h1 className="text-2xl font-black text-[#000000] tracking-tight">
             CatalogForge
           </h1>
-          <p className="text-xs text-[#6D8196] font-bold mt-1">
+          <p className="text-xs text-[#0284C7] font-bold mt-1">
             Sign in to your AI workspace
           </p>
         </div>
 
-        {/* Neumorphic Extruded Login Card */}
-        <div className="neu-card rounded-3xl p-7 space-y-5">
+        {/* Clean Flat Login Card (Zero Shadows) */}
+        <div className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-3xl p-7 space-y-5">
           {/* Error Banner */}
           {error && (
-            <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-800">
-              <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
               <span>{error}</span>
             </div>
           )}
@@ -88,7 +89,7 @@ export default function LoginPage() {
             <div>
               <label
                 htmlFor="login-email"
-                className="block text-xs font-extrabold text-[#4A4A4A] mb-1.5"
+                className="block text-xs font-black text-[#000000] mb-1.5"
               >
                 Email Address
               </label>
@@ -101,7 +102,7 @@ export default function LoginPage() {
                 autoComplete="email"
                 required
                 suppressHydrationWarning
-                className="w-full px-3.5 py-2.5 text-sm neu-input placeholder:text-[#4A4A4A]/50 transition-colors"
+                className="w-full px-3.5 py-2.5 text-sm bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl text-[#000000] placeholder:text-[#000000]/40 focus:outline-none focus:border-[#2563EB] transition-colors font-medium"
               />
             </div>
 
@@ -109,7 +110,7 @@ export default function LoginPage() {
             <div>
               <label
                 htmlFor="login-password"
-                className="block text-xs font-extrabold text-[#4A4A4A] mb-1.5"
+                className="block text-xs font-black text-[#000000] mb-1.5"
               >
                 Password
               </label>
@@ -124,12 +125,12 @@ export default function LoginPage() {
                   required
                   minLength={6}
                   suppressHydrationWarning
-                  className="w-full px-3.5 py-2.5 pr-10 text-sm neu-input placeholder:text-[#4A4A4A]/50 transition-colors"
+                  className="w-full px-3.5 py-2.5 pr-10 text-sm bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl text-[#000000] placeholder:text-[#000000]/40 focus:outline-none focus:border-[#2563EB] transition-colors font-medium"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-[#4A4A4A]/60 hover:text-[#4A4A4A] transition-colors"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-[#000000]/60 hover:text-[#000000] transition-colors"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                   suppressHydrationWarning
                 >
@@ -147,7 +148,7 @@ export default function LoginPage() {
               type="submit"
               disabled={!isValid || submitting || authLoading}
               suppressHydrationWarning
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 neu-btn-accent text-sm font-bold tracking-wide disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm font-bold rounded-xl border border-[#1D4ED8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? (
                 <>
@@ -162,9 +163,9 @@ export default function LoginPage() {
 
           {/* Divider */}
           <div className="flex items-center gap-3">
-            <div className="flex-1 h-px bg-[#CBCBCB]/60" />
-            <span className="text-[11px] text-[#6D8196] uppercase tracking-wider font-extrabold">or sign in with</span>
-            <div className="flex-1 h-px bg-[#CBCBCB]/60" />
+            <div className="flex-1 h-px bg-[#E2E8F0]" />
+            <span className="text-[11px] text-[#0284C7] uppercase tracking-wider font-extrabold">or sign in with</span>
+            <div className="flex-1 h-px bg-[#E2E8F0]" />
           </div>
 
           {/* Social Login: Google */}
@@ -174,7 +175,7 @@ export default function LoginPage() {
               disabled={submitting}
               onClick={handleGoogleSignIn}
               suppressHydrationWarning
-              className="w-full flex items-center justify-center gap-2.5 px-3 py-2.5 neu-btn text-[#4A4A4A] text-xs font-bold transition-all disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2.5 px-3 py-2.5 bg-[#FFFFFF] hover:bg-[#F8FAFC] border border-[#CBD5E1] text-[#000000] text-xs font-bold rounded-xl transition-all disabled:opacity-50"
             >
               <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
                 <path
@@ -199,12 +200,12 @@ export default function LoginPage() {
           </div>
 
           {/* Don't have an account link */}
-          <div className="text-center pt-2 border-t border-[#CBCBCB]/60">
-            <p className="text-xs text-[#4A4A4A] font-semibold">
+          <div className="text-center pt-2 border-t border-[#E2E8F0]">
+            <p className="text-xs text-[#000000] font-semibold">
               Don&apos;t have an account?{" "}
               <Link
                 href="/signup"
-                className="font-extrabold text-[#6D8196] hover:underline"
+                className="font-extrabold text-[#2563EB] hover:underline"
               >
                 Sign Up
               </Link>
@@ -213,7 +214,7 @@ export default function LoginPage() {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-[11px] text-[#4A4A4A]/60 mt-6 font-bold">
+        <p className="text-center text-[11px] text-[#000000]/60 mt-6 font-bold">
           CatalogForge.tech — Enterprise Product Intelligence
         </p>
       </div>

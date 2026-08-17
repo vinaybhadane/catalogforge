@@ -10,69 +10,53 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "var(--background)",
-        surface: "var(--surface)",
-        "surface-warm": "var(--surface-warm)",
-        "surface-muted": "var(--surface-muted)",
-        border: "var(--border)",
-        "border-strong": "var(--border-strong)",
-        foreground: "var(--primary-text)",
-        "secondary-text": "var(--secondary-text)",
-        "muted-text": "var(--muted-text)",
-        charcoal: {
-          DEFAULT: "#4A4A4A",
-          dark: "#333333",
-          light: "#606060",
+        background: "#F8FAFC",
+        foreground: "#000000",
+        navy: {
+          DEFAULT: "#0F172A",
+          dark: "#0B132B",
+          light: "#1E293B",
+          deep: "#0A192F",
         },
-        silver: {
-          DEFAULT: "#CBCBCB",
-          dark: "#A8A8A8",
-          light: "#E2E2E2",
+        brandBlue: {
+          DEFAULT: "#2563EB",
+          dark: "#1D4ED8",
+          light: "#3B82F6",
         },
-        cream: {
-          DEFAULT: "#FFFFE3",
-          dark: "#F0F0D0",
-          light: "#FFFFF2",
-        },
-        slateBlue: {
-          DEFAULT: "#6D8196",
-          dark: "#576A7E",
-          light: "#879BB0",
+        skyBlue: {
+          DEFAULT: "#38BDF8",
+          dark: "#0284C7",
+          light: "#E0F2FE",
+          accent: "#0EA5E9",
         },
         primary: {
-          DEFAULT: "#6D8196",
-          hover: "#576A7E",
-          soft: "#FFFFE3",
+          DEFAULT: "#2563EB",
+          hover: "#1D4ED8",
+          soft: "#E0F2FE",
         },
         success: {
-          DEFAULT: "#047857",
+          DEFAULT: "#059669",
           soft: "#ECFDF5",
         },
         warning: {
-          DEFAULT: "#B45309",
+          DEFAULT: "#D97706",
           soft: "#FFFBEB",
         },
         error: {
-          DEFAULT: "#B91C1C",
+          DEFAULT: "#DC2626",
           soft: "#FEF2F2",
         },
         info: {
-          DEFAULT: "#6D8196",
-          soft: "#FFFFE3",
-        },
-        neutral: {
-          DEFAULT: "#4A4A4A",
+          DEFAULT: "#0284C7",
+          soft: "#E0F2FE",
         },
       },
       boxShadow: {
-        "neu-flat": "8px 8px 18px rgba(74, 74, 74, 0.15), -8px -8px 18px rgba(255, 255, 227, 0.95)",
-        "neu-flat-sm": "4px 4px 10px rgba(74, 74, 74, 0.14), -4px -4px 10px rgba(255, 255, 227, 0.9)",
-        "neu-flat-lg": "12px 12px 24px rgba(74, 74, 74, 0.18), -12px -12px 24px rgba(255, 255, 227, 1)",
-        "neu-inset": "inset 4px 4px 8px rgba(74, 74, 74, 0.14), inset -4px -4px 8px rgba(255, 255, 227, 0.9)",
-        "neu-inset-sm": "inset 2px 2px 5px rgba(74, 74, 74, 0.12), inset -2px -2px 5px rgba(255, 255, 227, 0.85)",
-        "neu-btn": "4px 4px 10px rgba(74, 74, 74, 0.15), -4px -4px 10px rgba(255, 255, 227, 0.9)",
-        "neu-btn-accent": "5px 5px 14px rgba(74, 74, 74, 0.22), -5px -5px 14px rgba(255, 255, 227, 0.85), 0 0 12px rgba(109, 129, 150, 0.3)",
-        "neu-pressed": "inset 3px 3px 6px rgba(74, 74, 74, 0.18), inset -3px -3px 6px rgba(255, 255, 227, 0.9)",
+        none: "none",
+        "home-neu": "8px 8px 18px rgba(15, 23, 42, 0.08), -8px -8px 18px rgba(255, 255, 255, 0.9)",
+        "home-neu-sm": "4px 4px 10px rgba(15, 23, 42, 0.06), -4px -4px 10px rgba(255, 255, 255, 0.9)",
+        "home-neu-inset": "inset 4px 4px 8px rgba(15, 23, 42, 0.07), inset -4px -4px 8px rgba(255, 255, 255, 0.9)",
+        "home-neu-btn": "4px 4px 10px rgba(37, 99, 235, 0.2), -4px -4px 10px rgba(255, 255, 255, 0.8)",
       },
       fontFamily: {
         sans: ["Inter", "sans-serif"],

@@ -22,7 +22,7 @@ import { useDashboard } from "@/hooks/useDashboard";
 import { cn } from "@/lib/utils";
 
 // ─────────────────────────────────────────────────────────────
-// Neumorphic KPI Card
+// Clean Flat KPI Card (Zero Shadows)
 // ─────────────────────────────────────────────────────────────
 
 interface KpiCardProps {
@@ -50,24 +50,24 @@ function KpiCard({
       : value.toLocaleString();
 
   return (
-    <div className="neu-card neu-card-interactive rounded-2xl p-5">
+    <div className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-2xl p-5 hover:border-[#2563EB] transition-colors">
       <div className="flex items-start justify-between">
         <div className="space-y-1.5">
-          <p className="text-[11px] font-extrabold uppercase tracking-wider text-[#6D8196]">
+          <p className="text-[11px] font-black uppercase tracking-wider text-[#0F172A]/70">
             {label}
           </p>
-          <p className="text-2xl lg:text-3xl font-black font-mono text-[#4A4A4A] tracking-tight">
+          <p className="text-2xl lg:text-3xl font-black font-mono text-[#000000] tracking-tight">
             {formatted}
           </p>
           {badge && (
             <div className="pt-1">
               <span
                 className={cn(
-                  "neu-pill inline-flex items-center text-[10px] font-bold px-2.5 py-0.5 rounded-full",
-                  badgeType === "accent" && "text-[#6D8196] border-[#6D8196]",
-                  badgeType === "success" && "text-emerald-800 border-emerald-300",
-                  badgeType === "warning" && "text-amber-800 border-amber-300",
-                  badgeType === "neutral" && "text-[#4A4A4A] border-[#CBCBCB]"
+                  "inline-flex items-center text-[10px] font-bold px-2.5 py-0.5 rounded-full border",
+                  badgeType === "accent" && "bg-[#E0F2FE] text-[#0284C7] border-[#38BDF8]",
+                  badgeType === "success" && "bg-emerald-50 text-emerald-800 border-emerald-300",
+                  badgeType === "warning" && "bg-amber-50 text-amber-800 border-amber-300",
+                  badgeType === "neutral" && "bg-[#F1F5F9] text-[#000000] border-[#CBD5E1]"
                 )}
               >
                 {badge}
@@ -76,8 +76,8 @@ function KpiCard({
           )}
         </div>
 
-        {/* Tactile Icon Well */}
-        <div className="w-12 h-12 rounded-xl neu-icon-well flex items-center justify-center text-[#6D8196]">
+        {/* Icon Well */}
+        <div className="w-12 h-12 rounded-xl bg-[#E0F2FE] border border-[#38BDF8]/40 flex items-center justify-center text-[#2563EB]">
           <Icon className="w-6 h-6" />
         </div>
       </div>
@@ -87,12 +87,12 @@ function KpiCard({
 
 function KpiSkeleton() {
   return (
-    <div className="neu-card rounded-2xl p-5 h-28 animate-pulse flex items-center justify-between">
+    <div className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-2xl p-5 h-28 animate-pulse flex items-center justify-between">
       <div className="space-y-2">
-        <div className="h-3 w-20 bg-[#CBCBCB]/40 rounded" />
-        <div className="h-7 w-24 bg-[#CBCBCB]/60 rounded" />
+        <div className="h-3 w-20 bg-[#E2E8F0] rounded" />
+        <div className="h-7 w-24 bg-[#CBD5E1] rounded" />
       </div>
-      <div className="w-12 h-12 rounded-xl neu-icon-well" />
+      <div className="w-12 h-12 rounded-xl bg-[#F1F5F9]" />
     </div>
   );
 }
@@ -112,11 +112,11 @@ function formatDate(iso: string | null): string {
 }
 
 function StageBadge({ stage }: { stage: string | null }) {
-  if (!stage) return <span className="text-[#4A4A4A]/40 text-xs">—</span>;
+  if (!stage) return <span className="text-[#000000]/40 text-xs">—</span>;
 
   const stageConfig: Record<string, { label: string; dot: string; text: string }> = {
     queued: { label: "Queued", dot: "bg-slate-400", text: "text-slate-700" },
-    ingested: { label: "Ingested", dot: "bg-[#6D8196]", text: "text-[#6D8196]" },
+    ingested: { label: "Ingested", dot: "bg-[#2563EB]", text: "text-[#2563EB]" },
     classified: { label: "Classified", dot: "bg-indigo-500", text: "text-indigo-700" },
     enriched: { label: "Enriched", dot: "bg-purple-500", text: "text-purple-700" },
     validated: { label: "Validated", dot: "bg-amber-500", text: "text-amber-700" },
@@ -127,12 +127,12 @@ function StageBadge({ stage }: { stage: string | null }) {
 
   const current = stageConfig[stage] || {
     label: stage.replace(/_/g, " "),
-    dot: "bg-[#6D8196]",
-    text: "text-[#4A4A4A]",
+    dot: "bg-[#2563EB]",
+    text: "text-[#000000]",
   };
 
   return (
-    <span className="neu-pill inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider">
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[#F1F5F9] border border-[#CBD5E1]">
       <span className={cn("w-2 h-2 rounded-full", current.dot)} />
       <span className={current.text}>{current.label}</span>
     </span>
@@ -168,20 +168,20 @@ export default function DashboardPage() {
   }, [summary?.averageConfidence]);
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-6 pb-12 text-[#000000]">
       {/* Top Banner / Welcome Pod */}
-      <div className="neu-card rounded-3xl p-6 lg:p-8 relative overflow-hidden">
+      <div className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-3xl p-6 lg:p-8 relative overflow-hidden">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           <div className="space-y-2 max-w-2xl">
             <div className="flex items-center gap-2.5">
-              <span className="neu-pill-accent px-3 py-1 text-xs font-black uppercase tracking-wider flex items-center gap-1.5">
+              <span className="bg-[#E0F2FE] border border-[#38BDF8] text-[#0284C7] px-3 py-1 text-xs font-black uppercase tracking-wider rounded-full flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5" /> Deterministic Pipeline
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-[#4A4A4A] tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-black text-[#000000] tracking-tight">
               Enterprise Catalog Intelligence
             </h1>
-            <p className="text-xs sm:text-sm text-[#6D8196] font-bold leading-relaxed">
+            <p className="text-xs sm:text-sm text-[#0F172A]/80 font-bold leading-relaxed">
               Automated multi-stage catalog extraction, classification, taxonomy mapping, attribute normalization, and human-in-the-loop review.
             </p>
           </div>
@@ -192,15 +192,15 @@ export default function DashboardPage() {
               type="button"
               onClick={refresh}
               disabled={isLoading}
-              className="neu-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-[#4A4A4A] disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-[#000000] bg-[#FFFFFF] hover:bg-[#F1F5F9] border border-[#CBD5E1] transition-all disabled:opacity-50"
             >
-              <RefreshCw className={cn("w-4 h-4 text-[#6D8196]", isLoading && "animate-spin")} />
+              <RefreshCw className={cn("w-4 h-4 text-[#2563EB]", isLoading && "animate-spin")} />
               <span>Refresh</span>
             </button>
 
             <Link
               href="/upload"
-              className="neu-btn-accent flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-[#2563EB] hover:bg-[#1D4ED8] text-white border border-[#1D4ED8] transition-all"
             >
               <UploadCloud className="w-4 h-4" />
               <span>Ingest Catalog</span>
@@ -211,7 +211,7 @@ export default function DashboardPage() {
 
       {/* Error Banner */}
       {hookState === "error" && errorMessage && (
-        <div className="neu-card rounded-2xl p-4 border-l-4 border-l-rose-500 flex items-start gap-3">
+        <div className="bg-[#FFFFFF] border-l-4 border-l-rose-500 border border-[#E2E8F0] rounded-2xl p-4 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
           <div className="flex-1">
             <p className="text-xs font-extrabold text-rose-900">Dashboard Synchronization Warning</p>
@@ -220,7 +220,7 @@ export default function DashboardPage() {
           <button
             type="button"
             onClick={refresh}
-            className="neu-btn px-3 py-1 text-xs text-rose-800 font-bold"
+            className="px-3 py-1 text-xs text-rose-800 font-bold bg-rose-50 border border-rose-200 rounded-lg"
           >
             Retry
           </button>
@@ -276,24 +276,24 @@ export default function DashboardPage() {
         {/* Left 2 Cols: Confidence Distribution & Accuracy Gauges */}
         <div className="lg:col-span-2 space-y-6">
           {/* AI Confidence Distribution Bar */}
-          <div className="neu-card rounded-2xl p-6 space-y-4">
+          <div className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-2xl p-6 space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-black text-[#4A4A4A] tracking-tight flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-[#6D8196]" />
+                <h3 className="text-sm font-black text-[#000000] tracking-tight flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-[#2563EB]" />
                   AI Attribute Confidence Distribution
                 </h3>
-                <p className="text-xs text-[#6D8196] font-bold mt-0.5">
+                <p className="text-xs text-[#0F172A]/70 font-bold mt-0.5">
                   Breakdown across 25 schema-governed electrical & industrial attributes
                 </p>
               </div>
-              <span className="neu-pill px-2.5 py-1 text-[11px] font-mono font-bold text-[#6D8196]">
+              <span className="px-2.5 py-1 text-[11px] font-mono font-bold text-[#0284C7] bg-[#E0F2FE] border border-[#38BDF8] rounded-full">
                 Target &ge; 85%
               </span>
             </div>
 
-            {/* Inset Multi-segment Meter */}
-            <div className="neu-inset h-4 rounded-full overflow-hidden p-0.5 flex gap-1">
+            {/* Meter */}
+            <div className="bg-[#F1F5F9] border border-[#E2E8F0] h-4 rounded-full overflow-hidden p-0.5 flex gap-1">
               <div
                 style={{ width: `${confidenceStats.high}%` }}
                 className="bg-emerald-600 h-full rounded-full transition-all duration-500"
@@ -313,24 +313,24 @@ export default function DashboardPage() {
 
             {/* Legend Pills */}
             <div className="grid grid-cols-3 gap-3 pt-2 text-xs">
-              <div className="neu-inset p-3 rounded-xl flex items-center justify-between">
+              <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-3 rounded-xl flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                  <span className="font-bold text-[#4A4A4A]">High (&ge;85%)</span>
+                  <span className="font-bold text-[#000000]">High (&ge;85%)</span>
                 </div>
                 <span className="font-mono font-black text-emerald-800">{confidenceStats.high}%</span>
               </div>
-              <div className="neu-inset p-3 rounded-xl flex items-center justify-between">
+              <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-3 rounded-xl flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-                  <span className="font-bold text-[#4A4A4A]">Medium (60-84%)</span>
+                  <span className="font-bold text-[#000000]">Medium (60-84%)</span>
                 </div>
                 <span className="font-mono font-black text-amber-800">{confidenceStats.medium}%</span>
               </div>
-              <div className="neu-inset p-3 rounded-xl flex items-center justify-between">
+              <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-3 rounded-xl flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
-                  <span className="font-bold text-[#4A4A4A]">Review (&lt;60%)</span>
+                  <span className="font-bold text-[#000000]">Review (&lt;60%)</span>
                 </div>
                 <span className="font-mono font-black text-rose-800">{confidenceStats.low}%</span>
               </div>
@@ -338,43 +338,43 @@ export default function DashboardPage() {
           </div>
 
           {/* Ingestion & Pipeline Highlights */}
-          <div className="neu-card rounded-2xl p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-[#CBCBCB]/40 pb-3">
-              <h3 className="text-sm font-black text-[#4A4A4A] tracking-tight flex items-center gap-2">
-                <Layers className="w-4 h-4 text-[#6D8196]" />
+          <div className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3">
+              <h3 className="text-sm font-black text-[#000000] tracking-tight flex items-center gap-2">
+                <Layers className="w-4 h-4 text-[#2563EB]" />
                 Enrichment Pipeline Benchmarks
               </h3>
               <Link
                 href="/analytics"
-                className="text-xs font-extrabold text-[#6D8196] hover:underline flex items-center gap-1"
+                className="text-xs font-extrabold text-[#2563EB] hover:underline flex items-center gap-1"
               >
                 Full Analytics <ChevronRight className="w-3.5 h-3.5" />
               </Link>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="neu-inset p-4 rounded-xl space-y-1">
-                <span className="text-[10px] font-extrabold text-[#6D8196] uppercase tracking-wider">
+              <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-4 rounded-xl space-y-1">
+                <span className="text-[10px] font-extrabold text-[#0284C7] uppercase tracking-wider">
                   LOV Resolution Rate
                 </span>
-                <p className="text-xl font-black font-mono text-[#4A4A4A]">96.8%</p>
-                <p className="text-[10px] text-[#4A4A4A]/60 font-semibold">Strict taxonomy vocabulary</p>
+                <p className="text-xl font-black font-mono text-[#000000]">96.8%</p>
+                <p className="text-[10px] text-[#0F172A]/60 font-semibold">Strict taxonomy vocabulary</p>
               </div>
 
-              <div className="neu-inset p-4 rounded-xl space-y-1">
-                <span className="text-[10px] font-extrabold text-[#6D8196] uppercase tracking-wider">
+              <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-4 rounded-xl space-y-1">
+                <span className="text-[10px] font-extrabold text-[#0284C7] uppercase tracking-wider">
                   Character Limit Compliance
                 </span>
-                <p className="text-xl font-black font-mono text-[#4A4A4A]">100%</p>
-                <p className="text-[10px] text-[#4A4A4A]/60 font-semibold">Max 255 char boundary</p>
+                <p className="text-xl font-black font-mono text-[#000000]">100%</p>
+                <p className="text-[10px] text-[#0F172A]/60 font-semibold">Max 255 char boundary</p>
               </div>
 
-              <div className="neu-inset p-4 rounded-xl space-y-1">
-                <span className="text-[10px] font-extrabold text-[#6D8196] uppercase tracking-wider">
+              <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-4 rounded-xl space-y-1">
+                <span className="text-[10px] font-extrabold text-[#0284C7] uppercase tracking-wider">
                   Review SLA Turnaround
                 </span>
-                <p className="text-xl font-black font-mono text-[#4A4A4A]">98.4%</p>
-                <p className="text-[10px] text-[#4A4A4A]/60 font-semibold">&lt; 4 hr resolution time</p>
+                <p className="text-xl font-black font-mono text-[#000000]">98.4%</p>
+                <p className="text-[10px] text-[#0F172A]/60 font-semibold">&lt; 4 hr resolution time</p>
               </div>
             </div>
           </div>
@@ -383,83 +383,83 @@ export default function DashboardPage() {
         {/* Right 1 Col: Quick Workflow Launchpad & Review Trigger */}
         <div className="space-y-6">
           {/* Quick Launchpad Card */}
-          <div className="neu-card rounded-2xl p-6 space-y-4">
-            <h3 className="text-sm font-black text-[#4A4A4A] tracking-tight flex items-center gap-2">
-              <Zap className="w-4 h-4 text-[#6D8196]" />
+          <div className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-2xl p-6 space-y-4">
+            <h3 className="text-sm font-black text-[#000000] tracking-tight flex items-center gap-2">
+              <Zap className="w-4 h-4 text-[#2563EB]" />
               Workflow Launchpad
             </h3>
 
             <div className="space-y-3">
               <Link
                 href="/upload"
-                className="neu-btn p-3.5 rounded-xl flex items-center justify-between group"
+                className="bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[#E2E8F0] hover:border-[#2563EB] p-3.5 rounded-xl flex items-center justify-between group transition-all"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg neu-icon-well text-[#6D8196] flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-lg bg-[#E0F2FE] border border-[#38BDF8]/40 text-[#2563EB] flex items-center justify-center">
                     <UploadCloud className="w-4 h-4" />
                   </div>
                   <div className="text-left">
-                    <p className="text-xs font-extrabold text-[#4A4A4A]">Upload New Dataset</p>
-                    <p className="text-[10px] text-[#6D8196] font-bold">CSV, XLSX or PDF Specs</p>
+                    <p className="text-xs font-extrabold text-[#000000]">Upload New Dataset</p>
+                    <p className="text-[10px] text-[#0284C7] font-bold">CSV, XLSX or PDF Specs</p>
                   </div>
                 </div>
-                <ChevronRight className="w-4 h-4 text-[#6D8196] group-hover:translate-x-0.5 transition-transform" />
+                <ChevronRight className="w-4 h-4 text-[#2563EB] group-hover:translate-x-0.5 transition-transform" />
               </Link>
 
               <Link
                 href="/review"
-                className="neu-btn p-3.5 rounded-xl flex items-center justify-between group"
+                className="bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[#E2E8F0] hover:border-[#2563EB] p-3.5 rounded-xl flex items-center justify-between group transition-all"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg neu-icon-well text-[#6D8196] flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-lg bg-[#E0F2FE] border border-[#38BDF8]/40 text-[#2563EB] flex items-center justify-center">
                     <CheckSquare className="w-4 h-4" />
                   </div>
                   <div className="text-left">
-                    <p className="text-xs font-extrabold text-[#4A4A4A]">Review Flagged Items</p>
-                    <p className="text-[10px] text-[#6D8196] font-bold">{summary?.needsReview ?? 0} records pending</p>
+                    <p className="text-xs font-extrabold text-[#000000]">Review Flagged Items</p>
+                    <p className="text-[10px] text-[#0284C7] font-bold">{summary?.needsReview ?? 0} records pending</p>
                   </div>
                 </div>
-                <ChevronRight className="w-4 h-4 text-[#6D8196] group-hover:translate-x-0.5 transition-transform" />
+                <ChevronRight className="w-4 h-4 text-[#2563EB] group-hover:translate-x-0.5 transition-transform" />
               </Link>
 
               <Link
                 href="/products"
-                className="neu-btn p-3.5 rounded-xl flex items-center justify-between group"
+                className="bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[#E2E8F0] hover:border-[#2563EB] p-3.5 rounded-xl flex items-center justify-between group transition-all"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg neu-icon-well text-[#6D8196] flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-lg bg-[#E0F2FE] border border-[#38BDF8]/40 text-[#2563EB] flex items-center justify-center">
                     <Package className="w-4 h-4" />
                   </div>
                   <div className="text-left">
-                    <p className="text-xs font-extrabold text-[#4A4A4A]">Explore Product Catalog</p>
-                    <p className="text-[10px] text-[#6D8196] font-bold">Search published products</p>
+                    <p className="text-xs font-extrabold text-[#000000]">Explore Product Catalog</p>
+                    <p className="text-[10px] text-[#0284C7] font-bold">Search published products</p>
                   </div>
                 </div>
-                <ChevronRight className="w-4 h-4 text-[#6D8196] group-hover:translate-x-0.5 transition-transform" />
+                <ChevronRight className="w-4 h-4 text-[#2563EB] group-hover:translate-x-0.5 transition-transform" />
               </Link>
             </div>
           </div>
 
           {/* System Status Pod */}
-          <div className="neu-card rounded-2xl p-5 space-y-3">
+          <div className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-2xl p-5 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-extrabold text-[#4A4A4A]">Engine Cluster</span>
-              <span className="neu-pill px-2.5 py-0.5 text-[10px] font-black text-emerald-800 border-emerald-300">
+              <span className="text-xs font-extrabold text-[#000000]">Engine Cluster</span>
+              <span className="bg-[#E0F2FE] text-[#0284C7] border border-[#38BDF8] px-2.5 py-0.5 text-[10px] font-black rounded-full">
                 ACTIVE
               </span>
             </div>
-            <div className="neu-inset p-3 rounded-xl space-y-1.5 text-[11px]">
+            <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-3 rounded-xl space-y-1.5 text-[11px]">
               <div className="flex justify-between">
-                <span className="text-[#6D8196] font-bold">Fastify API Gateway:</span>
-                <span className="font-mono font-bold text-[#4A4A4A]">Online (:8000)</span>
+                <span className="text-[#0284C7] font-bold">Fastify API Gateway:</span>
+                <span className="font-mono font-bold text-[#000000]">Online (:8000)</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#6D8196] font-bold">Next.js UI Client:</span>
-                <span className="font-mono font-bold text-[#4A4A4A]">Active (:3000)</span>
+                <span className="text-[#0284C7] font-bold">Next.js UI Client:</span>
+                <span className="font-mono font-bold text-[#000000]">Active (:3000)</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#6D8196] font-bold">Auth Provider:</span>
-                <span className="font-mono font-bold text-[#4A4A4A]">Firebase Spark</span>
+                <span className="text-[#0284C7] font-bold">Auth Provider:</span>
+                <span className="font-mono font-bold text-[#000000]">Firebase Spark</span>
               </div>
             </div>
           </div>
@@ -467,31 +467,31 @@ export default function DashboardPage() {
       </div>
 
       {/* Recent Processing Jobs Table */}
-      <div className="neu-card rounded-2xl p-6 space-y-4">
+      <div className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-2xl p-6 space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h3 className="text-base font-black text-[#4A4A4A] tracking-tight">
+            <h3 className="text-base font-black text-[#000000] tracking-tight">
               Recent Processing Jobs
             </h3>
-            <p className="text-xs text-[#6D8196] font-bold mt-0.5">
+            <p className="text-xs text-[#0F172A]/70 font-bold mt-0.5">
               Live progression of uploaded datasets across the 8 pipeline stages
             </p>
           </div>
           <Link
             href="/jobs"
-            className="neu-btn px-3.5 py-1.5 rounded-xl text-xs font-bold text-[#4A4A4A] flex items-center gap-1.5"
+            className="px-3.5 py-1.5 rounded-xl text-xs font-bold text-[#000000] bg-[#FFFFFF] hover:bg-[#F1F5F9] border border-[#CBD5E1] flex items-center gap-1.5 transition-colors"
           >
             <span>View All Jobs</span>
-            <ArrowRight className="w-3.5 h-3.5 text-[#6D8196]" />
+            <ArrowRight className="w-3.5 h-3.5 text-[#2563EB]" />
           </Link>
         </div>
 
-        {/* Inset Table */}
-        <div className="neu-inset rounded-xl overflow-hidden p-1">
-          <div className="overflow-x-auto rounded-lg">
+        {/* Flat Table */}
+        <div className="border border-[#E2E8F0] rounded-xl overflow-hidden">
+          <div className="overflow-x-auto">
             <table className="w-full text-xs text-left" aria-label="Recent processing jobs">
               <thead>
-                <tr className="border-b border-[#CBCBCB]/40 text-[#4A4A4A] bg-[#E2E6E9]/60">
+                <tr className="border-b border-[#E2E8F0] text-[#000000] bg-[#F8FAFC]">
                   <th scope="col" className="px-4 py-3 font-bold uppercase tracking-wider text-[10px]">Job ID</th>
                   <th scope="col" className="px-4 py-3 font-bold uppercase tracking-wider text-[10px]">File Name</th>
                   <th scope="col" className="px-4 py-3 font-bold uppercase tracking-wider text-[10px]">Rows</th>
@@ -501,16 +501,16 @@ export default function DashboardPage() {
                   <th scope="col" className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-right">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#CBCBCB]/30">
+              <tbody className="divide-y divide-[#E2E8F0]">
                 {recentJobs.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-4 py-12 text-center">
-                      <div className="flex flex-col items-center gap-2 text-[#6D8196]">
+                      <div className="flex flex-col items-center gap-2 text-[#0284C7]">
                         <FileSpreadsheet className="w-8 h-8 opacity-60" />
-                        <p className="font-bold text-xs text-[#4A4A4A]">No processing jobs recorded yet</p>
+                        <p className="font-bold text-xs text-[#000000]">No processing jobs recorded yet</p>
                         <Link
                           href="/upload"
-                          className="mt-1 text-xs font-extrabold text-[#6D8196] underline"
+                          className="mt-1 text-xs font-extrabold text-[#2563EB] underline"
                         >
                           Upload your first dataset
                         </Link>
@@ -521,15 +521,15 @@ export default function DashboardPage() {
                   recentJobs.map((job) => (
                     <tr
                       key={job.jobId}
-                      className="hover:bg-[#FFFFE3]/40 transition-colors"
+                      className="hover:bg-[#F8FAFC] transition-colors"
                     >
-                      <td className="px-4 py-3 font-mono font-bold text-[#4A4A4A]">
+                      <td className="px-4 py-3 font-mono font-bold text-[#000000]">
                         {job.jobId.slice(0, 8)}…
                       </td>
-                      <td className="px-4 py-3 font-semibold text-[#4A4A4A] truncate max-w-[180px]">
+                      <td className="px-4 py-3 font-semibold text-[#000000] truncate max-w-[180px]">
                         {job.fileName ?? "—"}
                       </td>
-                      <td className="px-4 py-3 font-mono text-[#4A4A4A]">
+                      <td className="px-4 py-3 font-mono text-[#000000]">
                         {job.rowCount !== null ? job.rowCount.toLocaleString() : "—"}
                       </td>
                       <td className="px-4 py-3">
@@ -537,24 +537,24 @@ export default function DashboardPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <div className="flex-1 neu-inset-sm h-2 rounded-full w-20 overflow-hidden p-0.5">
+                          <div className="flex-1 bg-[#E2E8F0] h-2 rounded-full w-20 overflow-hidden">
                             <div
-                              className="bg-[#6D8196] h-full rounded-full transition-all"
+                              className="bg-[#2563EB] h-full rounded-full transition-all"
                               style={{ width: `${Math.min(job.progress ?? 0, 100)}%` }}
                             />
                           </div>
-                          <span className="font-mono text-[11px] font-bold text-[#4A4A4A]">
+                          <span className="font-mono text-[11px] font-bold text-[#000000]">
                             {job.progress ? `${Math.round(job.progress)}%` : "0%"}
                           </span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-[#4A4A4A]/70 text-[11px] font-medium whitespace-nowrap">
+                      <td className="px-4 py-3 text-[#0F172A]/70 text-[11px] font-medium whitespace-nowrap">
                         {formatDate(job.submittedAt)}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <Link
                           href={`/jobs/${job.jobId}`}
-                          className="neu-btn inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold text-[#6D8196] hover:text-[#4A4A4A]"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold text-[#2563EB] bg-[#E0F2FE] hover:bg-[#BAE6FD] transition-colors"
                         >
                           Details <ArrowRight className="w-3 h-3" />
                         </Link>
