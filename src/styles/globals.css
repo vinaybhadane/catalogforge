@@ -5,10 +5,10 @@
 :root {
   /* Core Theme Palette — Uploaded Design Tokens */
   /* #4A4A4A (Charcoal) | #CBCBCB (Silver) | #FFFFE3 (Warm Cream) | #6D8196 (Slate Blue) */
-  --background: #F4F6F8;
-  --surface: #FFFFFF;
+  --background: #E2E6E9;
+  --surface: #E2E6E9;
   --surface-warm: #FFFFE3;
-  --surface-muted: #ECEFF2;
+  --surface-muted: #DCE1E5;
   --border: #CBCBCB;
   --border-strong: #4A4A4A;
   --primary-text: #4A4A4A;
@@ -38,14 +38,9 @@
   --confidence-low-bg: var(--error-soft);
 }
 
-/* Global Reset for Shadow-Free Flat Design */
-* {
-  box-shadow: none !important;
-}
-
 body {
-  background-color: var(--background);
-  color: var(--primary-text);
+  background-color: #E2E6E9;
+  color: #4A4A4A;
   font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -54,92 +49,169 @@ body {
 @layer components {
   /* Confidence Badges */
   .confidence-high {
-    color: var(--confidence-high);
-    background-color: var(--confidence-high-bg);
-    border: 1px solid var(--confidence-high);
+    color: #047857;
+    background-color: #ECFDF5;
+    border: 1px solid #047857;
   }
   .confidence-medium {
-    color: var(--confidence-medium);
-    background-color: var(--confidence-medium-bg);
-    border: 1px solid var(--confidence-medium);
+    color: #B45309;
+    background-color: #FFFBEB;
+    border: 1px solid #B45309;
   }
   .confidence-low {
-    color: var(--confidence-low);
-    background-color: var(--confidence-low-bg);
-    border: 1px solid var(--confidence-low);
+    color: #B91C1C;
+    background-color: #FEF2F2;
+    border: 1px solid #B91C1C;
   }
 
   /* ─────────────────────────────────────────────────────────────
-   * Flat Design System Components (Zero Shadows)
+   * Neumorphism (Soft UI) System — Uploaded Palette
    * ───────────────────────────────────────────────────────────── */
 
-  /* Clean Flat Card */
-  .flat-card {
-    background-color: #FFFFFF;
-    border: 1px solid #CBCBCB;
+  /* Raised Extruded Surface Card */
+  .neu-card {
+    background: #E2E6E9;
+    box-shadow: 6px 6px 14px rgba(74, 74, 74, 0.14),
+                -6px -6px 14px rgba(255, 255, 227, 0.95);
+    border: 1px solid rgba(255, 255, 227, 0.65);
     border-radius: 1rem;
-    transition: border-color 0.2s ease, background-color 0.2s ease;
-  }
-  .flat-card:hover {
-    border-color: #6D8196;
   }
 
-  /* Warm Cream Accent Card */
-  .flat-card-warm {
-    background-color: #FFFFE3;
-    border: 1px solid #CBCBCB;
-    border-radius: 1rem;
-    color: #4A4A4A;
+  .neu-card-interactive {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .neu-card-interactive:hover {
+    transform: translateY(-2px);
+    box-shadow: 9px 9px 18px rgba(74, 74, 74, 0.17),
+                -9px -9px 18px rgba(255, 255, 227, 1);
   }
 
-  /* Muted Slate Well / Inset */
-  .flat-well {
-    background-color: #ECEFF2;
-    border: 1px solid #CBCBCB;
+  /* Sunken / Inset Well */
+  .neu-inset {
+    background: #DCE1E5;
+    box-shadow: inset 4px 4px 8px rgba(74, 74, 74, 0.13),
+                inset -4px -4px 8px rgba(255, 255, 227, 0.9);
+    border: 1px solid rgba(203, 203, 203, 0.35);
     border-radius: 0.75rem;
   }
 
-  /* Primary Action Button (#6D8196 Slate Blue with #FFFFE3 text) */
-  .flat-btn-primary {
-    background-color: #6D8196;
+  .neu-inset-sm {
+    background: #DEE3E7;
+    box-shadow: inset 2px 2px 5px rgba(74, 74, 74, 0.12),
+                inset -2px -2px 5px rgba(255, 255, 227, 0.85);
+    border: 1px solid rgba(203, 203, 203, 0.3);
+    border-radius: 0.5rem;
+  }
+
+  /* Tactile Convex Button */
+  .neu-btn {
+    background: linear-gradient(145deg, #E8ECEF, #D8DEE3);
+    box-shadow: 4px 4px 10px rgba(74, 74, 74, 0.14),
+                -4px -4px 10px rgba(255, 255, 227, 0.9);
+    border: 1px solid rgba(255, 255, 227, 0.7);
+    color: #4A4A4A;
+    border-radius: 0.75rem;
+    font-weight: 700;
+    transition: all 0.2s ease;
+  }
+  .neu-btn:hover {
+    background: linear-gradient(145deg, #EDF1F4, #DCE2E7);
+    box-shadow: 6px 6px 14px rgba(74, 74, 74, 0.18),
+                -6px -6px 14px rgba(255, 255, 227, 1);
+    color: #333333;
+  }
+  .neu-btn:active, .neu-btn-active {
+    background: #D8DEE3;
+    box-shadow: inset 3px 3px 6px rgba(74, 74, 74, 0.18),
+                inset -3px -3px 6px rgba(255, 255, 227, 0.9);
+  }
+
+  /* Primary Accent Button — Slate Blue #6D8196 */
+  .neu-btn-accent {
+    background: linear-gradient(145deg, #788EA4, #627488);
+    box-shadow: 5px 5px 14px rgba(74, 74, 74, 0.22),
+                -5px -5px 14px rgba(255, 255, 227, 0.85),
+                0 0 12px rgba(109, 129, 150, 0.25);
+    border: 1px solid rgba(255, 255, 227, 0.45);
     color: #FFFFE3;
-    border: 1px solid #576A7E;
     border-radius: 0.75rem;
-    font-weight: 600;
-    transition: background-color 0.15s ease, border-color 0.15s ease;
+    font-weight: 700;
+    transition: all 0.2s ease;
   }
-  .flat-btn-primary:hover {
-    background-color: #576A7E;
-    border-color: #4A4A4A;
+  .neu-btn-accent:hover {
+    background: linear-gradient(145deg, #8198AF, #697C92);
+    box-shadow: 7px 7px 16px rgba(74, 74, 74, 0.26),
+                -7px -7px 16px rgba(255, 255, 227, 0.95),
+                0 0 16px rgba(109, 129, 150, 0.4);
+    color: #FFFFFF;
+  }
+  .neu-btn-accent:active {
+    background: #5A6D80;
+    box-shadow: inset 3px 3px 6px rgba(35, 45, 55, 0.35),
+                inset -3px -3px 6px rgba(255, 255, 227, 0.35);
   }
 
-  /* Secondary Flat Button */
-  .flat-btn-secondary {
-    background-color: #FFFFFF;
-    color: #4A4A4A;
-    border: 1px solid #CBCBCB;
+  /* Danger Button */
+  .neu-btn-danger {
+    background: linear-gradient(145deg, #E05252, #C42B2B);
+    box-shadow: 4px 4px 10px rgba(185, 28, 28, 0.25),
+                -4px -4px 10px rgba(255, 255, 227, 0.8);
+    border: 1px solid rgba(255, 255, 227, 0.4);
+    color: #FFFFFF;
     border-radius: 0.75rem;
-    font-weight: 600;
-    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    font-weight: 700;
+    transition: all 0.2s ease;
   }
-  .flat-btn-secondary:hover {
-    background-color: #ECEFF2;
-    border-color: #6D8196;
-    color: #4A4A4A;
+  .neu-btn-danger:hover {
+    background: linear-gradient(145deg, #E85E5E, #D13434);
+    box-shadow: 6px 6px 14px rgba(185, 28, 28, 0.3),
+                -6px -6px 14px rgba(255, 255, 227, 0.95);
+  }
+  .neu-btn-danger:active {
+    background: #B91C1C;
+    box-shadow: inset 3px 3px 6px rgba(100, 15, 15, 0.4),
+                inset -3px -3px 6px rgba(255, 255, 227, 0.3);
   }
 
-  /* Flat Pill / Badge */
-  .flat-pill {
-    background-color: #ECEFF2;
-    border: 1px solid #CBCBCB;
-    color: #4A4A4A;
+  /* Tactile Icon Well */
+  .neu-icon-well {
+    background: #DEE3E7;
+    box-shadow: inset 3px 3px 6px rgba(74, 74, 74, 0.14),
+                inset -3px -3px 6px rgba(255, 255, 227, 0.9);
+    border: 1px solid rgba(255, 255, 227, 0.4);
+    border-radius: 0.75rem;
+  }
+
+  /* Tactile Pill / Badge */
+  .neu-pill {
+    background: #E2E6E9;
+    box-shadow: 3px 3px 7px rgba(74, 74, 74, 0.12),
+                -3px -3px 7px rgba(255, 255, 227, 0.85);
+    border: 1px solid rgba(255, 255, 227, 0.6);
     border-radius: 9999px;
   }
 
-  .flat-pill-accent {
-    background-color: #FFFFE3;
-    border: 1px solid #6D8196;
+  .neu-pill-accent {
+    background: #E2E6E9;
+    box-shadow: 3px 3px 7px rgba(74, 74, 74, 0.12),
+                -3px -3px 7px rgba(255, 255, 227, 0.85);
+    border: 1px solid rgba(109, 129, 150, 0.6);
     color: #6D8196;
     border-radius: 9999px;
+  }
+
+  /* Sunken Input Field */
+  .neu-input {
+    background: #DCE1E5;
+    box-shadow: inset 3px 3px 6px rgba(74, 74, 74, 0.13),
+                inset -3px -3px 6px rgba(255, 255, 227, 0.9);
+    border: 1px solid rgba(203, 203, 203, 0.4);
+    border-radius: 0.75rem;
+    color: #4A4A4A;
+    transition: border-color 0.2s ease;
+  }
+  .neu-input:focus {
+    border-color: #6D8196;
+    outline: none;
   }
 }

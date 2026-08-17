@@ -71,95 +71,89 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
 
   const getFileIcon = (file: File) => {
     if (file.name.endsWith(".csv") || file.name.endsWith(".xlsx") || file.name.endsWith(".xls")) {
-      return <FileSpreadsheet className="w-8 h-8 text-[#1D4ED8]" />;
+      return <FileSpreadsheet className="w-8 h-8 text-[#6D8196]" />;
     }
     if (file.name.endsWith(".pdf")) {
-      return <FileText className="w-8 h-8 text-[#B91C1C]" />;
+      return <FileText className="w-8 h-8 text-rose-600" />;
     }
-    return <File className="w-8 h-8 text-slate-500" />;
+    return <File className="w-8 h-8 text-[#6D8196]" />;
   };
 
   return (
     <div className="space-y-4">
       {!selectedFile ? (
-        /* Section 16 Dropzone Box */
+        /* Neumorphic Dropzone Box */
         <div
           {...getRootProps()}
           className={cn(
-            "border-2 border-dashed rounded-xl p-8 sm:p-12 text-center cursor-pointer transition-all bg-white select-none",
+            "neu-inset rounded-3xl p-8 sm:p-12 text-center cursor-pointer transition-all select-none border-2 border-dashed",
             isDragActive
-              ? "border-[#1D4ED8] bg-[#EFF6FF]"
+              ? "border-[#6D8196] bg-[#FFFFE3]/40"
               : isDragReject
-              ? "border-[#B91C1C] bg-[#FEF2F2]"
-              : "border-[#CBD5E1] hover:border-[#1D4ED8] hover:bg-slate-50",
+              ? "border-rose-500 bg-rose-50"
+              : "border-[#CBCBCB] hover:border-[#6D8196]",
             (disabled || isUploading) && "opacity-50 cursor-not-allowed"
           )}
         >
           <input {...getInputProps()} />
-          <div className="w-12 h-12 rounded-full bg-[#EFF6FF] text-[#1D4ED8] flex items-center justify-center mx-auto mb-4">
-            <UploadCloud className="w-6 h-6" />
+          <div className="w-14 h-14 rounded-2xl neu-icon-well text-[#6D8196] flex items-center justify-center mx-auto mb-4">
+            <UploadCloud className="w-7 h-7" />
           </div>
-
-          <p className="text-base font-semibold text-slate-900 mb-1">
-            {isDragActive ? "Drop file here" : "Drop file here or Browse files"}
+          <p className="text-sm font-extrabold text-[#4A4A4A]">
+            {isDragActive ? "Drop your file to upload" : "Drag and drop your dataset here"}
           </p>
-
-          <p className="text-xs text-slate-500 font-medium">
+          <p className="text-xs text-[#6D8196] font-bold mt-1">
             {mode === "pdf"
-              ? "Accepted format: Manufacturer PDF Specification (.pdf)"
-              : "Accepted formats: CSV (.csv) or Excel (.xlsx, .xls)"}
+              ? "Supports manufacturer datasheets (.pdf up to 50MB)"
+              : "Supports canonical supplier spreadsheets (.csv, .xlsx up to 50MB)"}
           </p>
-
-          {isDragReject && (
-            <p className="text-xs text-red-600 font-semibold mt-3 flex items-center justify-center gap-1">
-              <AlertCircle className="w-4 h-4" />
-              Unsupported file type selected.
-            </p>
-          )}
+          <div className="mt-4">
+            <span className="neu-btn px-4 py-2 text-xs font-bold text-[#4A4A4A] inline-block">
+              Browse Files
+            </span>
+          </div>
         </div>
       ) : (
-        /* Section 16 Selected File Card */
-        <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm space-y-4">
+        /* Selected File Card */
+        <div className="neu-card rounded-2xl p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3.5">
-              <div className="p-2 bg-slate-100 rounded-lg">{getFileIcon(selectedFile)}</div>
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl neu-icon-well flex items-center justify-center">
+                {getFileIcon(selectedFile)}
+              </div>
               <div>
-                <h4 className="font-semibold text-slate-900 text-sm tracking-tight truncate max-w-xs sm:max-w-md">
-                  {selectedFile.name}
-                </h4>
-                <div className="flex items-center gap-3 text-xs text-slate-500 mt-0.5">
-                  <span>{formatBytes(selectedFile.size)}</span>
-                  <span>•</span>
-                  <span className="uppercase font-mono">{selectedFile.name.split(".").pop()}</span>
-                </div>
+                <p className="text-sm font-extrabold text-[#4A4A4A]">{selectedFile.name}</p>
+                <p className="text-xs text-[#6D8196] font-bold">{formatBytes(selectedFile.size)}</p>
               </div>
             </div>
-
             <button
               type="button"
               onClick={() => onFileSelect(null)}
               disabled={isUploading}
-              className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-              title="Remove file"
+              className="neu-btn p-2 text-[#4A4A4A] hover:text-rose-600 rounded-xl"
               aria-label="Remove selected file"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
 
-          <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-            <span className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              Ready for pre-flight scan
-            </span>
-
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => onFileSelect(null)}
+              disabled={isUploading}
+              className="neu-btn px-4 py-2.5 rounded-xl text-xs font-bold text-[#4A4A4A]"
+            >
+              Cancel
+            </button>
             <button
               type="button"
               onClick={onUploadSubmit}
               disabled={isUploading}
-              className="px-4 py-2 bg-[#1D4ED8] hover:bg-[#1E40AF] text-white font-medium text-xs rounded-lg shadow-sm transition-colors disabled:opacity-50"
+              className="neu-btn-accent px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2"
             >
-              {isUploading ? "Uploading & Scanning..." : "Submit for Pre-flight Scan"}
+              <UploadCloud className="w-4 h-4" />
+              <span>Start Ingestion & Pre-flight Scan</span>
             </button>
           </div>
         </div>

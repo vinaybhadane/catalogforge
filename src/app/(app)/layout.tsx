@@ -71,70 +71,74 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F4F6F8]">
-      {/* Top Header */}
-      <header className="sticky top-0 z-40 h-14 bg-white border-b border-[#CBCBCB] px-4 flex items-center justify-between shrink-0">
+    <div className="min-h-screen flex flex-col bg-[#E2E6E9]">
+      {/* Neumorphic Top Header */}
+      <header className="sticky top-0 z-40 h-16 bg-[#E2E6E9] border-b border-[rgba(203,203,203,0.5)] px-4 sm:px-6 flex items-center justify-between shrink-0 shadow-[0_4px_12px_rgba(74,74,74,0.08)]">
         <div className="flex items-center gap-3">
           {/* Mobile Menu Toggle */}
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-1.5 text-[#4A4A4A] hover:text-[#333333] rounded-md hover:bg-[#ECEFF2] transition-colors"
+            className="md:hidden neu-btn p-2 text-[#4A4A4A] rounded-xl"
             aria-label="Toggle navigation menu"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
 
-          {/* Brand Logo & Name */}
-          <Link href="/dashboard" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-lg bg-[#6D8196] flex items-center justify-center text-[#FFFFE3] font-bold transition-colors">
-              <Layers className="w-4 h-4" />
+          {/* Brand Logo & Name in Embossed Tactile Well */}
+          <Link href="/dashboard" className="flex items-center gap-3 group">
+            <div className="w-10 h-10 rounded-xl neu-btn-accent flex items-center justify-center text-[#FFFFE3] font-bold group-hover:scale-105 transition-transform">
+              <Layers className="w-5 h-5" />
             </div>
             <div className="flex flex-col">
-              <span className="font-bold text-[#4A4A4A] text-sm tracking-tight leading-none">
+              <span className="font-extrabold text-[#4A4A4A] text-base tracking-tight leading-none">
                 {BRANDING.name}
               </span>
-              <span className="text-[10px] text-[#6D8196] font-mono mt-0.5 leading-none">
+              <span className="text-[10px] text-[#6D8196] font-mono mt-1 leading-none font-bold">
                 {BRANDING.domain}
               </span>
             </div>
           </Link>
         </div>
 
-        {/* Global Action / Search / Status Indicator */}
+        {/* Global Action / Status Indicator */}
         <div className="flex items-center gap-4">
-          {/* System Status Pill */}
-          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FFFFE3] border border-[#6D8196]/40 text-[#4A4A4A] text-xs font-semibold">
+          {/* Neumorphic Status Pill */}
+          <div className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full neu-pill text-xs font-bold text-[#4A4A4A]">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Engine Ready</span>
+            <span className="text-[#6D8196]">AI Engine Ready</span>
           </div>
 
           {/* User Profile Slot */}
-          <div className="flex items-center gap-2 pl-3 border-l border-[#CBCBCB]">
-            <div className="w-7 h-7 rounded-full bg-[#ECEFF2] border border-[#CBCBCB] text-[#6D8196] flex items-center justify-center text-xs font-bold">
-              {user?.displayName ? user.displayName.charAt(0).toUpperCase() : <User className="w-4 h-4" />}
+          <div className="flex items-center gap-2 pl-3 border-l border-[#CBCBCB]/60">
+            <div className="w-9 h-9 rounded-xl neu-icon-well text-[#6D8196] flex items-center justify-center text-xs font-extrabold">
+              {user?.displayName ? (
+                user.displayName.charAt(0).toUpperCase()
+              ) : (
+                <User className="w-4 h-4" />
+              )}
             </div>
-            <span className="hidden md:inline-block text-xs font-semibold text-[#4A4A4A]">
-              {user?.displayName || user?.email || "Authenticated Session"}
+            <span className="hidden md:inline-block text-xs font-bold text-[#4A4A4A]">
+              {user?.displayName || user?.email || "Admin Workspace"}
             </span>
           </div>
         </div>
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* Desktop Collapsible Sidebar */}
+        {/* Desktop Collapsible Neumorphic Sidebar */}
         <aside
           className={cn(
-            "hidden md:flex flex-col bg-white border-r border-[#CBCBCB] transition-all duration-200 select-none relative z-30",
-            collapsed ? "w-16" : "w-64"
+            "hidden md:flex flex-col bg-[#E2E6E9] border-r border-[rgba(203,203,203,0.5)] transition-all duration-200 select-none relative z-30",
+            collapsed ? "w-18" : "w-64"
           )}
         >
           {/* Navigation Items */}
-          <div className="flex-1 overflow-y-auto py-4 px-3 space-y-6">
+          <div className="flex-1 overflow-y-auto py-5 px-3.5 space-y-6">
             {NAV_SECTIONS.map((section) => (
-              <div key={section.title} className="space-y-1">
+              <div key={section.title} className="space-y-1.5">
                 {!collapsed ? (
-                  <h3 className="px-2 text-[11px] font-bold text-[#6D8196] tracking-wider uppercase mb-2">
+                  <h3 className="px-2 text-[10px] font-extrabold text-[#6D8196] tracking-wider uppercase mb-2">
                     {section.title}
                   </h3>
                 ) : (
@@ -149,17 +153,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                       href={item.href}
                       title={collapsed ? item.label : undefined}
                       className={cn(
-                        "flex items-center gap-3 px-2.5 py-2 rounded-xl text-xs font-semibold transition-colors",
+                        "flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all",
                         isActive
-                          ? "bg-[#FFFFE3] text-[#4A4A4A] border border-[#6D8196] font-bold"
-                          : "text-[#4A4A4A] hover:bg-[#ECEFF2]",
+                          ? "neu-inset text-[#6D8196] border border-[#6D8196]/40"
+                          : "neu-btn text-[#4A4A4A] hover:text-[#333333]",
                         collapsed && "justify-center px-0"
                       )}
                     >
                       <Icon
                         className={cn(
                           "w-4 h-4 shrink-0",
-                          isActive ? "text-[#6D8196]" : "text-[#4A4A4A]/60"
+                          isActive ? "text-[#6D8196]" : "text-[#4A4A4A]/70"
                         )}
                       />
                       {!collapsed && <span>{item.label}</span>}
@@ -171,14 +175,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           {/* Collapse Toggle Footer */}
-          <div className="p-3 border-t border-[#CBCBCB] flex items-center justify-end">
+          <div className="p-3.5 border-t border-[rgba(203,203,203,0.5)] flex items-center justify-end">
             <button
               type="button"
               onClick={() => setCollapsed(!collapsed)}
-              className="p-1.5 rounded-lg text-[#4A4A4A] hover:bg-[#ECEFF2] transition-colors w-full flex items-center justify-center"
+              className="neu-btn p-2 rounded-xl text-[#4A4A4A] w-full flex items-center justify-center"
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
-              {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+              {collapsed ? <ChevronRight className="w-4 h-4 text-[#6D8196]" /> : <ChevronLeft className="w-4 h-4 text-[#6D8196]" />}
             </button>
           </div>
         </aside>
@@ -193,27 +197,27 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             />
 
             {/* Mobile Sheet */}
-            <div className="relative w-72 bg-white max-w-full flex flex-col z-10 border-r border-[#CBCBCB]">
-              <div className="p-4 border-b border-[#CBCBCB] flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded bg-[#6D8196] text-[#FFFFE3] flex items-center justify-center font-bold">
+            <div className="relative w-72 bg-[#E2E6E9] max-w-full flex flex-col z-10 border-r border-[#CBCBCB] p-4">
+              <div className="pb-4 border-b border-[#CBCBCB]/60 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl neu-btn-accent text-[#FFFFE3] flex items-center justify-center font-bold">
                     <Layers className="w-4 h-4" />
                   </div>
-                  <span className="font-bold text-[#4A4A4A] text-sm">{BRANDING.name}</span>
+                  <span className="font-extrabold text-[#4A4A4A] text-sm">{BRANDING.name}</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="p-1 text-[#4A4A4A] hover:text-[#333333]"
+                  className="neu-btn p-1.5 text-[#4A4A4A] rounded-xl"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-4 space-y-6">
+              <div className="flex-1 overflow-y-auto py-4 space-y-6">
                 {NAV_SECTIONS.map((section) => (
-                  <div key={section.title} className="space-y-1">
-                    <h3 className="px-2 text-xs font-bold text-[#6D8196] tracking-wider uppercase mb-2">
+                  <div key={section.title} className="space-y-2">
+                    <h3 className="px-2 text-xs font-extrabold text-[#6D8196] tracking-wider uppercase mb-2">
                       {section.title}
                     </h3>
                     {section.items.map((item) => {
@@ -225,16 +229,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                           href={item.href}
                           onClick={() => setMobileMenuOpen(false)}
                           className={cn(
-                            "flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold transition-colors",
+                            "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all",
                             isActive
-                              ? "bg-[#FFFFE3] text-[#4A4A4A] border border-[#6D8196] font-bold"
-                              : "text-[#4A4A4A] hover:bg-[#ECEFF2]"
+                              ? "neu-inset text-[#6D8196] border border-[#6D8196]/40"
+                              : "neu-btn text-[#4A4A4A]"
                           )}
                         >
                           <Icon
                             className={cn(
                               "w-4 h-4",
-                              isActive ? "text-[#6D8196]" : "text-[#4A4A4A]/60"
+                              isActive ? "text-[#6D8196]" : "text-[#4A4A4A]/70"
                             )}
                           />
                           <span>{item.label}</span>
@@ -249,7 +253,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         )}
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 w-full bg-[#F4F6F8]">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 w-full bg-[#E2E6E9]">
           <div className="max-w-7xl mx-auto w-full">
             {children}
           </div>

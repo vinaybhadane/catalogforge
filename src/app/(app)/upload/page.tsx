@@ -10,6 +10,7 @@ import {
   FileCheck2,
   ArrowRight,
   RefreshCw,
+  Sparkles,
 } from "lucide-react";
 import { useUpload, UploadMode, UploadState } from "@/hooks/useUpload";
 import { UploadDropzone } from "@/components/upload/UploadDropzone";
@@ -35,19 +36,30 @@ export default function UploadPage() {
   } = useUpload();
 
   const isProcessing = uploadState === "uploading" || uploadState === "scanning";
+  const isPreflightReady =
+    uploadState === "completed" ||
+    uploadState === "completed_with_warnings" ||
+    uploadState === "rejected";
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
-      {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Dataset Upload & Ingestion</h1>
-        <p className="text-sm text-slate-500 mt-1">
-          Ingest raw catalog CSV/XLSX files, manufacturer specification PDFs, or document URLs for deterministic enrichment.
-        </p>
+    <div className="space-y-6 max-w-4xl mx-auto pb-10">
+      {/* Neumorphic Page Header */}
+      <div className="neu-card rounded-2xl p-6">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-xl neu-btn-accent flex items-center justify-center text-[#FFFFE3]">
+            <UploadCloud className="w-6 h-6" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-extrabold text-[#4A4A4A] tracking-tight">Dataset Upload & Ingestion</h1>
+            <p className="text-xs text-[#6D8196] font-bold mt-0.5">
+              Ingest raw catalog CSV/XLSX files, manufacturer specification PDFs, or URLs for deterministic enrichment.
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* Section 15.1 Upload Mode Segmented Control Switcher */}
-      <div className="bg-white p-1 rounded-xl border border-[#E2E8F0] inline-flex w-full sm:w-auto shadow-sm">
+      {/* Upload Mode Segmented Control Switcher */}
+      <div className="neu-inset p-1.5 rounded-2xl flex flex-wrap gap-2">
         {[
           { id: "file" as UploadMode, label: "File Upload (CSV/XLSX)", icon: UploadCloud },
           { id: "pdf" as UploadMode, label: "Manufacturer PDF", icon: FileText },
@@ -65,10 +77,10 @@ export default function UploadPage() {
               }}
               disabled={isProcessing}
               className={cn(
-                "flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-semibold transition-all",
+                "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all",
                 isActive
-                  ? "bg-[#1D4ED8] text-white shadow-sm"
-                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-50",
+                  ? "neu-btn-accent text-[#FFFFE3]"
+                  : "neu-btn text-[#4A4A4A]",
                 isProcessing && "opacity-50 cursor-not-allowed"
               )}
             >
@@ -79,104 +91,91 @@ export default function UploadPage() {
         })}
       </div>
 
-      {/* Error Banner for Section 18 Error state */}
+      {/* Error Banner */}
       {uploadState === "error" && errorMessage && (
-        <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-900 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+        <div className="neu-card rounded-2xl p-4 border-l-4 border-l-rose-500 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
           <div className="flex-1">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-red-800">Upload Request Error</h4>
-            <p className="text-xs text-red-700 mt-1">{errorMessage}</p>
+            <h4 className="text-xs font-extrabold uppercase tracking-wider text-rose-900">Upload Request Error</h4>
+            <p className="text-xs text-rose-700 mt-1">{errorMessage}</p>
           </div>
           <button
             type="button"
             onClick={reset}
-            className="text-xs text-red-700 hover:text-red-900 underline font-medium"
+            className="neu-btn px-3 py-1 text-xs text-rose-800 font-bold"
           >
             Retry
           </button>
         </div>
       )}
 
-      {/* Section 18 Loading / Scanning State Indicators */}
+      {/* Loading / Scanning State Indicators */}
       {isProcessing && (
-        <div className="bg-white border border-[#E2E8F0] rounded-xl p-8 shadow-sm space-y-4">
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
-            <span className="flex items-center gap-2">
-              <Loader2 className="w-4 h-4 text-[#1D4ED8] animate-spin" />
-              {uploadState === "uploading" ? "Uploading payload to ingestion server..." : "Running pre-flight schema & placeholder scan..."}
-            </span>
-            <span className="font-mono text-[#1D4ED8]">{progress}%</span>
+        <div className="neu-card rounded-2xl p-6 text-center space-y-4">
+          <div className="w-12 h-12 rounded-2xl neu-icon-well flex items-center justify-center mx-auto text-[#6D8196]">
+            <Loader2 className="w-6 h-6 animate-spin" />
           </div>
-
-          <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+          <div>
+            <h3 className="text-sm font-extrabold text-[#4A4A4A]">
+              {uploadState === "uploading" ? "Uploading Dataset..." : "Performing Pre-flight Schema Scan..."}
+            </h3>
+            <p className="text-xs text-[#6D8196] font-bold mt-1">
+              Validating columns, checking placeholder values, and normalizing units of measure.
+            </p>
+          </div>
+          {/* Progress Bar */}
+          <div className="neu-inset h-3 rounded-full overflow-hidden p-0.5 max-w-md mx-auto">
             <div
-              className="bg-[#1D4ED8] h-full transition-all duration-300 ease-out"
-              style={{ width: `${progress}%` }}
+              className="h-full rounded-full bg-gradient-to-r from-[#6D8196] to-indigo-500 transition-all duration-300"
+              style={{ width: `${Math.max(progress, 15)}%` }}
             />
           </div>
         </div>
       )}
 
-      {/* Main Upload Inputs based on mode */}
-      {uploadState !== "completed" &&
-        uploadState !== "completed_with_warnings" &&
-        uploadState !== "rejected" && (
+      {/* URL Ingestion Input Box */}
+      {uploadMode === "url" && uploadState === "idle" && (
+        <div className="neu-card rounded-2xl p-6 space-y-4">
           <div>
-            {uploadMode === "url" ? (
-              /* Manufacturer URL Input Control */
-              <div className="bg-white border border-[#E2E8F0] rounded-xl p-6 shadow-sm space-y-4">
-                <div>
-                  <label htmlFor="url-input" className="block text-xs font-bold text-slate-900 uppercase tracking-wider mb-2">
-                    Manufacturer Document URL
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                      <Globe className="w-4 h-4" />
-                    </div>
-                    <input
-                      id="url-input"
-                      type="url"
-                      value={urlInput}
-                      onChange={(e) => handleUrlChange(e.target.value)}
-                      placeholder="https://manufacturer.com/catalog/specifications.pdf"
-                      disabled={isProcessing}
-                      className="w-full pl-10 pr-4 py-2.5 border border-[#CBD5E1] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1D4ED8] focus:border-transparent text-slate-900"
-                    />
-                  </div>
-                  <p className="text-xs text-slate-500 mt-2">
-                    Source URL domain governance check will be validated authoritative server-side.
-                  </p>
-                </div>
-
-                <div className="pt-3 border-t border-slate-100 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={submitUpload}
-                    disabled={!urlInput.trim() || isProcessing}
-                    className="px-4 py-2.5 bg-[#1D4ED8] hover:bg-[#1E40AF] text-white font-semibold text-xs rounded-lg shadow-sm transition-colors disabled:opacity-50 flex items-center gap-2"
-                  >
-                    <span>Analyze Document URL</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ) : (
-              /* Interactive Dropzone Component for File & PDF */
-              <UploadDropzone
-                mode={uploadMode}
-                selectedFile={selectedFile}
-                onFileSelect={handleFileSelect}
-                onUploadSubmit={submitUpload}
-                isUploading={isProcessing}
+            <label htmlFor="url-input" className="block text-xs font-extrabold text-[#4A4A4A] mb-1.5">
+              Manufacturer Datasheet or Catalog URL
+            </label>
+            <div className="flex gap-3">
+              <input
+                id="url-input"
+                type="url"
+                value={urlInput}
+                onChange={(e) => handleUrlChange(e.target.value)}
+                placeholder="https://manufacturer.domain/spec-sheet.pdf"
+                className="flex-1 px-4 py-2.5 text-sm neu-input placeholder:text-[#4A4A4A]/50"
               />
-            )}
+              <button
+                type="button"
+                onClick={submitUpload}
+                disabled={!urlInput.trim()}
+                className="neu-btn-accent px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 disabled:opacity-50"
+              >
+                <Globe className="w-4 h-4" />
+                Ingest URL
+              </button>
+            </div>
           </div>
-        )}
+        </div>
+      )}
 
-      {/* Pre-flight Scan Results Summary */}
-      {(uploadState === "completed" ||
-        uploadState === "completed_with_warnings" ||
-        uploadState === "rejected") && (
+      {/* Dropzone File Upload */}
+      {(uploadMode === "file" || uploadMode === "pdf") && uploadState === "idle" && (
+        <UploadDropzone
+          mode={uploadMode}
+          selectedFile={selectedFile}
+          onFileSelect={handleFileSelect}
+          onUploadSubmit={submitUpload}
+          isUploading={isProcessing}
+        />
+      )}
+
+      {/* Pre-flight Scan Summary */}
+      {isPreflightReady && preflightResult && (
         <PreflightSummary
           result={preflightResult}
           state={uploadState}
