@@ -57,37 +57,56 @@ const AuthContext = createContext<AuthContextValue | null>(null);
  * Maps Firebase Auth error codes to user-friendly messages
  */
 function getReadableAuthErrorMessage(error: unknown): string {
-  if (!error || typeof error !== "object") {
+  if (!error) {
     return "An unexpected authentication error occurred. Please try again.";
   }
 
-  const authError = error as AuthError;
-  switch (authError.code) {
-    case "auth/invalid-credential":
-    case "auth/wrong-password":
-    case "auth/user-not-found":
-      return "Invalid email or password. Please check your credentials.";
-    case "auth/email-already-in-use":
-      return "An account with this email address already exists. Please log in instead.";
-    case "auth/weak-password":
-      return "Password is too weak. Please use at least 6 characters with a combination of letters and numbers.";
-    case "auth/invalid-email":
-      return "Please enter a valid email address format.";
-    case "auth/user-disabled":
-      return "This account has been disabled. Please contact your system administrator.";
-    case "auth/popup-closed-by-user":
-      return "Sign in cancelled. The popup was closed before completing.";
-    case "auth/cancelled-popup-request":
-      return "Only one popup request is allowed at a time.";
-    case "auth/popup-blocked":
-      return "Popup was blocked by your browser. Please allow popups for this site.";
-    case "auth/network-request-failed":
-      return "Network connection error. Please check your internet connection and try again.";
-    case "auth/too-many-requests":
-      return "Too many unsuccessful attempts. Access temporarily restricted. Please try again later.";
-    default:
-      return authError.message || "Authentication failed. Please try again.";
+  if (typeof error === "string") {
+    return error;
   }
+
+  if (typeof error === "object") {
+    // If it's a DOM Event (e.g. error event from popup/iframe/script)
+    if ("target" in error && !("code" in error) && !("message" in error)) {
+      return "Network or browser connection error. Please check your popup settings and try again.";
+    }
+
+    const authError = error as AuthError;
+    if (authError.code) {
+      switch (authError.code) {
+        case "auth/invalid-credential":
+        case "auth/wrong-password":
+        case "auth/user-not-found":
+          return "Invalid email or password. Please check your credentials.";
+        case "auth/email-already-in-use":
+          return "An account with this email address already exists. Please log in instead.";
+        case "auth/weak-password":
+          return "Password is too weak. Please use at least 6 characters with a combination of letters and numbers.";
+        case "auth/invalid-email":
+          return "Please enter a valid email address format.";
+        case "auth/user-disabled":
+          return "This account has been disabled. Please contact your system administrator.";
+        case "auth/popup-closed-by-user":
+          return "Sign in was cancelled. The popup was closed before completing.";
+        case "auth/cancelled-popup-request":
+          return "Only one popup request is allowed at a time.";
+        case "auth/popup-blocked":
+          return "Popup was blocked by your browser. Please allow popups for this site.";
+        case "auth/network-request-failed":
+          return "Network connection error. Please check your internet connection and try again.";
+        case "auth/too-many-requests":
+          return "Too many unsuccessful attempts. Access temporarily restricted. Please try again later.";
+        default:
+          return authError.message || "Authentication failed. Please try again.";
+      }
+    }
+
+    if (authError.message && typeof authError.message === "string") {
+      return authError.message;
+    }
+  }
+
+  return "Authentication failed. Please try again.";
 }
 
 /**
