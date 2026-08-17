@@ -14,7 +14,7 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { signIn, loading: authLoading } = useAuth();
+  const { signIn, signInWithGoogle, loading: authLoading } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -42,14 +42,16 @@ export default function LoginPage() {
     }
   };
 
-  const handleSocialSignIn = async (provider: "google" | "microsoft") => {
+  const handleGoogleSignIn = async () => {
     setSubmitting(true);
     setError(null);
     try {
-      await signIn(`user@${provider}.com`, "social-auth-password");
+      await signInWithGoogle();
       router.push("/dashboard");
     } catch (err) {
-      setError(`Failed to sign in with ${provider}.`);
+      setError(
+        err instanceof Error ? err.message : "Google sign-in failed. Please try again."
+      );
     } finally {
       setSubmitting(false);
     }
@@ -162,14 +164,13 @@ export default function LoginPage() {
             <div className="flex-1 h-px bg-[#E2E8F0]" />
           </div>
 
-          {/* Social Login Buttons: Google & Microsoft */}
-          <div className="grid grid-cols-2 gap-3">
-            {/* Google */}
+          {/* Social Login: Google */}
+          <div>
             <button
               type="button"
               disabled={submitting}
-              onClick={() => handleSocialSignIn("google")}
-              className="flex items-center justify-center gap-2 px-3 py-2.5 bg-white hover:bg-slate-50 border border-[#CBD5E1] text-slate-700 text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
+              onClick={handleGoogleSignIn}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-white hover:bg-slate-50 border border-[#CBD5E1] text-slate-700 text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
             >
               <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
                 <path
@@ -189,23 +190,7 @@ export default function LoginPage() {
                   fill="#EA4335"
                 />
               </svg>
-              <span>Google</span>
-            </button>
-
-            {/* Microsoft */}
-            <button
-              type="button"
-              disabled={submitting}
-              onClick={() => handleSocialSignIn("microsoft")}
-              className="flex items-center justify-center gap-2 px-3 py-2.5 bg-white hover:bg-slate-50 border border-[#CBD5E1] text-slate-700 text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
-            >
-              <svg className="w-4 h-4 shrink-0" viewBox="0 0 23 23">
-                <path fill="#f35325" d="M1 1h10v10H1z" />
-                <path fill="#81bc06" d="M12 1h10v10H12z" />
-                <path fill="#05a6f0" d="M1 12h10v10H1z" />
-                <path fill="#ffba08" d="M12 12h10v10H12z" />
-              </svg>
-              <span>Microsoft</span>
+              <span>Continue with Google</span>
             </button>
           </div>
 
