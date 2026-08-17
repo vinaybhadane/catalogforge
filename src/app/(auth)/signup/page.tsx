@@ -95,7 +95,7 @@ export default function SignUpPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" suppressHydrationWarning>
             {/* First & Last Name */}
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -112,7 +112,7 @@ export default function SignUpPage() {
                   onChange={(e) => setFirstName(e.target.value)}
                   placeholder="Jane"
                   required
-                  autoFocus
+                  suppressHydrationWarning
                   className="w-full px-3 py-2.5 text-sm border border-[#CBD5E1] rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1D4ED8] focus:border-transparent transition-shadow"
                 />
               </div>
@@ -131,6 +131,7 @@ export default function SignUpPage() {
                   onChange={(e) => setLastName(e.target.value)}
                   placeholder="Doe"
                   required
+                  suppressHydrationWarning
                   className="w-full px-3 py-2.5 text-sm border border-[#CBD5E1] rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1D4ED8] focus:border-transparent transition-shadow"
                 />
               </div>
@@ -152,6 +153,7 @@ export default function SignUpPage() {
                 placeholder="jane.doe@company.com"
                 autoComplete="email"
                 required
+                suppressHydrationWarning
                 className="w-full px-3 py-2.5 text-sm border border-[#CBD5E1] rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1D4ED8] focus:border-transparent transition-shadow"
               />
             </div>
@@ -173,6 +175,7 @@ export default function SignUpPage() {
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
                 placeholder="Acme Industrial Supply"
+                suppressHydrationWarning
                 className="w-full px-3 py-2.5 text-sm border border-[#CBD5E1] rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1D4ED8] focus:border-transparent transition-shadow"
               />
             </div>
@@ -195,6 +198,7 @@ export default function SignUpPage() {
                   autoComplete="new-password"
                   required
                   minLength={6}
+                  suppressHydrationWarning
                   className="w-full px-3 py-2.5 pr-10 text-sm border border-[#CBD5E1] rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1D4ED8] focus:border-transparent transition-shadow"
                 />
                 <button
@@ -202,6 +206,7 @@ export default function SignUpPage() {
                   onClick={() => setShowPassword((v) => !v)}
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 transition-colors"
                   aria-label={showPassword ? "Hide password" : "Show password"}
+                  suppressHydrationWarning
                 >
                   {showPassword ? (
                     <EyeOff className="w-4 h-4" />
@@ -217,6 +222,7 @@ export default function SignUpPage() {
             <button
               type="submit"
               disabled={!isValid || submitting || authLoading}
+              suppressHydrationWarning
               className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#1D4ED8] hover:bg-[#1E40AF] text-white text-sm font-semibold rounded-lg shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-2"
             >
               {submitting ? (
@@ -243,6 +249,7 @@ export default function SignUpPage() {
               type="button"
               disabled={submitting}
               onClick={handleGoogleSignUp}
+              suppressHydrationWarning
               className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-white hover:bg-slate-50 border border-[#CBD5E1] text-slate-700 text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
             >
               <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">

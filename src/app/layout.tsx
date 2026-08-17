@@ -17,8 +17,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="h-full bg-slate-50">
-      <body className="h-full font-sans antialiased text-slate-900 bg-[#F8FAFC]">
+    <html lang="en" className="h-full bg-slate-50" suppressHydrationWarning>
+      <body className="h-full font-sans antialiased text-slate-900 bg-[#F8FAFC]" suppressHydrationWarning>
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
