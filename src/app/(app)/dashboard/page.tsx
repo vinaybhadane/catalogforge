@@ -27,7 +27,7 @@ import { useDashboard } from "@/hooks/useDashboard";
 import { cn } from "@/lib/utils";
 
 // ─────────────────────────────────────────────────────────────
-// Neumorphic KPI Card
+// Flat KPI Card (Zero Shadows)
 // ─────────────────────────────────────────────────────────────
 
 interface KpiCardProps {
@@ -37,7 +37,6 @@ interface KpiCardProps {
   format?: "number" | "percent";
   badge?: string;
   badgeType?: "accent" | "neutral" | "warning" | "success";
-  accentColor?: string;
 }
 
 function KpiCard({
@@ -56,10 +55,7 @@ function KpiCard({
       : value.toLocaleString();
 
   return (
-    <div className="neu-card neu-card-interactive rounded-2xl p-5 relative overflow-hidden group">
-      {/* Top subtle highlight rim */}
-      <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#FFFFE3]/80 to-transparent" />
-
+    <div className="bg-white border border-[#CBCBCB] rounded-2xl p-5 hover:border-[#6D8196] transition-colors">
       <div className="flex items-start justify-between">
         <div className="space-y-1.5">
           <p className="text-[11px] font-bold uppercase tracking-wider text-[#4A4A4A]/80">
@@ -72,11 +68,11 @@ function KpiCard({
             <div className="pt-1">
               <span
                 className={cn(
-                  "inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-full neu-pill",
-                  badgeType === "accent" && "text-[#6D8196] border-[#6D8196]/30",
-                  badgeType === "success" && "text-emerald-700 border-emerald-500/30",
-                  badgeType === "warning" && "text-amber-800 border-amber-500/30",
-                  badgeType === "neutral" && "text-[#4A4A4A]/70 border-[#CBCBCB]"
+                  "inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-full border",
+                  badgeType === "accent" && "bg-[#FFFFE3] text-[#6D8196] border-[#6D8196]",
+                  badgeType === "success" && "bg-emerald-50 text-emerald-700 border-emerald-300",
+                  badgeType === "warning" && "bg-amber-50 text-amber-800 border-amber-300",
+                  badgeType === "neutral" && "bg-[#ECEFF2] text-[#4A4A4A] border-[#CBCBCB]"
                 )}
               >
                 {badge}
@@ -85,8 +81,8 @@ function KpiCard({
           )}
         </div>
 
-        {/* Embossed tactile icon well */}
-        <div className="w-12 h-12 rounded-xl neu-icon-well flex items-center justify-center text-[#6D8196] shadow-sm group-hover:scale-105 transition-transform">
+        {/* Flat icon well */}
+        <div className="w-12 h-12 rounded-xl bg-[#ECEFF2] border border-[#CBCBCB] flex items-center justify-center text-[#6D8196]">
           <Icon className="w-6 h-6" />
         </div>
       </div>
@@ -96,12 +92,12 @@ function KpiCard({
 
 function KpiSkeleton() {
   return (
-    <div className="neu-card rounded-2xl p-5 h-28 animate-pulse flex items-center justify-between">
+    <div className="bg-white border border-[#CBCBCB] rounded-2xl p-5 h-28 animate-pulse flex items-center justify-between">
       <div className="space-y-2">
         <div className="h-3 w-20 bg-[#CBCBCB]/40 rounded" />
         <div className="h-7 w-24 bg-[#CBCBCB]/60 rounded" />
       </div>
-      <div className="w-12 h-12 rounded-xl neu-inset" />
+      <div className="w-12 h-12 rounded-xl bg-[#ECEFF2]" />
     </div>
   );
 }
@@ -127,25 +123,33 @@ function formatDate(iso: string | null): string {
 function StageBadge({ stage }: { stage: string | null }) {
   if (!stage) return <span className="text-[#4A4A4A]/50 text-xs">—</span>;
 
-  const stageConfig: Record<string, { label: string; dot: string; text: string }> = {
-    queued: { label: "Queued", dot: "bg-slate-400", text: "text-slate-700" },
-    ingested: { label: "Ingested", dot: "bg-[#6D8196]", text: "text-[#6D8196]" },
-    classified: { label: "Classified", dot: "bg-indigo-500", text: "text-indigo-700" },
-    enriched: { label: "Enriched", dot: "bg-purple-500", text: "text-purple-700" },
-    validated: { label: "Validated", dot: "bg-amber-500", text: "text-amber-700" },
-    needs_review: { label: "Needs Review", dot: "bg-orange-500", text: "text-orange-700" },
-    published: { label: "Published", dot: "bg-emerald-500", text: "text-emerald-700" },
-    failed: { label: "Failed", dot: "bg-rose-500", text: "text-rose-700" },
+  const stageConfig: Record<string, { label: string; dot: string; text: string; bg: string; border: string }> = {
+    queued: { label: "Queued", dot: "bg-slate-400", text: "text-slate-700", bg: "bg-slate-50", border: "border-slate-300" },
+    ingested: { label: "Ingested", dot: "bg-[#6D8196]", text: "text-[#6D8196]", bg: "bg-[#FFFFE3]", border: "border-[#6D8196]" },
+    classified: { label: "Classified", dot: "bg-indigo-500", text: "text-indigo-700", bg: "bg-indigo-50", border: "border-indigo-300" },
+    enriched: { label: "Enriched", dot: "bg-purple-500", text: "text-purple-700", bg: "bg-purple-50", border: "border-purple-300" },
+    validated: { label: "Validated", dot: "bg-amber-500", text: "text-amber-700", bg: "bg-amber-50", border: "border-amber-300" },
+    needs_review: { label: "Needs Review", dot: "bg-orange-500", text: "text-orange-700", bg: "bg-orange-50", border: "border-orange-300" },
+    published: { label: "Published", dot: "bg-emerald-500", text: "text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-300" },
+    failed: { label: "Failed", dot: "bg-rose-500", text: "text-rose-700", bg: "bg-rose-50", border: "border-rose-300" },
   };
 
   const current = stageConfig[stage] || {
     label: stage.replace(/_/g, " "),
     dot: "bg-[#6D8196]",
     text: "text-[#4A4A4A]",
+    bg: "bg-[#ECEFF2]",
+    border: "border-[#CBCBCB]",
   };
 
   return (
-    <span className="neu-pill inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wider">
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider border",
+        current.bg,
+        current.border
+      )}
+    >
       <span className={cn("w-2 h-2 rounded-full", current.dot)} />
       <span className={current.text}>{current.label}</span>
     </span>
@@ -153,7 +157,7 @@ function StageBadge({ stage }: { stage: string | null }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Main Neumorphic Dashboard
+// Main Flat Dashboard
 // ─────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
@@ -188,15 +192,15 @@ export default function DashboardPage() {
   }, [summary?.recentJobs, searchTerm, filterStage]);
 
   return (
-    <div className="min-h-full space-y-7 pb-10">
+    <div className="min-h-full space-y-6 pb-10">
       {/* ─────────────────────────────────────────────────────────────
-          1. Neumorphic Header & Action Bar
+          1. Header & Action Bar (Clean Flat Card)
       ───────────────────────────────────────────────────────────── */}
-      <div className="neu-card rounded-2xl p-6 relative overflow-hidden">
+      <div className="bg-white border border-[#CBCBCB] rounded-2xl p-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
-              <span className="neu-pill px-3 py-1 rounded-full text-[11px] font-bold text-[#6D8196] flex items-center gap-1.5 tracking-wide">
+              <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-[#FFFFE3] border border-[#6D8196] text-[#6D8196] flex items-center gap-1.5 tracking-wide">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 AI Intelligence Pipeline Active
               </span>
@@ -213,13 +217,13 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          {/* Tactile Action Buttons */}
+          {/* Action Buttons */}
           <div className="flex items-center flex-wrap gap-3">
             <button
               type="button"
               onClick={refresh}
               disabled={isLoading}
-              className="neu-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold tracking-wide transition-all disabled:opacity-50"
+              className="bg-white hover:bg-[#ECEFF2] text-[#4A4A4A] border border-[#CBCBCB] hover:border-[#6D8196] flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold tracking-wide transition-colors disabled:opacity-50"
               title="Refresh Dashboard Data"
             >
               <RefreshCw className={cn("w-4 h-4 text-[#6D8196]", isLoading && "animate-spin")} />
@@ -228,7 +232,7 @@ export default function DashboardPage() {
 
             <Link
               href="/review"
-              className="neu-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-[#4A4A4A] tracking-wide transition-all"
+              className="bg-white hover:bg-[#ECEFF2] text-[#4A4A4A] border border-[#CBCBCB] hover:border-[#6D8196] flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold tracking-wide transition-colors"
             >
               <CheckSquare className="w-4 h-4 text-[#6D8196]" />
               Review Queue
@@ -236,7 +240,7 @@ export default function DashboardPage() {
 
             <Link
               href="/upload"
-              className="neu-btn-accent flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold tracking-wide transition-all"
+              className="bg-[#6D8196] hover:bg-[#576A7E] text-[#FFFFE3] border border-[#576A7E] flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold tracking-wide transition-colors"
             >
               <UploadCloud className="w-4 h-4" />
               Upload Data
@@ -249,16 +253,16 @@ export default function DashboardPage() {
           2. Error Banner
       ───────────────────────────────────────────────────────────── */}
       {hookState === "error" && errorMessage && (
-        <div className="neu-card rounded-2xl p-4 border-l-4 border-l-rose-500 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
           <div className="flex-1">
-            <p className="text-xs font-bold text-rose-900">Unable to load dashboard data.</p>
-            <p className="text-xs text-rose-700 mt-0.5">{errorMessage}</p>
+            <p className="text-xs font-bold text-red-900">Unable to load dashboard data.</p>
+            <p className="text-xs text-red-700 mt-0.5">{errorMessage}</p>
           </div>
           <button
             type="button"
             onClick={refresh}
-            className="neu-btn text-xs px-3 py-1 rounded-lg text-rose-800 font-semibold"
+            className="text-xs px-3 py-1 rounded-lg bg-white border border-red-300 text-red-800 font-semibold"
           >
             Retry
           </button>
@@ -266,7 +270,7 @@ export default function DashboardPage() {
       )}
 
       {/* ─────────────────────────────────────────────────────────────
-          3. Tactile KPI Grid (5 Cards)
+          3. Flat KPI Grid (5 Cards)
       ───────────────────────────────────────────────────────────── */}
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -316,14 +320,14 @@ export default function DashboardPage() {
       ) : null}
 
       {/* ─────────────────────────────────────────────────────────────
-          4. Neumorphic Dual Analytics / Pipeline Insight Cards
+          4. Dual Analytics / Pipeline Insight Panels
       ───────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Confidence Distribution Panel */}
-        <div className="neu-card rounded-2xl p-6 lg:col-span-2 space-y-5">
+        <div className="bg-white border border-[#CBCBCB] rounded-2xl p-6 lg:col-span-2 space-y-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg neu-icon-well flex items-center justify-center text-[#6D8196]">
+              <div className="w-8 h-8 rounded-lg bg-[#ECEFF2] border border-[#CBCBCB] flex items-center justify-center text-[#6D8196]">
                 <Zap className="w-4 h-4" />
               </div>
               <div>
@@ -337,7 +341,7 @@ export default function DashboardPage() {
             </div>
             <Link
               href="/analytics"
-              className="neu-pill text-xs font-semibold text-[#6D8196] px-3 py-1 rounded-full hover:text-[#4A4A4A] transition-colors flex items-center gap-1"
+              className="text-xs font-bold text-[#6D8196] bg-[#FFFFE3] border border-[#6D8196] px-3 py-1 rounded-full hover:bg-[#6D8196] hover:text-[#FFFFE3] transition-colors flex items-center gap-1"
             >
               Full Report <ChevronRight className="w-3.5 h-3.5" />
             </Link>
@@ -353,9 +357,9 @@ export default function DashboardPage() {
                 </span>
                 <span className="font-mono font-bold text-[#4A4A4A]">78%</span>
               </div>
-              <div className="neu-inset h-3 rounded-full overflow-hidden p-0.5">
+              <div className="h-2.5 rounded-full bg-[#ECEFF2] border border-[#CBCBCB] overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-[#6D8196] transition-all duration-500"
+                  className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-[#6D8196]"
                   style={{ width: "78%" }}
                 />
               </div>
@@ -370,9 +374,9 @@ export default function DashboardPage() {
                 </span>
                 <span className="font-mono font-bold text-[#4A4A4A]">17%</span>
               </div>
-              <div className="neu-inset h-3 rounded-full overflow-hidden p-0.5">
+              <div className="h-2.5 rounded-full bg-[#ECEFF2] border border-[#CBCBCB] overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-amber-500 to-[#6D8196] transition-all duration-500"
+                  className="h-full rounded-full bg-gradient-to-r from-amber-500 to-[#6D8196]"
                   style={{ width: "17%" }}
                 />
               </div>
@@ -387,9 +391,9 @@ export default function DashboardPage() {
                 </span>
                 <span className="font-mono font-bold text-[#4A4A4A]">5%</span>
               </div>
-              <div className="neu-inset h-3 rounded-full overflow-hidden p-0.5">
+              <div className="h-2.5 rounded-full bg-[#ECEFF2] border border-[#CBCBCB] overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-rose-500 transition-all duration-500"
+                  className="h-full rounded-full bg-rose-500"
                   style={{ width: "5%" }}
                 />
               </div>
@@ -398,9 +402,9 @@ export default function DashboardPage() {
         </div>
 
         {/* Quick Launchpad Panel */}
-        <div className="neu-card rounded-2xl p-6 space-y-4">
+        <div className="bg-white border border-[#CBCBCB] rounded-2xl p-6 space-y-4">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg neu-icon-well flex items-center justify-center text-[#6D8196]">
+            <div className="w-8 h-8 rounded-lg bg-[#ECEFF2] border border-[#CBCBCB] flex items-center justify-center text-[#6D8196]">
               <Layers className="w-4 h-4" />
             </div>
             <div>
@@ -412,10 +416,10 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 gap-2.5 pt-1">
             <Link
               href="/upload"
-              className="neu-btn neu-card-interactive p-3 rounded-xl flex items-center justify-between group"
+              className="bg-white hover:bg-[#ECEFF2] border border-[#CBCBCB] hover:border-[#6D8196] p-3 rounded-xl flex items-center justify-between group transition-colors"
             >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg neu-icon-well flex items-center justify-center text-[#6D8196]">
+                <div className="w-8 h-8 rounded-lg bg-[#ECEFF2] border border-[#CBCBCB] flex items-center justify-center text-[#6D8196]">
                   <UploadCloud className="w-4 h-4" />
                 </div>
                 <div>
@@ -428,10 +432,10 @@ export default function DashboardPage() {
 
             <Link
               href="/products"
-              className="neu-btn neu-card-interactive p-3 rounded-xl flex items-center justify-between group"
+              className="bg-white hover:bg-[#ECEFF2] border border-[#CBCBCB] hover:border-[#6D8196] p-3 rounded-xl flex items-center justify-between group transition-colors"
             >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg neu-icon-well flex items-center justify-center text-[#6D8196]">
+                <div className="w-8 h-8 rounded-lg bg-[#ECEFF2] border border-[#CBCBCB] flex items-center justify-center text-[#6D8196]">
                   <Database className="w-4 h-4" />
                 </div>
                 <div>
@@ -444,10 +448,10 @@ export default function DashboardPage() {
 
             <Link
               href="/review"
-              className="neu-btn neu-card-interactive p-3 rounded-xl flex items-center justify-between group"
+              className="bg-white hover:bg-[#ECEFF2] border border-[#CBCBCB] hover:border-[#6D8196] p-3 rounded-xl flex items-center justify-between group transition-colors"
             >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg neu-icon-well flex items-center justify-center text-[#6D8196]">
+                <div className="w-8 h-8 rounded-lg bg-[#ECEFF2] border border-[#CBCBCB] flex items-center justify-center text-[#6D8196]">
                   <ShieldCheck className="w-4 h-4" />
                 </div>
                 <div>
@@ -462,9 +466,9 @@ export default function DashboardPage() {
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
-          5. Neumorphic Recent Jobs Table
+          5. Recent Jobs Table (Clean Flat Design)
       ───────────────────────────────────────────────────────────── */}
-      <div className="neu-card rounded-2xl overflow-hidden space-y-4 p-5">
+      <div className="bg-white border border-[#CBCBCB] rounded-2xl space-y-4 p-5">
         {/* Table Top Bar: Title, Search, and Stage Filters */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
@@ -475,20 +479,20 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex items-center flex-wrap gap-2.5">
-            {/* Sunken Search Input */}
+            {/* Flat Search Input */}
             <div className="relative">
               <input
                 type="text"
                 placeholder="Search jobs or files..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="neu-inset-sm px-3 py-1.5 pl-8 text-xs rounded-xl text-[#4A4A4A] placeholder:text-[#4A4A4A]/50 focus:outline-none w-48 md:w-56"
+                className="bg-[#ECEFF2] border border-[#CBCBCB] focus:border-[#6D8196] px-3 py-1.5 pl-8 text-xs rounded-xl text-[#4A4A4A] placeholder:text-[#4A4A4A]/50 focus:outline-none w-48 md:w-56"
               />
               <Search className="w-3.5 h-3.5 text-[#4A4A4A]/60 absolute left-2.5 top-1/2 -translate-y-1/2" />
             </div>
 
             {/* Filter Pills */}
-            <div className="neu-inset-sm p-1 rounded-xl flex items-center gap-1">
+            <div className="bg-[#ECEFF2] border border-[#CBCBCB] p-1 rounded-xl flex items-center gap-1">
               {[
                 { id: "all", label: "All" },
                 { id: "processing", label: "Processing" },
@@ -500,9 +504,9 @@ export default function DashboardPage() {
                   type="button"
                   onClick={() => setFilterStage(tab.id)}
                   className={cn(
-                    "px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all",
+                    "px-2.5 py-1 text-[11px] font-bold rounded-lg transition-colors",
                     filterStage === tab.id
-                      ? "neu-btn-accent text-white"
+                      ? "bg-[#6D8196] text-[#FFFFE3]"
                       : "text-[#4A4A4A]/70 hover:text-[#4A4A4A]"
                   )}
                 >
@@ -513,19 +517,19 @@ export default function DashboardPage() {
 
             <Link
               href="/jobs"
-              className="neu-btn text-xs font-bold text-[#6D8196] px-3 py-1.5 rounded-xl flex items-center gap-1"
+              className="bg-white hover:bg-[#ECEFF2] border border-[#CBCBCB] text-xs font-bold text-[#6D8196] px-3 py-1.5 rounded-xl flex items-center gap-1 transition-colors"
             >
               View All <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
         </div>
 
-        {/* Tactile Table Inset Wrapper */}
-        <div className="neu-inset rounded-xl overflow-hidden p-1">
-          <div className="overflow-x-auto rounded-lg">
+        {/* Table Container */}
+        <div className="border border-[#CBCBCB] rounded-xl overflow-hidden">
+          <div className="overflow-x-auto">
             <table className="w-full text-xs text-left" aria-label="Recent processing jobs">
               <thead>
-                <tr className="border-b border-[#CBCBCB]/40 text-[#4A4A4A]/80 bg-[#E2E6E9]/60">
+                <tr className="border-b border-[#CBCBCB] text-[#4A4A4A] bg-[#ECEFF2]">
                   <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px]">Job ID</th>
                   <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px]">Source File</th>
                   <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px]">Row Count</th>
@@ -536,7 +540,7 @@ export default function DashboardPage() {
                   <th className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-right">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#CBCBCB]/25">
+              <tbody className="divide-y divide-[#CBCBCB]/40">
                 {isLoading ? (
                   Array.from({ length: 4 }).map((_, i) => (
                     <tr key={i} className="animate-pulse">
@@ -559,14 +563,14 @@ export default function DashboardPage() {
                   filteredJobs.map((job) => (
                     <tr
                       key={job.jobId}
-                      className="hover:bg-[#FFFFE3]/40 transition-colors"
+                      className="hover:bg-[#FFFFE3]/50 transition-colors"
                     >
                       <td className="px-4 py-3 font-mono font-bold text-[#4A4A4A]">
                         {job.jobId.length > 12 ? `${job.jobId.slice(0, 12)}…` : job.jobId}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-md neu-icon-well flex items-center justify-center text-[#6D8196] shrink-0">
+                          <div className="w-6 h-6 rounded-md bg-[#ECEFF2] border border-[#CBCBCB] flex items-center justify-center text-[#6D8196] shrink-0">
                             <FileSpreadsheet className="w-3.5 h-3.5" />
                           </div>
                           <span className="font-semibold text-[#4A4A4A] truncate max-w-[140px]">
@@ -583,7 +587,7 @@ export default function DashboardPage() {
                       <td className="px-4 py-3">
                         {job.progress !== null ? (
                           <div className="flex items-center gap-2.5">
-                            <div className="w-20 neu-inset-sm h-2 rounded-full overflow-hidden p-0.5">
+                            <div className="w-20 bg-[#ECEFF2] border border-[#CBCBCB] h-2 rounded-full overflow-hidden">
                               <div
                                 className="h-full rounded-full bg-gradient-to-r from-[#6D8196] to-indigo-500"
                                 style={{ width: `${Math.min(job.progress, 100)}%` }}
@@ -598,7 +602,7 @@ export default function DashboardPage() {
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        <span className="neu-pill px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-[#4A4A4A]">
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#ECEFF2] border border-[#CBCBCB] text-[#4A4A4A]">
                           {job.status}
                         </span>
                       </td>
@@ -608,7 +612,7 @@ export default function DashboardPage() {
                       <td className="px-4 py-3 text-right">
                         <Link
                           href={`/jobs/${job.jobId}`}
-                          className="neu-btn inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold text-[#6D8196] hover:text-[#4A4A4A] transition-colors"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold text-[#6D8196] bg-[#FFFFE3] border border-[#6D8196] hover:bg-[#6D8196] hover:text-[#FFFFE3] transition-colors"
                         >
                           View <ArrowRight className="w-3 h-3" />
                         </Link>

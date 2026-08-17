@@ -3,37 +3,44 @@
 @tailwind utilities;
 
 :root {
-  /* Core Colors - Section 5.1 */
-  --background: #F8FAFC;
+  /* Core Theme Palette — Uploaded Design Tokens */
+  /* #4A4A4A (Charcoal) | #CBCBCB (Silver) | #FFFFE3 (Warm Cream) | #6D8196 (Slate Blue) */
+  --background: #F4F6F8;
   --surface: #FFFFFF;
-  --surface-muted: #F1F5F9;
-  --border: #E2E8F0;
-  --border-strong: #CBD5E1;
-  --primary-text: #0F172A;
-  --secondary-text: #475569;
-  --muted-text: #64748B;
-  --primary-brand: #1D4ED8;
-  --primary-hover: #1E40AF;
-  --primary-soft: #EFF6FF;
+  --surface-warm: #FFFFE3;
+  --surface-muted: #ECEFF2;
+  --border: #CBCBCB;
+  --border-strong: #4A4A4A;
+  --primary-text: #4A4A4A;
+  --secondary-text: #6D8196;
+  --muted-text: #7A8694;
+  --primary-brand: #6D8196;
+  --primary-hover: #576A7E;
+  --primary-soft: #FFFFE3;
 
-  /* Semantic Colors - Section 5.2 */
+  /* Semantic Alert Tones */
   --success: #047857;
   --success-soft: #ECFDF5;
   --warning: #B45309;
   --warning-soft: #FFFBEB;
   --error: #B91C1C;
   --error-soft: #FEF2F2;
-  --info: #0369A1;
-  --info-soft: #F0F9FF;
-  --neutral: #475569;
+  --info: #6D8196;
+  --info-soft: #FFFFE3;
+  --neutral: #4A4A4A;
 
-  /* Confidence Threshold Color Mappings - Section 5.3 */
+  /* Confidence Threshold Mappings */
   --confidence-high: var(--success);
   --confidence-high-bg: var(--success-soft);
   --confidence-medium: var(--warning);
   --confidence-medium-bg: var(--warning-soft);
   --confidence-low: var(--error);
   --confidence-low-bg: var(--error-soft);
+}
+
+/* Global Reset for Shadow-Free Flat Design */
+* {
+  box-shadow: none !important;
 }
 
 body {
@@ -44,8 +51,8 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom Utilities for Confidence Badges & Data Displays */
 @layer components {
+  /* Confidence Badges */
   .confidence-high {
     color: var(--confidence-high);
     background-color: var(--confidence-high-bg);
@@ -61,105 +68,78 @@ body {
     background-color: var(--confidence-low-bg);
     border: 1px solid var(--confidence-low);
   }
-}
 
-/* ─────────────────────────────────────────────────────────────
- * Neumorphism (Soft UI) Utilities — Uploaded Palette
- * #4A4A4A (Dark Charcoal) | #CBCBCB (Silver Slate)
- * #FFFFE3 (Warm Cream)    | #6D8196 (Slate Blue Accent)
- * ───────────────────────────────────────────────────────────── */
+  /* ─────────────────────────────────────────────────────────────
+   * Flat Design System Components (Zero Shadows)
+   * ───────────────────────────────────────────────────────────── */
 
-.neu-dashboard-bg {
-  background-color: #E2E6E9;
-}
+  /* Clean Flat Card */
+  .flat-card {
+    background-color: #FFFFFF;
+    border: 1px solid #CBCBCB;
+    border-radius: 1rem;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+  }
+  .flat-card:hover {
+    border-color: #6D8196;
+  }
 
-/* Raised Extruded Card Surface */
-.neu-card {
-  background: #E2E6E9;
-  box-shadow: 8px 8px 18px rgba(74, 74, 74, 0.15),
-              -8px -8px 18px rgba(255, 255, 227, 0.95);
-  border: 1px solid rgba(255, 255, 227, 0.65);
-}
+  /* Warm Cream Accent Card */
+  .flat-card-warm {
+    background-color: #FFFFE3;
+    border: 1px solid #CBCBCB;
+    border-radius: 1rem;
+    color: #4A4A4A;
+  }
 
-.neu-card-interactive {
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.neu-card-interactive:hover {
-  transform: translateY(-2px);
-  box-shadow: 11px 11px 22px rgba(74, 74, 74, 0.18),
-              -11px -11px 22px rgba(255, 255, 227, 1);
-}
+  /* Muted Slate Well / Inset */
+  .flat-well {
+    background-color: #ECEFF2;
+    border: 1px solid #CBCBCB;
+    border-radius: 0.75rem;
+  }
 
-/* Sunken / Inset Tactile Well */
-.neu-inset {
-  background: #DCE1E5;
-  box-shadow: inset 4px 4px 8px rgba(74, 74, 74, 0.14),
-              inset -4px -4px 8px rgba(255, 255, 227, 0.9);
-  border: 1px solid rgba(203, 203, 203, 0.35);
-}
+  /* Primary Action Button (#6D8196 Slate Blue with #FFFFE3 text) */
+  .flat-btn-primary {
+    background-color: #6D8196;
+    color: #FFFFE3;
+    border: 1px solid #576A7E;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+  }
+  .flat-btn-primary:hover {
+    background-color: #576A7E;
+    border-color: #4A4A4A;
+  }
 
-.neu-inset-sm {
-  background: #DEE3E7;
-  box-shadow: inset 2px 2px 5px rgba(74, 74, 74, 0.12),
-              inset -2px -2px 5px rgba(255, 255, 227, 0.85);
-}
+  /* Secondary Flat Button */
+  .flat-btn-secondary {
+    background-color: #FFFFFF;
+    color: #4A4A4A;
+    border: 1px solid #CBCBCB;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  }
+  .flat-btn-secondary:hover {
+    background-color: #ECEFF2;
+    border-color: #6D8196;
+    color: #4A4A4A;
+  }
 
-/* Tactile Convex Button */
-.neu-btn {
-  background: linear-gradient(145deg, #E8ECEF, #D8DEE3);
-  box-shadow: 4px 4px 10px rgba(74, 74, 74, 0.15),
-              -4px -4px 10px rgba(255, 255, 227, 0.9);
-  border: 1px solid rgba(255, 255, 227, 0.7);
-  color: #4A4A4A;
-  transition: all 0.2s ease;
-}
-.neu-btn:hover {
-  background: linear-gradient(145deg, #EDF1F4, #DCE2E7);
-  box-shadow: 6px 6px 14px rgba(74, 74, 74, 0.18),
-              -6px -6px 14px rgba(255, 255, 227, 1);
-  color: #1F2937;
-}
-.neu-btn:active, .neu-btn-active {
-  background: #D8DEE3;
-  box-shadow: inset 3px 3px 6px rgba(74, 74, 74, 0.18),
-              inset -3px -3px 6px rgba(255, 255, 227, 0.9);
-}
+  /* Flat Pill / Badge */
+  .flat-pill {
+    background-color: #ECEFF2;
+    border: 1px solid #CBCBCB;
+    color: #4A4A4A;
+    border-radius: 9999px;
+  }
 
-/* Primary Accent Button — Slate Blue #6D8196 */
-.neu-btn-accent {
-  background: linear-gradient(145deg, #788EA4, #627488);
-  box-shadow: 5px 5px 14px rgba(74, 74, 74, 0.22),
-              -5px -5px 14px rgba(255, 255, 227, 0.85),
-              0 0 12px rgba(109, 129, 150, 0.3);
-  border: 1px solid rgba(255, 255, 227, 0.45);
-  color: #FFFFE3;
-  transition: all 0.2s ease;
-}
-.neu-btn-accent:hover {
-  background: linear-gradient(145deg, #8198AF, #697C92);
-  box-shadow: 7px 7px 16px rgba(74, 74, 74, 0.26),
-              -7px -7px 16px rgba(255, 255, 227, 0.95),
-              0 0 16px rgba(109, 129, 150, 0.45);
-  color: #FFFFFF;
-}
-.neu-btn-accent:active {
-  background: #5A6D80;
-  box-shadow: inset 3px 3px 6px rgba(35, 45, 55, 0.35),
-              inset -3px -3px 6px rgba(255, 255, 227, 0.35);
-}
-
-/* Tactile Icon Container */
-.neu-icon-well {
-  background: #DEE3E7;
-  box-shadow: inset 3px 3px 6px rgba(74, 74, 74, 0.14),
-              inset -3px -3px 6px rgba(255, 255, 227, 0.9);
-  border: 1px solid rgba(255, 255, 227, 0.4);
-}
-
-/* Tactile Pill / Badge */
-.neu-pill {
-  background: #E2E6E9;
-  box-shadow: 3px 3px 7px rgba(74, 74, 74, 0.12),
-              -3px -3px 7px rgba(255, 255, 227, 0.85);
-  border: 1px solid rgba(255, 255, 227, 0.6);
+  .flat-pill-accent {
+    background-color: #FFFFE3;
+    border: 1px solid #6D8196;
+    color: #6D8196;
+    border-radius: 9999px;
+  }
 }
