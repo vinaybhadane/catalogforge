@@ -88,8 +88,9 @@ export class IngestionService {
     // 4. Persist 11-column raw input rows
     const insertedRawIds = await rawInputRepository.insertBatch(job.jobId, sanitizedRows);
 
-    // 5. Automatically extract, classify, normalize and persist products into Azure SQL
+    // 5. Automatically extract, classify, normalize and persist products into Azure SQL in batch
     if (errors.length === 0) {
+      const enrichedBatch: Array<{ enriched: any; rawInputId?: number }> = [];
       for (let i = 0; i < sanitizedRows.length; i++) {
         const raw = sanitizedRows[i]!;
         const rawInputId = insertedRawIds?.[i]?.id;
@@ -105,10 +106,14 @@ export class IngestionService {
             category_name: raw.dept || raw.class || raw.fine || undefined,
             specs: raw.part_desc || undefined,
           });
-          await aiPipelineService.persistProduct(enriched, rawInputId);
+          enrichedBatch.push({ enriched, rawInputId });
         } catch (err) {
           console.error('[Ingestion] Pipeline extraction error on row:', i, err);
         }
+      }
+
+      if (enrichedBatch.length > 0) {
+        await aiPipelineService.persistProductBatch(enrichedBatch);
       }
 
       // Update job stage to completed
@@ -116,6 +121,8 @@ export class IngestionService {
         status: 'completed',
         stage: 'published',
         processedRows: sanitizedRows.length,
+        publishedRows: enrichedBatch.filter(b => b.enriched.status === 'published').length,
+        reviewRows: enrichedBatch.filter(b => b.enriched.status === 'pending_review').length,
       });
     }
 

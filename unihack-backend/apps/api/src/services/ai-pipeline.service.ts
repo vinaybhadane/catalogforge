@@ -155,6 +155,53 @@ export class AiPipelineService {
   }
 
   /**
+   * Bulk persists enriched products into Azure SQL in a single fast operation
+   */
+  async persistProductBatch(
+    items: Array<{ enriched: EnrichedProductOutput; rawInputId?: number }>,
+  ): Promise<void> {
+    const pool = getSqlPool();
+    if (!pool || !pool.connected || items.length === 0) return;
+
+    try {
+      const table = new sql.Table('dbo.product');
+      table.create = false;
+      table.columns.add('raw_input_id', sql.BigInt, { nullable: true });
+      table.columns.add('part_number', sql.VarChar(50), { nullable: false });
+      table.columns.add('manufacturer_name', sql.VarChar(255), { nullable: true });
+      table.columns.add('brand_name', sql.VarChar(255), { nullable: true });
+      table.columns.add('manufacturer_part_number', sql.VarChar(100), { nullable: true });
+      table.columns.add('classpath', sql.VarChar(500), { nullable: true });
+      table.columns.add('short_desc', sql.VarChar(150), { nullable: true });
+      table.columns.add('long_desc1', sql.NVarChar(sql.MAX), { nullable: true });
+      table.columns.add('unspsc', sql.VarChar(50), { nullable: true });
+      table.columns.add('row_confidence', sql.Decimal(5, 2), { nullable: true });
+      table.columns.add('status', sql.VarChar(30), { nullable: false });
+
+      items.forEach(({ enriched, rawInputId }) => {
+        table.rows.add(
+          rawInputId || null,
+          (enriched.partNumber || 'UNKNOWN').substring(0, 50),
+          enriched.manufacturerName ? enriched.manufacturerName.substring(0, 255) : null,
+          enriched.brandName ? enriched.brandName.substring(0, 255) : null,
+          enriched.manufacturerPartNumber ? enriched.manufacturerPartNumber.substring(0, 100) : null,
+          enriched.classpath ? enriched.classpath.substring(0, 500) : null,
+          enriched.shortDesc ? enriched.shortDesc.substring(0, 150) : null,
+          enriched.longDesc1 || null,
+          enriched.unspsc ? enriched.unspsc.substring(0, 50) : null,
+          enriched.rowConfidence,
+          enriched.status,
+        );
+      });
+
+      const request = pool.request();
+      await request.bulk(table);
+    } catch (err) {
+      console.error('[AiPipeline] Failed to bulk persist products:', err);
+    }
+  }
+
+  /**
    * Persists an enriched product into Azure SQL
    */
   async persistProduct(enriched: EnrichedProductOutput, rawInputId?: number): Promise<number | null> {
@@ -164,14 +211,14 @@ export class AiPipelineService {
     try {
       const req = pool.request();
       req.input('raw_input_id', sql.BigInt, rawInputId || null);
-      req.input('part_number', sql.VarChar(50), enriched.partNumber);
-      req.input('manufacturer_name', sql.VarChar(255), enriched.manufacturerName);
-      req.input('brand_name', sql.VarChar(255), enriched.brandName);
-      req.input('manufacturer_part_number', sql.VarChar(100), enriched.manufacturerPartNumber);
-      req.input('classpath', sql.VarChar(500), enriched.classpath);
-      req.input('short_desc', sql.VarChar(150), enriched.shortDesc);
+      req.input('part_number', sql.VarChar(50), enriched.partNumber.substring(0, 50));
+      req.input('manufacturer_name', sql.VarChar(255), enriched.manufacturerName.substring(0, 255));
+      req.input('brand_name', sql.VarChar(255), enriched.brandName ? enriched.brandName.substring(0, 255) : null);
+      req.input('manufacturer_part_number', sql.VarChar(100), enriched.manufacturerPartNumber ? enriched.manufacturerPartNumber.substring(0, 100) : null);
+      req.input('classpath', sql.VarChar(500), enriched.classpath ? enriched.classpath.substring(0, 500) : null);
+      req.input('short_desc', sql.VarChar(150), enriched.shortDesc ? enriched.shortDesc.substring(0, 150) : null);
       req.input('long_desc1', sql.NVarChar(sql.MAX), enriched.longDesc1);
-      req.input('unspsc', sql.VarChar(50), enriched.unspsc);
+      req.input('unspsc', sql.VarChar(50), enriched.unspsc ? enriched.unspsc.substring(0, 50) : null);
       req.input('row_confidence', sql.Decimal(5, 2), enriched.rowConfidence);
       req.input('status', sql.VarChar(30), enriched.status);
 

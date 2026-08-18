@@ -39,6 +39,7 @@ import {
 
 export async function buildApp(opts: FastifyServerOptions = {}): Promise<FastifyInstance> {
   const app = fastify({
+    pluginTimeout: 60000,
     logger: {
       level: env.LOG_LEVEL,
     },
