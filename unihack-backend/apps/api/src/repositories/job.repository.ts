@@ -96,20 +96,20 @@ export class JobRepository {
 
     const result = await request.query(`
       SELECT
-        job_id AS jobId,
-        file_name AS fileName,
-        source_type AS sourceType,
-        row_count AS rowCount,
-        processed_rows AS processedRows,
-        published_rows AS publishedRows,
-        review_rows AS reviewRows,
-        failed_rows AS failedRows,
+        job_id AS [jobId],
+        file_name AS [fileName],
+        source_type AS [sourceType],
+        row_count AS [rowCount],
+        processed_rows AS [processedRows],
+        published_rows AS [publishedRows],
+        review_rows AS [reviewRows],
+        failed_rows AS [failedRows],
         status,
         stage,
-        submitted_by AS submittedBy,
-        submitted_at AS submittedAt,
-        completed_at AS completedAt,
-        updated_at AS updatedAt
+        submitted_by AS [submittedBy],
+        submitted_at AS [submittedAt],
+        completed_at AS [completedAt],
+        updated_at AS [updatedAt]
       FROM dbo.ingestion_job
       WHERE job_id = @job_id
     `);
@@ -175,20 +175,20 @@ export class JobRepository {
 
     const result = await request.query(`
       SELECT
-        job_id AS jobId,
-        file_name AS fileName,
-        source_type AS sourceType,
-        row_count AS rowCount,
-        processed_rows AS processedRows,
-        published_rows AS publishedRows,
-        review_rows AS reviewRows,
-        failed_rows AS failedRows,
+        job_id AS [jobId],
+        file_name AS [fileName],
+        source_type AS [sourceType],
+        row_count AS [rowCount],
+        processed_rows AS [processedRows],
+        published_rows AS [publishedRows],
+        review_rows AS [reviewRows],
+        failed_rows AS [failedRows],
         status,
         stage,
-        submitted_by AS submittedBy,
-        submitted_at AS submittedAt,
-        completed_at AS completedAt,
-        updated_at AS updatedAt
+        submitted_by AS [submittedBy],
+        submitted_at AS [submittedAt],
+        completed_at AS [completedAt],
+        updated_at AS [updatedAt]
       FROM dbo.ingestion_job
       ${whereClause}
       ORDER BY submitted_at DESC
