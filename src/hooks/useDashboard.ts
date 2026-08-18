@@ -2,6 +2,16 @@ import { useState, useCallback } from "react";
 import { apiClient, ApiClientError } from "@/lib/api/client";
 import { ProcessingJob } from "@/types";
 
+export interface AnalyticsSummaryResponse {
+  totalProducts: number;
+  publishedProducts: number;
+  pendingReview: number;
+  rejectedProducts: number;
+  autoPublishRate: number;
+  averageConfidence: number;
+  recentJobsCount?: number;
+}
+
 export interface DashboardSummary {
   productsProcessed: number | null;
   activeJobs: number | null;
@@ -33,8 +43,15 @@ export function useDashboard(): UseDashboardReturn {
     setHookState("loading");
     setErrorMessage(null);
     try {
-      const data = await apiClient.get<DashboardSummary>("/dashboard/summary");
-      setSummary(data);
+      const data = await apiClient.get<AnalyticsSummaryResponse>("/analytics/summary");
+      setSummary({
+        productsProcessed: data.totalProducts ?? null,
+        activeJobs: null,
+        needsReview: data.pendingReview ?? null,
+        published: data.publishedProducts ?? null,
+        averageConfidence: data.averageConfidence ?? null,
+        recentJobs: [],
+      });
       setHookState("success");
     } catch (err) {
       if (

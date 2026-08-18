@@ -148,7 +148,7 @@ export default function UploadPage() {
       )}
 
       {/* ── URL Input ────────────────────────────────────────────────── */}
-      {uploadMode === "url" && uploadState === "idle" && (
+      {uploadMode === "url" && (uploadState === "idle" || uploadState === "selected" || uploadState === "error") && (
         <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 space-y-4">
           <div>
             <h3 className="text-sm font-bold text-[#000000] mb-0.5">Manufacturer Datasheet URL</h3>
@@ -188,7 +188,7 @@ export default function UploadPage() {
       )}
 
       {/* ── File Dropzone ─────────────────────────────────────────────── */}
-      {(uploadMode === "file" || uploadMode === "pdf") && uploadState === "idle" && (
+      {(uploadMode === "file" || uploadMode === "pdf") && (uploadState === "idle" || uploadState === "selected" || uploadState === "error") && (
         <UploadDropzone
           mode={uploadMode}
           selectedFile={selectedFile}
