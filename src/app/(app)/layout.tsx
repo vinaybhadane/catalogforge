@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -97,18 +96,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
 
-          <Link href="/dashboard" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center bg-white/10 p-1 shadow-[0_0_12px_rgba(51,134,231,0.35)] transition-transform group-hover:scale-105">
-              <Image
-                src="/logo-icon.png"
-                alt="CatalogForge Logo"
-                width={36}
-                height={36}
-                className="w-full h-full object-contain"
-                priority
-              />
-            </div>
-            <span className="font-black text-lg tracking-tight hidden sm:inline-block">
+          <Link href="/dashboard" className="flex items-center group py-1">
+            <span className="font-black text-lg tracking-tight">
               <span className="text-[#3386E7]">Catalog</span>
               <span className="text-white">Forge</span>
             </span>
@@ -262,16 +251,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <div className="relative w-[260px] bg-[#111827] max-w-full flex flex-col z-10 border-r border-[#1F2937] shadow-2xl">
               {/* Mobile Sheet Header */}
               <div className="h-16 px-4 flex items-center justify-between border-b border-[#1F2937]">
-                <Link href="/dashboard" className="flex items-center gap-2.5" onClick={() => setMobileMenuOpen(false)}>
-                  <div className="w-8 h-8 rounded-lg overflow-hidden bg-white/10 p-0.5 flex items-center justify-center">
-                    <Image
-                      src="/logo-icon.png"
-                      alt="CatalogForge Logo"
-                      width={32}
-                      height={32}
-                      className="w-full h-full object-contain"
-                    />
-                  </div>
+                <Link href="/dashboard" className="flex items-center" onClick={() => setMobileMenuOpen(false)}>
                   <span className="font-black text-base text-white">
                     <span className="text-[#3386E7]">Catalog</span>Forge
                   </span>

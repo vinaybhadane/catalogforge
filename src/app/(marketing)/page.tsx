@@ -33,22 +33,12 @@ export default function MarketingLandingPage() {
   return (
     <div className="min-h-screen flex flex-col bg-[#F8FAFC] text-[#000000] overflow-x-hidden">
       {/* ─────────────────────────────────────────────────────────────
-       * Black Responsive Header with CatalogForge Brand Logo & Name
+       * Black Responsive Header with CatalogForge Brand Name
        * ───────────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-50 bg-[#000000] border-b border-[#1E293B] shadow-2xl backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 sm:h-24 flex items-center justify-between">
-          {/* Brand Logo & Name */}
-          <Link href="/" className="flex items-center gap-3 group py-1">
-            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl overflow-hidden bg-white/10 p-1 flex items-center justify-center shadow-[0_0_16px_rgba(51,134,231,0.4)] group-hover:scale-105 transition-transform">
-              <Image
-                src="/logo-icon.png"
-                alt="CatalogForge Logo"
-                width={44}
-                height={44}
-                className="w-full h-full object-contain"
-                priority
-              />
-            </div>
+          {/* Brand Name */}
+          <Link href="/" className="flex flex-col group py-1">
             <span className="font-black text-xl sm:text-2xl tracking-tight leading-none group-hover:opacity-90 transition-opacity">
               <span className="text-[#3386E7]">Catalog</span>
               <span className="text-[#FFFFFF]">Forge</span>
