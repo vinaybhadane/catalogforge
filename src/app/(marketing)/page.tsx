@@ -1,4 +1,6 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
 import Link from "next/link";
 import {
   Layers,
@@ -19,133 +21,226 @@ import {
   FileSpreadsheet,
   Globe,
   CheckSquare,
+  Menu,
+  X,
 } from "lucide-react";
 import { BRANDING } from "@/lib/constants/branding";
 
 export default function MarketingLandingPage() {
-  return (
-    <div className="min-h-screen flex flex-col bg-[#F8FAFC] text-[#000000]">
-      {/* ─────────────────────────────────────────────────────────────
-       * Neumorphic Header
-       * ───────────────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-50 bg-[#FFFFFF]/90 backdrop-blur-md border-b border-[#E2E8F0]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl home-neu-btn-primary flex items-center justify-center font-bold text-white">
-              <Layers className="w-5 h-5" />
-            </div>
-            <div className="flex flex-col">
-              <span className="font-black text-[#000000] text-base tracking-tight leading-none">
-                {BRANDING.name}
-              </span>
-              <span className="text-[10px] text-[#0284C7] font-mono mt-1 font-bold leading-none">
-                {BRANDING.domain}
-              </span>
-            </div>
-          </div>
+  const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
 
-          <nav className="hidden md:flex items-center gap-8 text-xs font-bold text-[#0F172A]">
-            <a href="#workflow" className="hover:text-[#2563EB] transition-colors">
+  return (
+    <div className="min-h-screen flex flex-col bg-[#F8FAFC] text-[#000000] overflow-x-hidden">
+      {/* ─────────────────────────────────────────────────────────────
+       * Black Responsive Header with CatalogForge Brand Name (SVG logo removed)
+       * ───────────────────────────────────────────────────────────── */}
+      <header className="sticky top-0 z-50 bg-[#000000] border-b border-[#1E293B] shadow-2xl backdrop-blur-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 sm:h-24 flex items-center justify-between">
+          {/* Brand Name Text Link (SVG icon removed) */}
+          <Link href="/" className="flex flex-col group py-1">
+            <span className="font-black text-xl sm:text-2xl tracking-tight leading-none group-hover:opacity-90 transition-opacity">
+              <span className="text-[#3386E7]">Catalog</span>
+              <span className="text-[#FFFFFF]">Forge</span>
+            </span>
+          </Link>
+
+          {/* Desktop Navigation Links */}
+          <nav className="hidden md:flex items-center gap-6 lg:gap-8 text-sm font-semibold text-gray-300">
+            <a
+              href="#workflow"
+              className="hover:text-[#F5B853] transition-colors py-2 px-3 rounded-lg hover:bg-white/5"
+            >
               Workflow
             </a>
-            <a href="#explainability" className="hover:text-[#2563EB] transition-colors">
+            <a
+              href="#explainability"
+              className="hover:text-[#F5B853] transition-colors py-2 px-3 rounded-lg hover:bg-white/5"
+            >
               Explainability
             </a>
-            <a href="#capabilities" className="hover:text-[#2563EB] transition-colors">
+            <a
+              href="#capabilities"
+              className="hover:text-[#F5B853] transition-colors py-2 px-3 rounded-lg hover:bg-white/5"
+            >
               Capabilities
             </a>
-            <a href="#security" className="hover:text-[#2563EB] transition-colors">
+            <a
+              href="#security"
+              className="hover:text-[#F5B853] transition-colors py-2 px-3 rounded-lg hover:bg-white/5"
+            >
               Security
             </a>
           </nav>
 
-          <div className="flex items-center gap-3">
+          {/* Desktop Action Buttons */}
+          <div className="hidden md:flex items-center gap-3.5">
             <Link
               href="/login"
-              className="text-xs font-bold text-[#000000] hover:text-[#2563EB] px-3.5 py-2 rounded-xl transition-colors home-neu-btn"
+              className="text-sm font-bold text-gray-200 hover:text-white px-5 py-2.5 rounded-full border border-neutral-700 hover:border-[#F5B853] bg-neutral-900/90 transition-all hover:bg-neutral-800"
             >
               Sign In
             </Link>
             <Link
               href="/signup"
-              className="text-xs font-bold text-white home-neu-btn-primary px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5"
+              className="btn-get-started-oval text-sm font-black text-[#000000] px-7 py-3 rounded-full transition-all flex items-center gap-2 group"
             >
               <span>Get Started</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
           </div>
+
+          {/* Mobile Header Controls (< md) */}
+          <div className="flex md:hidden items-center gap-2.5">
+            <Link
+              href="/signup"
+              className="btn-get-started-oval text-xs font-black text-[#000000] px-3.5 py-2 rounded-full transition-all flex items-center gap-1"
+            >
+              <span>Get Started</span>
+              <ArrowRight className="w-3 h-3" />
+            </Link>
+
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2.5 text-gray-200 hover:text-white bg-neutral-900 border border-neutral-800 rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-[#F5B853]"
+              aria-label="Toggle navigation menu"
+              aria-expanded={mobileMenuOpen}
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
         </div>
+
+        {/* Mobile Dropdown Navigation Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-[#0a0a0a] border-t border-neutral-800 px-4 py-6 space-y-4 animate-in slide-in-from-top-4 duration-200 shadow-2xl">
+            <nav className="flex flex-col space-y-2">
+              <a
+                href="#workflow"
+                onClick={() => setMobileMenuOpen(false)}
+                className="text-sm font-bold text-gray-200 hover:text-[#F5B853] hover:bg-neutral-900 px-4 py-3 rounded-xl transition-colors flex items-center justify-between"
+              >
+                <span>8-Stage Workflow</span>
+                <ArrowRight className="w-4 h-4 text-gray-500" />
+              </a>
+              <a
+                href="#explainability"
+                onClick={() => setMobileMenuOpen(false)}
+                className="text-sm font-bold text-gray-200 hover:text-[#F5B853] hover:bg-neutral-900 px-4 py-3 rounded-xl transition-colors flex items-center justify-between"
+              >
+                <span>Explainability & Mockup</span>
+                <ArrowRight className="w-4 h-4 text-gray-500" />
+              </a>
+              <a
+                href="#capabilities"
+                onClick={() => setMobileMenuOpen(false)}
+                className="text-sm font-bold text-gray-200 hover:text-[#F5B853] hover:bg-neutral-900 px-4 py-3 rounded-xl transition-colors flex items-center justify-between"
+              >
+                <span>Enterprise Capabilities</span>
+                <ArrowRight className="w-4 h-4 text-gray-500" />
+              </a>
+              <a
+                href="#security"
+                onClick={() => setMobileMenuOpen(false)}
+                className="text-sm font-bold text-gray-200 hover:text-[#F5B853] hover:bg-neutral-900 px-4 py-3 rounded-xl transition-colors flex items-center justify-between"
+              >
+                <span>Audit & Security</span>
+                <ArrowRight className="w-4 h-4 text-gray-500" />
+              </a>
+            </nav>
+
+            <div className="pt-4 border-t border-neutral-800 grid grid-cols-2 gap-3">
+              <Link
+                href="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="text-center py-2.5 text-xs font-bold text-gray-200 bg-neutral-900 border border-neutral-700 rounded-full hover:bg-neutral-800 transition-colors"
+              >
+                Sign In
+              </Link>
+              <Link
+                href="/signup"
+                onClick={() => setMobileMenuOpen(false)}
+                className="btn-get-started-oval text-center py-2.5 text-xs font-black text-[#000000] rounded-full flex items-center justify-center gap-1.5"
+              >
+                <span>Get Started</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* ─────────────────────────────────────────────────────────────
-       * Neumorphic Hero Section
+       * Responsive Hero Section
        * ───────────────────────────────────────────────────────────── */}
-      <section className="py-16 md:py-24 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto text-center">
+      <section className="py-12 sm:py-16 md:py-24 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto text-center">
         {/* Tactile Pill */}
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full home-neu-pill text-[#0284C7] text-xs font-extrabold uppercase tracking-wider mb-6 border border-[#38BDF8]/40">
-          <ShieldCheck className="w-4 h-4 text-[#2563EB]" />
+        <div className="inline-flex flex-wrap items-center justify-center gap-2 px-4 py-1.5 rounded-full home-neu-pill text-[#0284C7] text-[11px] sm:text-xs font-extrabold uppercase tracking-wider mb-6 border border-[#38BDF8]/40 max-w-full leading-normal">
+          <ShieldCheck className="w-4 h-4 text-[#2563EB] shrink-0" />
           <span>Enterprise Product Intelligence & Deterministic Verification</span>
         </div>
 
-        <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-[#000000] tracking-tight leading-tight max-w-4xl mx-auto">
-          Transform raw catalog data into <span className="text-[#2563EB]">validated</span>, source-grounded commerce records.
+        <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-[#000000] tracking-tight leading-[1.15] max-w-4xl mx-auto break-words">
+          Transform raw catalog data into <span className="text-[#3386E7]">validated</span>, source-grounded commerce records.
         </h1>
 
-        <p className="mt-6 text-base sm:text-lg text-[#0F172A]/80 font-medium max-w-3xl mx-auto leading-relaxed">
+        <p className="mt-4 sm:mt-6 text-sm sm:text-base md:text-lg text-[#0F172A]/80 font-medium max-w-3xl mx-auto leading-relaxed px-2">
           Automated classification, controlled vocabulary normalization, deterministic validation rules,
           and human-in-the-loop review queues for production catalog governance.
         </p>
 
         {/* Hero CTAs */}
-        <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+        <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 w-full max-w-md sm:max-w-none mx-auto">
           <Link
             href="/signup"
-            className="w-full sm:w-auto px-7 py-3.5 home-neu-btn-primary text-white font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2"
+            className="w-full sm:w-auto px-8 py-3.5 sm:py-4 btn-get-started-oval text-[#000000] font-black text-sm rounded-full transition-all flex items-center justify-center gap-2 group"
           >
             <span>Start Free Workspace</span>
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
           </Link>
           <a
             href="#workflow"
-            className="w-full sm:w-auto px-7 py-3.5 home-neu-btn text-[#000000] font-bold text-sm rounded-xl transition-all flex items-center justify-center"
+            className="w-full sm:w-auto px-7 py-3.5 sm:py-4 home-neu-btn text-[#000000] font-bold text-sm rounded-full transition-all flex items-center justify-center"
           >
             Explore 8-Stage Pipeline
           </a>
         </div>
 
-        {/* Neumorphic Hero Interactive Mockup Showcase */}
-        <div className="mt-14 home-neu-card rounded-3xl p-6 sm:p-8 text-left border border-[#E2E8F0]">
-          <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-4 mb-6">
-            <div className="flex items-center gap-2.5">
-              <span className="w-3 h-3 rounded-full bg-rose-500" />
-              <span className="w-3 h-3 rounded-full bg-amber-500" />
-              <span className="w-3 h-3 rounded-full bg-emerald-500" />
-              <span className="ml-3 text-xs font-mono font-bold text-[#0F172A]">
+        {/* Interactive Mockup Showcase (Responsive Grid) */}
+        <div id="explainability" className="mt-10 sm:mt-14 home-neu-card rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 text-left border border-[#E2E8F0]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E2E8F0] pb-4 mb-5 sm:mb-6">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-full bg-rose-500" />
+                <span className="w-3 h-3 rounded-full bg-amber-500" />
+                <span className="w-3 h-3 rounded-full bg-emerald-500" />
+              </div>
+              <span className="text-xs font-mono font-bold text-[#0F172A] truncate max-w-[220px] sm:max-w-none">
                 catalogforge-pipeline / job-exec-8492
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="px-3 py-1 rounded-full home-neu-pill text-[10px] font-mono font-bold text-[#0284C7]">
+              <span className="px-3 py-1 rounded-full home-neu-pill text-[10px] font-mono font-bold text-[#0284C7] shrink-0">
                 CONFIDENCE: 98.4%
               </span>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
             {/* Raw Ingestion Input */}
-            <div className="home-neu-inset p-5 rounded-2xl space-y-2">
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#0284C7]">
+            <div className="home-neu-inset p-4 sm:p-5 rounded-2xl space-y-2">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#0284C7] block">
                 Stage 1: Raw Ingest
               </span>
-              <p className="font-mono text-xs font-bold text-[#000000]">
+              <p className="font-mono text-xs font-bold text-[#000000] break-words">
                 &quot;Square D QO 20A 1-Pole 120V 10kA Circuit Breaker QO120&quot;
               </p>
               <p className="text-[11px] text-[#0F172A]/70 font-medium">Unstructured supplier datasheet text</p>
             </div>
 
             {/* AI Extraction */}
-            <div className="home-neu-inset p-5 rounded-2xl space-y-2 border-l-4 border-l-[#2563EB]">
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#2563EB]">
+            <div className="home-neu-inset p-4 sm:p-5 rounded-2xl space-y-2 border-l-4 border-l-[#2563EB]">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#2563EB] block">
                 Stage 4: Normalized Attributes
               </span>
               <div className="text-[11px] font-mono space-y-1 text-[#000000]">
@@ -157,14 +252,14 @@ export default function MarketingLandingPage() {
             </div>
 
             {/* Published Record */}
-            <div className="home-neu-inset p-5 rounded-2xl space-y-2 border-l-4 border-l-emerald-500">
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700">
+            <div className="home-neu-inset p-4 sm:p-5 rounded-2xl space-y-2 border-l-4 border-l-emerald-500">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700 block">
                 Stage 8: Governed Taxonomy
               </span>
-              <p className="text-xs font-bold text-[#000000]">
+              <p className="text-xs font-bold text-[#000000] break-words">
                 Electrical &gt; Distribution &gt; Circuit Breakers &gt; Miniature
               </p>
-              <div className="flex items-center gap-2 pt-1">
+              <div className="flex items-center gap-2 pt-1 flex-wrap">
                 <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-bold text-[10px]">
                   RULE VALIDATED
                 </span>
@@ -180,21 +275,21 @@ export default function MarketingLandingPage() {
       {/* ─────────────────────────────────────────────────────────────
        * 8-Stage Deterministic Workflow Section
        * ───────────────────────────────────────────────────────────── */}
-      <section id="workflow" className="py-20 bg-[#FFFFFF] border-y border-[#E2E8F0]">
+      <section id="workflow" className="py-14 sm:py-20 bg-[#FFFFFF] border-y border-[#E2E8F0]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
+          <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-16 space-y-3">
             <span className="home-neu-pill px-3 py-1 text-xs font-black text-[#2563EB] uppercase tracking-wider">
               Architecture
             </span>
-            <h2 className="text-2xl sm:text-4xl font-black text-[#000000] tracking-tight">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-[#000000] tracking-tight">
               Deterministic 8-Stage Pipeline
             </h2>
-            <p className="text-sm text-[#0F172A]/80 font-medium">
+            <p className="text-xs sm:text-sm text-[#0F172A]/80 font-medium px-2">
               Every raw record travels through strict, auditable stages with clear confidence boundaries and validation rules.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {[
               {
                 step: "01",
@@ -249,7 +344,7 @@ export default function MarketingLandingPage() {
               return (
                 <div
                   key={stage.step}
-                  className="home-neu-card home-neu-card-interactive p-6 rounded-2xl space-y-3"
+                  className="home-neu-card home-neu-card-interactive p-5 sm:p-6 rounded-2xl space-y-3"
                 >
                   <div className="flex items-center justify-between">
                     <div className="w-10 h-10 rounded-xl home-neu-icon-well flex items-center justify-center text-[#2563EB]">
@@ -273,25 +368,25 @@ export default function MarketingLandingPage() {
       {/* ─────────────────────────────────────────────────────────────
        * Capabilities & Governance
        * ───────────────────────────────────────────────────────────── */}
-      <section id="capabilities" className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
+      <section id="capabilities" className="py-14 sm:py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-16 space-y-3">
           <span className="home-neu-pill px-3 py-1 text-xs font-black text-[#0284C7] uppercase tracking-wider">
             Governance
           </span>
-          <h2 className="text-2xl sm:text-4xl font-black text-[#000000] tracking-tight">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-[#000000] tracking-tight">
             Built for Industrial Catalog Scale
           </h2>
-          <p className="text-sm text-[#0F172A]/80 font-medium">
+          <p className="text-xs sm:text-sm text-[#0F172A]/80 font-medium px-2">
             Handles complex electrical, mechanical, and industrial distributor datasets.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="home-neu-card home-neu-card-interactive p-8 rounded-3xl space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
+          <div className="home-neu-card home-neu-card-interactive p-6 sm:p-8 rounded-2xl sm:rounded-3xl space-y-4">
             <div className="w-12 h-12 rounded-2xl home-neu-icon-well flex items-center justify-center text-[#2563EB]">
               <Sparkles className="w-6 h-6" />
             </div>
-            <h3 className="text-lg font-black text-[#000000]">Controlled Vocabulary (LOV)</h3>
+            <h3 className="text-base sm:text-lg font-black text-[#000000]">Controlled Vocabulary (LOV)</h3>
             <p className="text-xs text-[#0F172A]/80 font-medium leading-relaxed">
               Standardizes variants (e.g., &quot;Polycarbonate&quot;, &quot;PC&quot;, &quot;Polycarb&quot;) into exact approved master data terms automatically.
             </p>
@@ -300,11 +395,11 @@ export default function MarketingLandingPage() {
             </div>
           </div>
 
-          <div className="home-neu-card home-neu-card-interactive p-8 rounded-3xl space-y-4">
+          <div className="home-neu-card home-neu-card-interactive p-6 sm:p-8 rounded-2xl sm:rounded-3xl space-y-4">
             <div className="w-12 h-12 rounded-2xl home-neu-icon-well flex items-center justify-center text-[#2563EB]">
               <FileCheck2 className="w-6 h-6" />
             </div>
-            <h3 className="text-lg font-black text-[#000000]">Placeholder Detection</h3>
+            <h3 className="text-base sm:text-lg font-black text-[#000000]">Placeholder Detection</h3>
             <p className="text-xs text-[#0F172A]/80 font-medium leading-relaxed">
               Catches invalid tokens like <code className="bg-[#E0F2FE] px-1 py-0.5 rounded text-[#0284C7] font-bold">-- Unbranded --</code> or <code className="bg-[#E0F2FE] px-1 py-0.5 rounded text-[#0284C7] font-bold">-- No DIB Brand --</code> before publishing.
             </p>
@@ -313,11 +408,11 @@ export default function MarketingLandingPage() {
             </div>
           </div>
 
-          <div className="home-neu-card home-neu-card-interactive p-8 rounded-3xl space-y-4">
+          <div id="security" className="home-neu-card home-neu-card-interactive p-6 sm:p-8 rounded-2xl sm:rounded-3xl space-y-4">
             <div className="w-12 h-12 rounded-2xl home-neu-icon-well flex items-center justify-center text-[#2563EB]">
               <Lock className="w-6 h-6" />
             </div>
-            <h3 className="text-lg font-black text-[#000000]">Full Audit Trail</h3>
+            <h3 className="text-base sm:text-lg font-black text-[#000000]">Full Audit Trail</h3>
             <p className="text-xs text-[#0F172A]/80 font-medium leading-relaxed">
               Every value change, confidence score calculation, and reviewer action is logged with immutable timestamps.
             </p>
@@ -329,42 +424,46 @@ export default function MarketingLandingPage() {
       </section>
 
       {/* ─────────────────────────────────────────────────────────────
-       * Call to Action Footer Pod
+       * Call to Action Section
        * ───────────────────────────────────────────────────────────── */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto text-center">
-        <div className="home-neu-card rounded-3xl p-10 sm:p-14 space-y-6 border border-[#38BDF8]/40">
-          <h2 className="text-2xl sm:text-4xl font-black text-[#000000] tracking-tight">
+      <section className="py-12 sm:py-16 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto text-center">
+        <div className="home-neu-card rounded-2xl sm:rounded-3xl p-6 sm:p-10 md:p-14 space-y-5 sm:space-y-6 border border-[#38BDF8]/40">
+          <h2 className="text-xl sm:text-3xl md:text-4xl font-black text-[#000000] tracking-tight">
             Ready to Automate Your Catalog Enrichment?
           </h2>
-          <p className="text-sm text-[#0F172A]/80 font-medium max-w-xl mx-auto">
+          <p className="text-xs sm:text-sm text-[#0F172A]/80 font-medium max-w-xl mx-auto px-2">
             Get started with CatalogForge in minutes. Ingest raw spreadsheets, inspect confidence scores, and publish clean master data.
           </p>
           <div className="pt-2 flex justify-center">
             <Link
               href="/signup"
-              className="home-neu-btn-primary px-8 py-3.5 rounded-xl font-black text-white text-sm flex items-center gap-2"
+              className="btn-get-started-oval w-full sm:w-auto px-8 sm:px-9 py-3.5 sm:py-4 rounded-full font-black text-[#000000] text-sm flex items-center justify-center gap-2 group"
             >
               <span>Launch Your Workspace</span>
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
           </div>
         </div>
       </section>
 
       {/* ─────────────────────────────────────────────────────────────
-       * Footer
+       * Black Footer with High-Contrast Dual-Color Branding
        * ───────────────────────────────────────────────────────────── */}
-      <footer className="mt-auto py-8 bg-[#FFFFFF] border-t border-[#E2E8F0] text-center text-xs text-[#0F172A]/70 font-semibold">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg home-neu-btn-primary text-white flex items-center justify-center font-bold text-xs">
-              <Layers className="w-3.5 h-3.5" />
+      <footer className="mt-auto py-8 sm:py-10 bg-[#000000] border-t border-[#1E293B] text-center text-xs text-gray-400 font-medium">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-[#3386E7] text-white flex items-center justify-center font-bold text-xs shadow-[0_0_12px_rgba(51,134,231,0.35)]">
+              <Layers className="w-4 h-4" />
             </div>
-            <span className="font-extrabold text-[#000000]">{BRANDING.name}</span>
+            <span className="font-extrabold text-base tracking-tight">
+              <span className="text-[#3386E7]">Catalog</span>
+              <span className="text-[#FFFFFF]">Forge</span>
+            </span>
           </div>
-          <p>© 2026 CatalogForge.tech — Enterprise Product Intelligence</p>
+          <p className="text-[11px] sm:text-xs">© 2026 CatalogForge.tech — Enterprise Product Intelligence</p>
         </div>
       </footer>
     </div>
   );
 }
+

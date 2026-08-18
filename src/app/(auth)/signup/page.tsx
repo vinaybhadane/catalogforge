@@ -76,15 +76,17 @@ export default function SignUpPage() {
       <div className="w-full max-w-md">
         {/* Brand Logo & Title */}
         <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-[#2563EB] text-white flex items-center justify-center mx-auto mb-4 border border-[#1D4ED8]">
-            <Layers className="w-7 h-7" />
-          </div>
-          <h1 className="text-2xl font-black text-[#000000] tracking-tight">
-            Get Started with CatalogForge
-          </h1>
-          <p className="text-xs text-[#0284C7] font-bold mt-1">
-            Create your account to start enriching raw product catalogs
-          </p>
+          <Link href="/" className="inline-flex flex-col items-center group">
+            <div className="w-14 h-14 rounded-2xl bg-[#3386E7] text-white flex items-center justify-center mx-auto mb-4 border border-[#3386E7]/30 shadow-[0_0_20px_rgba(51,134,231,0.35)] group-hover:scale-105 transition-transform">
+              <Layers className="w-7 h-7" />
+            </div>
+            <h1 className="text-3xl font-black tracking-tight">
+              Get Started with <span className="text-[#3386E7]">Catalog</span><span className="text-[#000000]">Forge</span>
+            </h1>
+            <p className="text-xs text-[#0284C7] font-bold mt-1">
+              Create your account to start enriching raw product catalogs
+            </p>
+          </Link>
         </div>
 
         {/* Clean Flat SignUp Card (Zero Shadows) */}
@@ -224,7 +226,7 @@ export default function SignUpPage() {
               type="submit"
               disabled={!isValid || submitting || authLoading}
               suppressHydrationWarning
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm font-bold rounded-xl border border-[#1D4ED8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 btn-get-started-oval text-white text-sm font-bold rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-2"
             >
               {submitting ? (
                 <>

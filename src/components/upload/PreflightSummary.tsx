@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React from "react";
 import {
@@ -35,166 +35,159 @@ export const PreflightSummary: React.FC<PreflightSummaryProps> = ({
   const hasWarnings = state === "completed_with_warnings" || result.warnings.length > 0;
 
   return (
-    <div className="neu-card rounded-2xl overflow-hidden space-y-0">
-      {/* Header Banner */}
-      <div
-        className={cn(
-          "px-6 py-4 border-b flex items-center justify-between",
-          isRejected
-            ? "bg-rose-50 border-rose-200 text-rose-900"
-            : hasWarnings
-            ? "bg-amber-50 border-amber-200 text-amber-900"
-            : "bg-emerald-50 border-emerald-200 text-emerald-900"
-        )}
-      >
+    <div className="bg-white border border-[#E2E8F0] rounded-2xl overflow-hidden">
+
+      {/* ── Status Banner ── */}
+      <div className={cn(
+        "px-6 py-4 flex items-center justify-between border-b",
+        isRejected
+          ? "bg-rose-50 border-rose-200"
+          : hasWarnings
+          ? "bg-amber-50 border-amber-200"
+          : "bg-emerald-50 border-emerald-200"
+      )}>
         <div className="flex items-center gap-3">
-          {isRejected ? (
-            <XCircle className="w-5 h-5 text-rose-600 shrink-0" />
-          ) : hasWarnings ? (
-            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
-          ) : (
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-          )}
+          <div className={cn(
+            "w-9 h-9 rounded-lg flex items-center justify-center shrink-0",
+            isRejected ? "bg-rose-100" : hasWarnings ? "bg-amber-100" : "bg-emerald-100"
+          )}>
+            {isRejected
+              ? <XCircle className="w-5 h-5 text-rose-600" />
+              : hasWarnings
+              ? <AlertTriangle className="w-5 h-5 text-amber-600" />
+              : <CheckCircle2 className="w-5 h-5 text-emerald-600" />}
+          </div>
           <div>
-            <h3 className="font-extrabold text-sm">
+            <h3 className={cn(
+              "text-sm font-bold",
+              isRejected ? "text-rose-900" : hasWarnings ? "text-amber-900" : "text-emerald-900"
+            )}>
               {isRejected
                 ? "Pre-flight Validation Failed"
                 : hasWarnings
-                ? "Pre-flight Scan Completed with Warnings"
-                : "Pre-flight Scan Completed Successfully"}
+                ? "Completed with Warnings"
+                : "Pre-flight Scan Passed"}
             </h3>
-            <p className="text-xs opacity-80 mt-0.5">
+            <p className={cn(
+              "text-xs mt-0.5",
+              isRejected ? "text-rose-700" : hasWarnings ? "text-amber-700" : "text-emerald-700"
+            )}>
               {isRejected
-                ? "File cannot be processed until schema errors are resolved."
-                : "File schema verified. Dataset is ready for pipeline enrichment."}
+                ? "Schema errors must be resolved before processing."
+                : "Dataset schema verified and ready for pipeline enrichment."}
             </p>
           </div>
         </div>
-
-        <span
-          className={cn(
-            "text-xs font-mono font-bold px-3 py-1 rounded-full uppercase tracking-wider neu-pill",
-            isRejected
-              ? "text-rose-700 border-rose-300"
-              : hasWarnings
-              ? "text-amber-800 border-amber-300"
-              : "text-emerald-800 border-emerald-300"
-          )}
-        >
-          {isRejected ? "REJECTED" : hasWarnings ? "PASSED WITH WARNINGS" : "PASSED"}
+        <span className={cn(
+          "text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider border",
+          isRejected
+            ? "text-rose-700 border-rose-300 bg-white"
+            : hasWarnings
+            ? "text-amber-800 border-amber-300 bg-white"
+            : "text-emerald-800 border-emerald-300 bg-white"
+        )}>
+          {isRejected ? "REJECTED" : hasWarnings ? "WARNINGS" : "PASSED"}
         </span>
       </div>
 
-      {/* Metrics Summary Grid */}
-      <div className="p-6 grid grid-cols-1 sm:grid-cols-3 gap-4 border-b border-[rgba(203,203,203,0.4)]">
-        <div className="p-4 rounded-xl neu-inset">
-          <div className="flex items-center gap-2 text-[#6D8196] text-xs font-bold mb-1">
-            <Layers className="w-4 h-4" />
-            <span>Detected Schema</span>
+      {/* ── Metrics Grid ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-[#F1F5F9] border-b border-[#E2E8F0]">
+        {[
+          { icon: Layers, label: "Detected Schema", value: result.schema || "Unknown" },
+          { icon: Hash, label: "Row Count", value: result.rowCount !== null ? result.rowCount.toLocaleString() : "N/A" },
+          { icon: Columns, label: "Column Count", value: result.columnCount !== null ? `${result.columnCount}` : "N/A" },
+        ].map(({ icon: Icon, label, value }) => (
+          <div key={label} className="px-5 py-4">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-[#64748B] mb-1.5">
+              <Icon className="w-3.5 h-3.5" />
+              {label}
+            </div>
+            <p className="text-sm font-bold text-[#000000] font-mono">{value}</p>
           </div>
-          <span className="font-extrabold text-[#4A4A4A] text-sm">
-            {result.schema || "Unknown Schema"}
-          </span>
-        </div>
-
-        <div className="p-4 rounded-xl neu-inset">
-          <div className="flex items-center gap-2 text-[#6D8196] text-xs font-bold mb-1">
-            <Hash className="w-4 h-4" />
-            <span>Input Row Count</span>
-          </div>
-          <span className="font-extrabold text-[#4A4A4A] text-sm font-mono">
-            {result.rowCount !== null ? result.rowCount.toLocaleString() : "N/A"}
-          </span>
-        </div>
-
-        <div className="p-4 rounded-xl neu-inset">
-          <div className="flex items-center gap-2 text-[#6D8196] text-xs font-bold mb-1">
-            <Columns className="w-4 h-4" />
-            <span>Column Count</span>
-          </div>
-          <span className="font-extrabold text-[#4A4A4A] text-sm font-mono">
-            {result.columnCount !== null ? `${result.columnCount} columns` : "N/A"}
-          </span>
-        </div>
+        ))}
       </div>
 
-      {/* Placeholder Scan Section */}
+      {/* ── Placeholder Scan ── */}
       <div className="p-6 space-y-4">
         <div>
-          <h4 className="text-xs font-extrabold text-[#4A4A4A] uppercase tracking-wider flex items-center gap-2">
-            <FileCheck2 className="w-4 h-4 text-[#6D8196]" />
-            Placeholder & Governance Scan Findings
+          <h4 className="text-sm font-bold text-[#000000] flex items-center gap-2 mb-0.5">
+            <FileCheck2 className="w-4 h-4 text-[#64748B]" />
+            Placeholder &amp; Governance Scan
           </h4>
-          <p className="text-xs text-[#4A4A4A]/70 mt-1">
-            Detecting placeholder tokens (e.g. <code className="bg-[#FFFFE3] px-1 py-0.5 rounded text-[#4A4A4A]">-- Unbranded --</code>, <code className="bg-[#FFFFE3] px-1 py-0.5 rounded text-[#4A4A4A]">-- No Unilog Brand --</code>) to prevent invalid brand propagation.
+          <p className="text-xs text-[#64748B]">
+            Detecting placeholder tokens (e.g.{" "}
+            <code className="bg-[#F1F5F9] px-1.5 py-0.5 rounded text-[#000000] text-[11px]">-- Unbranded --</code>
+            {", "}
+            <code className="bg-[#F1F5F9] px-1.5 py-0.5 rounded text-[#000000] text-[11px]">-- No Unilog Brand --</code>
+            ) to prevent invalid brand propagation.
           </p>
         </div>
 
         {result.placeholderScan.placeholdersDetected.length > 0 ? (
-          <div className="p-4 rounded-xl neu-inset space-y-3">
-            <div className="flex items-center justify-between text-xs font-bold text-amber-900">
+          <div className="border border-amber-200 rounded-xl p-4 bg-amber-50 space-y-3">
+            <div className="flex items-center justify-between text-xs font-semibold text-amber-900">
               <span className="flex items-center gap-1.5">
-                <Info className="w-4 h-4 text-amber-600" />
+                <Info className="w-3.5 h-3.5 text-amber-600" />
                 Brand Placeholders Detected
               </span>
-              <span className="font-mono font-bold">
-                {result.placeholderScan.rowsAffected !== null ? `${result.placeholderScan.rowsAffected} rows affected` : "Detected"}
+              <span className="font-mono text-amber-800">
+                {result.placeholderScan.rowsAffected !== null
+                  ? `${result.placeholderScan.rowsAffected} rows affected`
+                  : "Detected"}
               </span>
             </div>
-
-            <div className="flex flex-wrap gap-2 pt-1">
+            <div className="flex flex-wrap gap-2">
               {result.placeholderScan.details.map((item, idx) => (
                 <div
                   key={idx}
-                  className="px-2.5 py-1 rounded-lg bg-white border border-amber-300 text-amber-900 text-xs font-mono flex items-center gap-2"
+                  className="px-2.5 py-1 rounded-lg bg-white border border-amber-200 text-amber-900 text-xs font-mono flex items-center gap-2"
                 >
                   <span className="font-bold">{item.placeholder}</span>
-                  <span className="bg-amber-100 text-amber-800 text-[10px] px-1.5 py-0.5 rounded-md font-extrabold">
+                  <span className="bg-amber-100 text-amber-800 text-[10px] px-1.5 py-0.5 rounded-md font-bold">
                     {item.count}
                   </span>
                 </div>
               ))}
             </div>
-
-            <p className="text-[11px] text-[#4A4A4A]/80 leading-normal pt-1">
-              Note: Detected placeholder strings will be handled explicitly as missing governance data during enrichment and will not be published as actual brand values.
+            <p className="text-[11px] text-amber-800 leading-normal">
+              Detected placeholders will be handled as missing governance data during enrichment and will not be published as actual brand values.
             </p>
           </div>
         ) : (
-          <div className="p-4 rounded-xl neu-inset text-xs text-[#4A4A4A] flex items-center gap-2">
+          <div className="flex items-center gap-2.5 p-3 rounded-xl bg-[#F0FDF4] border border-emerald-200 text-sm font-medium text-emerald-800">
             <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span className="font-semibold">No brand placeholders detected. All brand fields contain standard data formats.</span>
+            No brand placeholders detected. All brand fields contain standard data.
           </div>
         )}
 
-        {/* Warnings List */}
+        {/* Warnings */}
         {result.warnings.length > 0 && (
-          <div className="space-y-2 pt-2">
+          <div className="space-y-2">
             <h5 className="text-xs font-bold text-amber-800 uppercase tracking-wider">
               Warnings ({result.warnings.length})
             </h5>
-            <ul className="space-y-1">
+            <ul className="space-y-1.5">
               {result.warnings.map((warn, i) => (
-                <li key={i} className="text-xs text-amber-900 flex items-start gap-2 bg-amber-50 p-2 rounded-lg border border-amber-200">
-                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
-                  <span>{warn}</span>
+                <li key={i} className="flex items-start gap-2.5 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                  {warn}
                 </li>
               ))}
             </ul>
           </div>
         )}
 
-        {/* Errors List */}
+        {/* Errors */}
         {result.errors.length > 0 && (
-          <div className="space-y-2 pt-2">
+          <div className="space-y-2">
             <h5 className="text-xs font-bold text-rose-800 uppercase tracking-wider">
               Errors ({result.errors.length})
             </h5>
-            <ul className="space-y-1">
+            <ul className="space-y-1.5">
               {result.errors.map((err, i) => (
-                <li key={i} className="text-xs text-rose-900 flex items-start gap-2 bg-rose-50 p-2 rounded-lg border border-rose-200">
-                  <XCircle className="w-3.5 h-3.5 text-rose-600 shrink-0 mt-0.5" />
-                  <span>{err}</span>
+                <li key={i} className="flex items-start gap-2.5 p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-900">
+                  <XCircle className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
+                  {err}
                 </li>
               ))}
             </ul>
@@ -202,24 +195,24 @@ export const PreflightSummary: React.FC<PreflightSummaryProps> = ({
         )}
       </div>
 
-      {/* Action Footer */}
-      <div className="p-6 border-t border-[rgba(203,203,203,0.4)] flex items-center justify-between">
+      {/* ── Action Footer ── */}
+      <div className="px-6 py-4 border-t border-[#E2E8F0] bg-[#FAFAFA] flex items-center justify-between">
         <button
           type="button"
           onClick={onReset}
-          className="neu-btn px-4 py-2.5 rounded-xl text-xs font-bold text-[#4A4A4A] flex items-center gap-2"
+          className="flex items-center gap-2 text-sm font-medium text-[#64748B] hover:text-[#000000] transition-colors"
         >
-          <RefreshCw className="w-4 h-4 text-[#6D8196]" />
-          <span>Upload Another File</span>
+          <RefreshCw className="w-4 h-4" />
+          Upload Another File
         </button>
 
         {!isRejected && (
           <button
             type="button"
             onClick={onProceed}
-            className="neu-btn-accent px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#3386E7] hover:bg-[#2563EB] text-white text-sm font-semibold transition-colors shadow-sm"
           >
-            <span>Proceed to Batch Processing</span>
+            Proceed to Batch Processing
             <ArrowRight className="w-4 h-4" />
           </button>
         )}

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useEffect, useMemo } from "react";
 import Link from "next/link";
@@ -21,9 +21,9 @@ import {
 import { useDashboard } from "@/hooks/useDashboard";
 import { cn } from "@/lib/utils";
 
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Clean Flat KPI Card (Zero Shadows)
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface KpiCardProps {
   label: string;
@@ -44,7 +44,7 @@ function KpiCard({
 }: KpiCardProps) {
   const formatted =
     value === null
-      ? "—"
+      ? "â€”"
       : format === "percent"
       ? `${Math.round(value * 100)}%`
       : value.toLocaleString();
@@ -98,7 +98,7 @@ function KpiSkeleton() {
 }
 
 function formatDate(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "â€”";
   try {
     return new Date(iso).toLocaleString(undefined, {
       month: "short",
@@ -112,7 +112,7 @@ function formatDate(iso: string | null): string {
 }
 
 function StageBadge({ stage }: { stage: string | null }) {
-  if (!stage) return <span className="text-[#000000]/40 text-xs">—</span>;
+  if (!stage) return <span className="text-[#000000]/40 text-xs">â€”</span>;
 
   const stageConfig: Record<string, { label: string; dot: string; text: string }> = {
     queued: { label: "Queued", dot: "bg-slate-400", text: "text-slate-700" },
@@ -139,9 +139,9 @@ function StageBadge({ stage }: { stage: string | null }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Dashboard Page Component
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export default function DashboardPage() {
   const {
@@ -524,13 +524,13 @@ export default function DashboardPage() {
                       className="hover:bg-[#F8FAFC] transition-colors"
                     >
                       <td className="px-4 py-3 font-mono font-bold text-[#000000]">
-                        {job.jobId.slice(0, 8)}…
+                        {job.jobId.slice(0, 8)}â€¦
                       </td>
                       <td className="px-4 py-3 font-semibold text-[#000000] truncate max-w-[180px]">
-                        {job.fileName ?? "—"}
+                        {job.fileName ?? "â€”"}
                       </td>
                       <td className="px-4 py-3 font-mono text-[#000000]">
-                        {job.rowCount !== null ? job.rowCount.toLocaleString() : "—"}
+                        {job.rowCount !== null ? job.rowCount.toLocaleString() : "â€”"}
                       </td>
                       <td className="px-4 py-3">
                         <StageBadge stage={job.stage} />

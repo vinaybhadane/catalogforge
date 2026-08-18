@@ -238,4 +238,27 @@ body {
     border: 1px solid #E2E8F0;
     border-radius: 0.875rem;
   }
+
+  /* ─────────────────────────────────────────────────────────────
+   * Curved Oval Button with #F5B853 Golden Amber Accent
+   * ───────────────────────────────────────────────────────────── */
+  .btn-get-started-oval {
+    background-color: #F5B853;
+    color: #000000;
+    border-radius: 9999px;
+    font-weight: 800;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 20px rgba(245, 184, 83, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+  }
+  .btn-get-started-oval:hover {
+    background-color: #eca83e;
+    box-shadow: 0 6px 28px rgba(245, 184, 83, 0.65);
+    transform: translateY(-1px);
+  }
+  .btn-get-started-oval:active {
+    transform: translateY(0) scale(0.97);
+  }
 }
+
+

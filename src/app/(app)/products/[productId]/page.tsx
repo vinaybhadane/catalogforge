@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
@@ -18,9 +18,9 @@ import { Product, ProductAttribute, ProductAsset } from "@/types";
 import { DynamicFieldRenderer, FieldDefinition } from "@/components/products/DynamicFieldRenderer";
 import { cn } from "@/lib/utils";
 
-// ─────────────────────────────────────────────────────────────
-// Tabs — Section 22
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Tabs â€” Section 22
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const TABS = [
   "Overview",
@@ -32,9 +32,9 @@ const TABS = [
 ] as const;
 type TabId = typeof TABS[number];
 
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Overview Tab
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function OverviewTab({ product }: { product: Product }) {
   const fields: { label: string; value: string | null }[] = [
@@ -81,9 +81,9 @@ function OverviewTab({ product }: { product: Product }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────
-// Descriptions Tab — Section 22
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Descriptions Tab â€” Section 22
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function DescriptionsTab({ product }: { product: Product }) {
   const descriptions: { label: string; value: string | null }[] = [
@@ -129,9 +129,9 @@ function DescriptionsTab({ product }: { product: Product }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────
-// Attributes Tab — Section 46
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Attributes Tab â€” Section 46
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function AttributesTab({ attributes }: { attributes: ProductAttribute[] }) {
   if (attributes.length === 0) {
@@ -153,12 +153,12 @@ function AttributesTab({ attributes }: { attributes: ProductAttribute[] }) {
             <tr key={attr.sequence} className="hover:bg-slate-50">
               <td className="px-4 py-2.5 text-xs text-slate-400 font-mono">{attr.sequence}</td>
               <td className="px-4 py-2.5 text-xs font-semibold text-slate-700">{attr.attributeLabel}</td>
-              <td className="px-4 py-2.5 text-xs text-slate-900">{attr.attributeValue ?? <span className="text-slate-400 italic">—</span>}</td>
-              <td className="px-4 py-2.5 text-xs text-slate-600">{attr.attributeUom ?? "—"}</td>
+              <td className="px-4 py-2.5 text-xs text-slate-900">{attr.attributeValue ?? <span className="text-slate-400 italic">â€”</span>}</td>
+              <td className="px-4 py-2.5 text-xs text-slate-600">{attr.attributeUom ?? "â€”"}</td>
               <td className="px-4 py-2.5">
                 {attr.confidence !== null ? (
                   <span className={cn("text-[11px] font-mono font-bold", attr.confidence >= 0.85 ? "text-[#047857]" : attr.confidence >= 0.6 ? "text-[#B45309]" : "text-[#B91C1C]")}>{Math.round(attr.confidence * 100)}%</span>
-                ) : (<span className="text-[11px] text-slate-400 italic">—</span>)}
+                ) : (<span className="text-[11px] text-slate-400 italic">â€”</span>)}
               </td>
               <td className="px-4 py-2.5">
                 {attr.validationFlags.length > 0 ? (
@@ -167,7 +167,7 @@ function AttributesTab({ attributes }: { attributes: ProductAttribute[] }) {
                       <span key={f} className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border bg-amber-50 border-amber-200 text-amber-800">{f}</span>
                     ))}
                   </div>
-                ) : (<span className="text-[11px] text-slate-400">—</span>)}
+                ) : (<span className="text-[11px] text-slate-400">â€”</span>)}
               </td>
             </tr>
           ))}
@@ -177,9 +177,9 @@ function AttributesTab({ attributes }: { attributes: ProductAttribute[] }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Dimensions Tab
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function DimensionsTab({ product }: { product: Product }) {
   const dims = product.dimensions;
@@ -201,7 +201,7 @@ function DimensionsTab({ product }: { product: Product }) {
         {rows.map((r) => (
           <div key={r.label} className="bg-slate-50 rounded-lg p-3 border border-slate-200">
             <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{r.label}</p>
-            <p className="text-lg font-bold text-slate-900 font-mono mt-0.5">{r.value !== null ? r.value : <span className="text-slate-400 italic text-sm font-normal">—</span>}</p>
+            <p className="text-lg font-bold text-slate-900 font-mono mt-0.5">{r.value !== null ? r.value : <span className="text-slate-400 italic text-sm font-normal">â€”</span>}</p>
           </div>
         ))}
       </div>
@@ -209,9 +209,9 @@ function DimensionsTab({ product }: { product: Product }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────
-// Assets Tab — Section 104
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Assets Tab â€” Section 104
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function AssetsTab({ assets }: { assets: ProductAsset[] }) {
   if (assets.length === 0) return <p className="text-sm text-slate-400 italic py-8 text-center">No assets available.</p>;
@@ -241,9 +241,9 @@ function AssetsTab({ assets }: { assets: ProductAsset[] }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Validation Tab
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function ValidationTab({ product }: { product: Product }) {
   const flaggedAttrs = product.attributes.filter((a) => a.validationFlags.length > 0);
@@ -280,9 +280,9 @@ function ValidationTab({ product }: { product: Product }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Skeleton
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function DetailSkeleton() {
   return (
@@ -295,9 +295,9 @@ function DetailSkeleton() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────
-// Main Page — Section 22
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Main Page â€” Section 22
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export default function ProductDetailPage() {
   const params = useParams<{ productId: string }>();
@@ -330,7 +330,7 @@ export default function ProductDetailPage() {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
-      {/* Breadcrumb — Section 87 */}
+      {/* Breadcrumb â€” Section 87 */}
       <div className="flex items-center gap-2">
         <Link href="/products" className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-[#1D4ED8] transition-colors">
           <ArrowLeft className="w-3.5 h-3.5" /> Products
@@ -367,7 +367,7 @@ export default function ProductDetailPage() {
 
       {fetchState === "success" && product && (
         <>
-          {/* Tabs — Section 22 */}
+          {/* Tabs â€” Section 22 */}
           <div className="border-b border-[#E2E8F0] flex gap-0 overflow-x-auto">
             {TABS.map((tab) => (
               <button

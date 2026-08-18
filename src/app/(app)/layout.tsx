@@ -18,7 +18,10 @@ import {
   Menu,
   X,
   Layers,
-  ShieldCheck,
+  Bell,
+  Search,
+  LogOut,
+  Sparkles,
 } from "lucide-react";
 import { BRANDING } from "@/lib/constants/branding";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -28,6 +31,7 @@ interface NavItem {
   label: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
+  badge?: string;
 }
 
 interface NavSection {
@@ -68,191 +72,266 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState<boolean>(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
 
+  const userInitial = user?.displayName
+    ? user.displayName.charAt(0).toUpperCase()
+    : user?.email
+    ? user.email.charAt(0).toUpperCase()
+    : "A";
+
+  const userLabel = user?.displayName || user?.email || "Admin Workspace";
+
   return (
-    <div className="min-h-screen flex flex-col bg-[#F8FAFC] text-[#000000]">
-      {/* Top Header — Clean Flat Navbar with Navy / Sky Blue Brand */}
-      <header className="sticky top-0 z-40 h-16 bg-[#FFFFFF] border-b border-[#E2E8F0] px-4 sm:px-6 flex items-center justify-between shrink-0">
+    <div className="min-h-screen flex flex-col bg-[#F0F2F5] text-[#0F172A]">
+
+      {/* ── Top Header ─────────────────────────────────────────────── */}
+      <header className="sticky top-0 z-40 h-16 bg-[#000000] border-b border-[#1a1a2e] px-4 sm:px-6 flex items-center justify-between shrink-0 shadow-md">
+        {/* Left: Mobile toggle + Brand */}
         <div className="flex items-center gap-3">
-          {/* Mobile Menu Toggle */}
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 text-[#000000] rounded-xl hover:bg-[#F1F5F9] transition-colors"
-            aria-label="Toggle navigation menu"
+            className="md:hidden p-2 text-gray-300 hover:text-white rounded-lg hover:bg-white/10 transition-colors"
+            aria-label="Toggle navigation"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
 
-          {/* Brand Logo & Name */}
-          <Link href="/dashboard" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] flex items-center justify-center text-white font-bold transition-all">
-              <Layers className="w-5 h-5" />
+          <Link href="/dashboard" className="flex items-center gap-2.5 group">
+            <div className="w-8 h-8 rounded-lg bg-[#3386E7] flex items-center justify-center text-white shadow-[0_0_12px_rgba(51,134,231,0.4)] transition-transform group-hover:scale-105">
+              <Layers className="w-4 h-4" />
             </div>
-            <div className="flex flex-col">
-              <span className="font-black text-[#000000] text-base tracking-tight leading-none">
-                {BRANDING.name}
-              </span>
-              <span className="text-[10px] text-[#0284C7] font-mono mt-1 leading-none font-bold">
-                {BRANDING.domain}
-              </span>
-            </div>
+            <span className="font-black text-lg tracking-tight hidden sm:inline-block">
+              <span className="text-[#3386E7]">Catalog</span>
+              <span className="text-white">Forge</span>
+            </span>
           </Link>
         </div>
 
-        {/* Global Action / Status Indicator */}
-        <div className="flex items-center gap-4">
-          {/* Status Pill */}
-          <div className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#E0F2FE] border border-[#38BDF8] text-xs font-bold text-[#0284C7]">
-            <span className="w-2 h-2 rounded-full bg-[#0284C7] animate-pulse" />
-            <span>AI Engine Ready</span>
+        {/* Right: Status + User */}
+        <div className="flex items-center gap-3">
+          {/* AI Status */}
+          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-950/80 border border-emerald-500/30 text-xs font-semibold text-emerald-300">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span>AI Ready</span>
           </div>
 
-          {/* User Profile Slot */}
-          <div className="flex items-center gap-2.5 pl-3 border-l border-[#E2E8F0]">
-            <div className="w-9 h-9 rounded-xl bg-[#0F172A] text-white flex items-center justify-center text-xs font-black">
-              {user?.displayName ? (
-                user.displayName.charAt(0).toUpperCase()
-              ) : (
-                <User className="w-4 h-4" />
-              )}
+          {/* Notifications */}
+          <button className="p-2 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors relative" aria-label="Notifications">
+            <Bell className="w-4.5 h-4.5 w-[18px] h-[18px]" />
+          </button>
+
+          {/* Divider */}
+          <div className="w-px h-6 bg-neutral-700" />
+
+          {/* User */}
+          <Link href="/profile" className="flex items-center gap-2.5 group">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#3386E7] to-[#1D4ED8] text-white flex items-center justify-center text-sm font-black shadow-sm">
+              {userInitial}
             </div>
-            <span className="hidden md:inline-block text-xs font-extrabold text-[#000000]">
-              {user?.displayName || user?.email || "Admin Workspace"}
-            </span>
-          </div>
+            <div className="hidden md:flex flex-col">
+              <span className="text-xs font-bold text-gray-100 leading-none">{userLabel.split("@")[0]}</span>
+              <span className="text-[10px] text-gray-400 leading-none mt-0.5">Administrator</span>
+            </div>
+          </Link>
         </div>
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* Desktop Collapsible Flat Sidebar */}
+        {/* ── Desktop Sidebar ──────────────────────────────────────── */}
         <aside
           className={cn(
-            "hidden md:flex flex-col bg-[#FFFFFF] border-r border-[#E2E8F0] transition-all duration-200 select-none relative z-30",
-            collapsed ? "w-18" : "w-64"
+            "hidden md:flex flex-col bg-[#111827] border-r border-[#1F2937] transition-all duration-250 select-none relative z-30 shrink-0",
+            collapsed ? "w-[68px]" : "w-[240px]"
           )}
         >
-          {/* Navigation Items */}
-          <div className="flex-1 overflow-y-auto py-5 px-3 space-y-6">
+          {/* Nav Sections */}
+          <div className="flex-1 overflow-y-auto py-4 space-y-1 px-2">
             {NAV_SECTIONS.map((section) => (
-              <div key={section.title} className="space-y-1">
-                {!collapsed ? (
-                  <h3 className="px-3 text-[10px] font-black text-[#0F172A]/70 tracking-wider uppercase mb-2">
+              <div key={section.title} className="mb-1">
+                {/* Section Header */}
+                {!collapsed && (
+                  <p className="px-3 pt-3 pb-1.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest select-none">
                     {section.title}
-                  </h3>
-                ) : (
-                  <div className="h-4" />
+                  </p>
                 )}
-                {section.items.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      title={collapsed ? item.label : undefined}
-                      className={cn(
-                        "flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all",
-                        isActive
-                          ? "bg-[#E0F2FE] text-[#2563EB] border border-[#38BDF8]"
-                          : "text-[#000000] hover:bg-[#F1F5F9] hover:text-[#2563EB]",
-                        collapsed && "justify-center px-0"
-                      )}
-                    >
-                      <Icon
+                {collapsed && <div className="h-5" />}
+
+                {/* Nav Items */}
+                <div className="space-y-0.5">
+                  {section.items.map((item) => {
+                    const Icon = item.icon;
+                    const isActive =
+                      pathname === item.href || pathname.startsWith(`${item.href}/`);
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        title={collapsed ? item.label : undefined}
                         className={cn(
-                          "w-4 h-4 shrink-0",
-                          isActive ? "text-[#2563EB]" : "text-[#0F172A]/70"
+                          "flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13.5px] font-medium transition-all duration-150 group relative",
+                          isActive
+                            ? "bg-[#1E3A5F] text-white shadow-sm"
+                            : "text-gray-400 hover:text-gray-100 hover:bg-[#1F2937]",
+                          collapsed && "justify-center px-2"
                         )}
-                      />
-                      {!collapsed && <span>{item.label}</span>}
-                    </Link>
-                  );
-                })}
+                      >
+                        {/* Active indicator bar */}
+                        {isActive && !collapsed && (
+                          <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-[#3386E7] rounded-r-full" />
+                        )}
+
+                        <Icon
+                          className={cn(
+                            "w-[18px] h-[18px] shrink-0 transition-colors",
+                            isActive ? "text-[#3386E7]" : "text-gray-500 group-hover:text-gray-300"
+                          )}
+                        />
+                        {!collapsed && (
+                          <span className="truncate">{item.label}</span>
+                        )}
+
+                        {/* Badge */}
+                        {!collapsed && item.badge && (
+                          <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#3386E7]/20 text-[#3386E7]">
+                            {item.badge}
+                          </span>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
               </div>
             ))}
           </div>
 
-          {/* Collapse Toggle Footer */}
-          <div className="p-3 border-t border-[#E2E8F0] flex items-center justify-end">
+          {/* Sidebar Footer: User mini card + collapse */}
+          <div className="border-t border-[#1F2937] p-2 space-y-1">
+            {/* User row */}
+            {!collapsed && (
+              <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-[#1F2937]">
+                <div className="w-7 h-7 rounded-md bg-gradient-to-br from-[#3386E7] to-[#1D4ED8] text-white flex items-center justify-center text-xs font-black shrink-0">
+                  {userInitial}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-gray-200 truncate leading-none">{userLabel.split("@")[0]}</p>
+                  <p className="text-[10px] text-gray-500 truncate leading-none mt-0.5">Administrator</p>
+                </div>
+              </div>
+            )}
+
+            {/* Collapse toggle */}
             <button
               type="button"
               onClick={() => setCollapsed(!collapsed)}
-              className="p-2 rounded-xl text-[#000000] hover:bg-[#F1F5F9] w-full flex items-center justify-center transition-colors"
+              className={cn(
+                "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-gray-400 hover:text-gray-100 hover:bg-[#1F2937] transition-colors text-xs font-medium",
+                collapsed && "justify-center"
+              )}
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
-              {collapsed ? <ChevronRight className="w-4 h-4 text-[#2563EB]" /> : <ChevronLeft className="w-4 h-4 text-[#2563EB]" />}
+              {collapsed ? (
+                <ChevronRight className="w-4 h-4 text-gray-500" />
+              ) : (
+                <>
+                  <ChevronLeft className="w-4 h-4 text-gray-500" />
+                  <span>Collapse</span>
+                </>
+              )}
             </button>
           </div>
         </aside>
 
-        {/* Mobile Navigation Drawer Overlay */}
+        {/* ── Mobile Drawer ─────────────────────────────────────────── */}
         {mobileMenuOpen && (
           <div className="md:hidden fixed inset-0 z-50 flex">
             {/* Backdrop */}
             <div
-              className="fixed inset-0 bg-[#0F172A]/50 backdrop-blur-sm"
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm"
               onClick={() => setMobileMenuOpen(false)}
             />
 
-            {/* Mobile Sheet */}
-            <div className="relative w-72 bg-[#FFFFFF] max-w-full flex flex-col z-10 border-r border-[#E2E8F0] p-4">
-              <div className="pb-4 border-b border-[#E2E8F0] flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-[#2563EB] text-white flex items-center justify-center font-bold">
-                    <Layers className="w-4 h-4" />
+            {/* Sheet */}
+            <div className="relative w-[260px] bg-[#111827] max-w-full flex flex-col z-10 border-r border-[#1F2937] shadow-2xl">
+              {/* Mobile Sheet Header */}
+              <div className="h-16 px-4 flex items-center justify-between border-b border-[#1F2937]">
+                <Link href="/dashboard" className="flex items-center gap-2.5" onClick={() => setMobileMenuOpen(false)}>
+                  <div className="w-7 h-7 rounded-lg bg-[#3386E7] text-white flex items-center justify-center">
+                    <Layers className="w-3.5 h-3.5" />
                   </div>
-                  <span className="font-black text-[#000000] text-sm">{BRANDING.name}</span>
-                </div>
+                  <span className="font-black text-base text-white">
+                    <span className="text-[#3386E7]">Catalog</span>Forge
+                  </span>
+                </Link>
                 <button
                   type="button"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="p-1.5 text-[#000000] hover:bg-[#F1F5F9] rounded-xl"
+                  className="p-1.5 text-gray-400 hover:text-white hover:bg-[#1F2937] rounded-lg transition-colors"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto py-4 space-y-6">
+              {/* Mobile Nav */}
+              <div className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
                 {NAV_SECTIONS.map((section) => (
-                  <div key={section.title} className="space-y-2">
-                    <h3 className="px-3 text-xs font-black text-[#0F172A]/70 tracking-wider uppercase mb-2">
+                  <div key={section.title} className="mb-1">
+                    <p className="px-3 pt-3 pb-1.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
                       {section.title}
-                    </h3>
-                    {section.items.map((item) => {
-                      const Icon = item.icon;
-                      const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
-                      return (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          onClick={() => setMobileMenuOpen(false)}
-                          className={cn(
-                            "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all",
-                            isActive
-                              ? "bg-[#E0F2FE] text-[#2563EB] border border-[#38BDF8]"
-                              : "text-[#000000] hover:bg-[#F1F5F9]"
-                          )}
-                        >
-                          <Icon
+                    </p>
+                    <div className="space-y-0.5">
+                      {section.items.map((item) => {
+                        const Icon = item.icon;
+                        const isActive =
+                          pathname === item.href || pathname.startsWith(`${item.href}/`);
+                        return (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            onClick={() => setMobileMenuOpen(false)}
                             className={cn(
-                              "w-4 h-4",
-                              isActive ? "text-[#2563EB]" : "text-[#0F172A]/70"
+                              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all relative",
+                              isActive
+                                ? "bg-[#1E3A5F] text-white"
+                                : "text-gray-400 hover:text-gray-100 hover:bg-[#1F2937]"
                             )}
-                          />
-                          <span>{item.label}</span>
-                        </Link>
-                      );
-                    })}
+                          >
+                            {isActive && (
+                              <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-[#3386E7] rounded-r-full" />
+                            )}
+                            <Icon
+                              className={cn(
+                                "w-[18px] h-[18px] shrink-0",
+                                isActive ? "text-[#3386E7]" : "text-gray-500"
+                              )}
+                            />
+                            <span>{item.label}</span>
+                          </Link>
+                        );
+                      })}
+                    </div>
                   </div>
                 ))}
+              </div>
+
+              {/* Mobile Sheet Footer */}
+              <div className="border-t border-[#1F2937] p-3">
+                <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg bg-[#1F2937]">
+                  <div className="w-7 h-7 rounded-md bg-gradient-to-br from-[#3386E7] to-[#1D4ED8] text-white flex items-center justify-center text-xs font-black">
+                    {userInitial}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-gray-200 truncate">{userLabel.split("@")[0]}</p>
+                    <p className="text-[10px] text-gray-500 truncate">Administrator</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 w-full bg-[#F8FAFC]">
-          <div className="max-w-7xl mx-auto w-full">
+        {/* ── Main Content Area ─────────────────────────────────────── */}
+        <main className="flex-1 overflow-y-auto min-h-0">
+          <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto w-full">
             {children}
           </div>
         </main>
@@ -260,3 +339,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
+
+
+
+

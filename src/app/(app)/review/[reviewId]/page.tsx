@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
@@ -24,9 +24,9 @@ import { ReviewActionBar } from "@/components/review/ReviewActionBar";
 import { ReviewField, EvidenceReference, LovMatch } from "@/types";
 import { cn } from "@/lib/utils";
 
-// ─────────────────────────────────────────────────────────────
-// Section 29: ConfidenceBadge — never shows 0% for null
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Section 29: ConfidenceBadge â€” never shows 0% for null
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function ConfidenceBadge({
   score,
@@ -73,9 +73,9 @@ function ConfidenceBadge({
   );
 }
 
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Section 30: Validation Flag Chips
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const FLAG_STYLES: Record<string, string> = {
   OVER_CHAR_LIMIT:      "bg-red-50 text-red-700 border-red-200",
@@ -99,9 +99,9 @@ function ValidationFlagChip({ flag }: { flag: string }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Section 31: Character Counter
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function CharCounter({ current, limit }: { current: number; limit: number | null }) {
   if (limit === null) {
@@ -114,14 +114,14 @@ function CharCounter({ current, limit }: { current: number; limit: number | null
   const over = current > limit;
   return (
     <span className={cn("text-[10px] font-mono", over ? "text-[#B91C1C] font-bold" : "text-slate-500")}>
-      {current} / {limit} chars{over && " — over limit"}
+      {current} / {limit} chars{over && " â€” over limit"}
     </span>
   );
 }
 
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Section 26: Editable Product Field Row
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface FieldRowProps {
   field: ReviewField;
@@ -227,7 +227,7 @@ function FieldRow({
                 ) : (
                   <Check className="w-3.5 h-3.5" />
                 )}
-                {actionState === "saving" ? "Saving…" : "Save"}
+                {actionState === "saving" ? "Savingâ€¦" : "Save"}
               </button>
             </div>
           </div>
@@ -256,9 +256,9 @@ function FieldRow({
   );
 }
 
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Section 27 + 96: Evidence & LOV Right Panel
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function EvidencePanel({
   field,
@@ -290,7 +290,7 @@ function EvidencePanel({
         <p className="text-[11px] font-mono text-slate-500">{field.fieldName}</p>
       </div>
 
-      {/* Source Evidence — Section 96 */}
+      {/* Source Evidence â€” Section 96 */}
       <div>
         <button
           type="button"
@@ -310,7 +310,7 @@ function EvidencePanel({
         {expanded && (
           <div className="mt-2 space-y-3">
             {evidence === null ? (
-              /* Section 96 explicit missing state — never fabricate */
+              /* Section 96 explicit missing state â€” never fabricate */
               <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-500 italic">
                 No source evidence returned for this field.
               </div>
@@ -367,7 +367,7 @@ function EvidencePanel({
         )}
       </div>
 
-      {/* LOV Matches — Section 27 */}
+      {/* LOV Matches â€” Section 27 */}
       {lovMatches.length > 0 && (
         <div>
           <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">
@@ -398,7 +398,7 @@ function EvidencePanel({
                   )}
                 </div>
                 <span className="font-mono text-slate-500 shrink-0">
-                  {match.score !== null ? `${Math.round(match.score * 100)}%` : "—"}
+                  {match.score !== null ? `${Math.round(match.score * 100)}%` : "â€”"}
                 </span>
               </div>
             ))}
@@ -416,9 +416,9 @@ function EvidencePanel({
   );
 }
 
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Skeleton
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function StudioSkeleton() {
   return (
@@ -441,9 +441,9 @@ function StudioSkeleton() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────
-// Main Review Studio Page — Section 24
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Main Review Studio Page â€” Section 24
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export default function ReviewStudioPage() {
   const params = useParams<{ reviewId: string }>();
@@ -497,7 +497,7 @@ export default function ReviewStudioPage() {
   const handleNext = useCallback(() => router.push("/review"), [router]);
   const handlePrevious = useCallback(() => router.push("/review"), [router]);
 
-  // Section 65 — Keyboard shortcuts (disabled while editing text)
+  // Section 65 â€” Keyboard shortcuts (disabled while editing text)
   useReviewKeyboardShortcuts(
     {
       onApprove: handleApprove,
@@ -577,15 +577,15 @@ export default function ReviewStudioPage() {
         </div>
       )}
 
-      {/* ── Section 24.1 Three-Panel Studio Grid ── */}
+      {/* â”€â”€ Section 24.1 Three-Panel Studio Grid â”€â”€ */}
       {fetchState === "success" && reviewItem && (
         <div
           className="flex-1 grid overflow-hidden"
           style={{ gridTemplateColumns: "260px 1fr 380px" }}
         >
-          {/* ═══════════════════════════════════════
-              LEFT PANEL — Section 25: Record Navigation
-             ═══════════════════════════════════════ */}
+          {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+              LEFT PANEL â€” Section 25: Record Navigation
+             â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
           <aside className="border-r border-[#E2E8F0] bg-[#F8FAFC] flex flex-col overflow-hidden">
             <div className="px-3 py-3 border-b border-[#E2E8F0]">
               <h2 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
@@ -637,9 +637,9 @@ export default function ReviewStudioPage() {
             </div>
           </aside>
 
-          {/* ═══════════════════════════════════════
-              CENTER PANEL — Section 26: Generated Product Fields
-             ═══════════════════════════════════════ */}
+          {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+              CENTER PANEL â€” Section 26: Generated Product Fields
+             â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
           <main className="flex flex-col overflow-hidden bg-white">
             <div className="px-4 py-3 border-b border-[#E2E8F0] shrink-0">
               <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">
@@ -694,9 +694,9 @@ export default function ReviewStudioPage() {
             </div>
           </main>
 
-          {/* ═══════════════════════════════════════
-              RIGHT PANEL — Section 27: Evidence & LOV
-             ═══════════════════════════════════════ */}
+          {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+              RIGHT PANEL â€” Section 27: Evidence & LOV
+             â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
           <aside className="border-l border-[#E2E8F0] bg-[#F8FAFC] flex flex-col overflow-hidden">
             <div className="px-3 py-3 border-b border-[#E2E8F0] shrink-0">
               <h2 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">

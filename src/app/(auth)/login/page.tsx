@@ -63,15 +63,18 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         {/* Logo / Brand */}
         <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-[#2563EB] text-white flex items-center justify-center mx-auto mb-4 border border-[#1D4ED8]">
-            <Layers className="w-7 h-7" />
-          </div>
-          <h1 className="text-2xl font-black text-[#000000] tracking-tight">
-            CatalogForge
-          </h1>
-          <p className="text-xs text-[#0284C7] font-bold mt-1">
-            Sign in to your AI workspace
-          </p>
+          <Link href="/" className="inline-flex flex-col items-center group">
+            <div className="w-14 h-14 rounded-2xl bg-[#3386E7] text-white flex items-center justify-center mx-auto mb-4 border border-[#3386E7]/30 shadow-[0_0_20px_rgba(51,134,231,0.35)] group-hover:scale-105 transition-transform">
+              <Layers className="w-7 h-7" />
+            </div>
+            <h1 className="text-3xl font-black tracking-tight">
+              <span className="text-[#3386E7]">Catalog</span>
+              <span className="text-[#000000]">Forge</span>
+            </h1>
+            <p className="text-xs text-[#0284C7] font-bold mt-1">
+              Sign in to your AI workspace
+            </p>
+          </Link>
         </div>
 
         {/* Clean Flat Login Card (Zero Shadows) */}
@@ -102,7 +105,7 @@ export default function LoginPage() {
                 autoComplete="email"
                 required
                 suppressHydrationWarning
-                className="w-full px-3.5 py-2.5 text-sm bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl text-[#000000] placeholder:text-[#000000]/40 focus:outline-none focus:border-[#2563EB] transition-colors font-medium"
+                className="w-full px-3.5 py-2.5 text-sm bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl text-[#000000] placeholder:text-[#000000]/40 focus:outline-none focus:border-[#3386E7] transition-colors font-medium"
               />
             </div>
 
@@ -123,9 +126,8 @@ export default function LoginPage() {
                   placeholder="••••••••"
                   autoComplete="current-password"
                   required
-                  minLength={6}
                   suppressHydrationWarning
-                  className="w-full px-3.5 py-2.5 pr-10 text-sm bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl text-[#000000] placeholder:text-[#000000]/40 focus:outline-none focus:border-[#2563EB] transition-colors font-medium"
+                  className="w-full px-3.5 py-2.5 text-sm bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl text-[#000000] placeholder:text-[#000000]/40 focus:outline-none focus:border-[#3386E7] transition-colors font-medium pr-10"
                 />
                 <button
                   type="button"
@@ -148,7 +150,7 @@ export default function LoginPage() {
               type="submit"
               disabled={!isValid || submitting || authLoading}
               suppressHydrationWarning
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm font-bold rounded-xl border border-[#1D4ED8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 btn-get-started-oval text-white text-sm font-bold rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? (
                 <>

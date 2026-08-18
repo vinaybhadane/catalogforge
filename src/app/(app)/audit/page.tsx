@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useEffect, useState } from "react";
 import {
@@ -16,9 +16,9 @@ import {
 import { useAuditLogs, AuditEvent, AuditAction } from "@/hooks/useAuditLogs";
 import { cn } from "@/lib/utils";
 
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Helpers
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function formatDate(iso: string): string {
   try {
@@ -42,8 +42,8 @@ function ActionBadge({ action }: { action: AuditAction }) {
       label: "Auto Published",
     },
     approved: {
-      cls: "text-[#6D8196] border-[#6D8196]",
-      icon: <CheckCircle2 className="w-3 h-3 text-[#6D8196]" />,
+      cls: "text-[#64748B] border-[#6D8196]",
+      icon: <CheckCircle2 className="w-3 h-3 text-[#64748B]" />,
       label: "Approved",
     },
     corrected: {
@@ -58,14 +58,14 @@ function ActionBadge({ action }: { action: AuditAction }) {
     },
   };
   const c = cfg[action] ?? {
-    cls: "text-[#4A4A4A] border-[#CBCBCB]",
+    cls: "text-[#000000] border-[#E2E8F0]",
     icon: null,
     label: action,
   };
   return (
     <span
       className={cn(
-        "neu-pill inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider",
+        "border rounded-full bg-[#F8FAFC] inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider",
         c.cls
       )}
     >
@@ -77,12 +77,12 @@ function ActionBadge({ action }: { action: AuditAction }) {
 
 function ConfidenceCell({ value }: { value: number | null }) {
   if (value === null)
-    return <span className="text-[11px] text-[#4A4A4A]/40 italic">—</span>;
+    return <span className="text-[11px] text-[#000000]/40 italic">â€”</span>;
   const pct = Math.round(value * 100);
   return (
     <span
       className={cn(
-        "text-[11px] font-mono font-bold px-2 py-0.5 rounded-full neu-pill",
+        "text-[11px] font-mono font-bold px-2 py-0.5 rounded-full border rounded-full bg-[#F8FAFC]",
         pct >= 85
           ? "text-emerald-700 border-emerald-300"
           : pct >= 60
@@ -95,28 +95,28 @@ function ConfidenceCell({ value }: { value: number | null }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Expandable Row Detail
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function ExpandedDetail({ event }: { event: AuditEvent }) {
   return (
     <tr>
       <td colSpan={9} className="px-4 py-3 bg-[#DEE3E7]/50">
-        <div className="neu-inset p-4 rounded-xl space-y-3">
+        <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4 rounded-xl space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
             <div>
-              <span className="font-bold text-[#6D8196] block mb-1">
+              <span className="font-bold text-[#64748B] block mb-1">
                 Field Context:
               </span>
-              <p className="font-mono text-[#4A4A4A]">{event.fieldName}</p>
+              <p className="font-mono text-[#000000]">{event.fieldName}</p>
             </div>
 
             <div>
-              <span className="font-bold text-[#6D8196] block mb-1">
+              <span className="font-bold text-[#64748B] block mb-1">
                 Reviewer / Actor:
               </span>
-              <p className="text-[#4A4A4A] font-medium">
+              <p className="text-[#000000] font-medium">
                 {event.reviewer ?? "Automated Enrichment Engine"}
               </p>
             </div>
@@ -141,10 +141,10 @@ function ExpandedDetail({ event }: { event: AuditEvent }) {
           )}
 
           <div>
-            <span className="font-bold text-[#6D8196] block mb-1 text-xs">
+            <span className="font-bold text-[#64748B] block mb-1 text-xs">
               Value Payload:
             </span>
-            <pre className="p-3 bg-white/70 rounded-lg text-[11px] font-mono text-[#4A4A4A] overflow-x-auto border border-[#CBCBCB]/40">
+            <pre className="p-3 bg-white/70 rounded-lg text-[11px] font-mono text-[#000000] overflow-x-auto border border-[#E2E8F0]">
               {JSON.stringify(
                 {
                   generatedValue: event.generatedValue,
@@ -168,13 +168,13 @@ function AuditRow({ event }: { event: AuditEvent }) {
 
   return (
     <>
-      <tr className="hover:bg-[#FFFFE3]/40 transition-colors">
+      <tr className="hover:bg-[#EFF6FF]/40 transition-colors">
         {/* Expand toggle */}
         <td className="pl-3 py-3 w-8">
           <button
             type="button"
             onClick={() => setExpanded((v) => !v)}
-            className="neu-btn p-1 text-[#6D8196] rounded-md"
+            className="bg-white border border-[#E2E8F0] rounded-xl hover:bg-[#F8FAFC] transition-colors p-1 text-[#64748B] rounded-md"
             aria-label={expanded ? "Collapse details" : "Expand details"}
           >
             {expanded ? (
@@ -186,29 +186,29 @@ function AuditRow({ event }: { event: AuditEvent }) {
         </td>
 
         {/* Timestamp */}
-        <td className="px-3 py-3 whitespace-nowrap text-[11px] font-medium text-[#4A4A4A]">
+        <td className="px-3 py-3 whitespace-nowrap text-[11px] font-medium text-[#000000]">
           {formatDate(event.timestamp)}
         </td>
 
         {/* Product ID */}
         <td className="px-3 py-3">
-          <span className="font-mono text-[11px] font-bold text-[#4A4A4A]">
+          <span className="font-mono text-[11px] font-bold text-[#000000]">
             {event.productId}
           </span>
         </td>
 
         {/* Field */}
         <td className="px-3 py-3">
-          <span className="font-mono text-[11px] font-bold text-[#6D8196] uppercase">
+          <span className="font-mono text-[11px] font-bold text-[#64748B] uppercase">
             {event.fieldName}
           </span>
         </td>
 
         {/* Generated Value */}
         <td className="px-3 py-3 max-w-[180px]">
-          <span className="text-[11px] font-semibold text-[#4A4A4A] truncate block">
+          <span className="text-[11px] font-semibold text-[#000000] truncate block">
             {event.generatedValue ?? (
-              <span className="text-[#4A4A4A]/40 italic">—</span>
+              <span className="text-[#000000]/40 italic">â€”</span>
             )}
           </span>
         </td>
@@ -225,14 +225,14 @@ function AuditRow({ event }: { event: AuditEvent }) {
               {event.validationFlags.length} flag{event.validationFlags.length !== 1 ? "s" : ""}
             </span>
           ) : (
-            <span className="text-[11px] text-[#4A4A4A]/40">—</span>
+            <span className="text-[11px] text-[#000000]/40">â€”</span>
           )}
         </td>
 
         {/* Reviewer */}
         <td className="px-3 py-3">
-          <span className="text-[11px] font-medium text-[#4A4A4A]">
-            {event.reviewer ?? <span className="text-[#4A4A4A]/40 italic">—</span>}
+          <span className="text-[11px] font-medium text-[#000000]">
+            {event.reviewer ?? <span className="text-[#000000]/40 italic">â€”</span>}
           </span>
         </td>
 
@@ -280,20 +280,20 @@ export default function AuditPage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-10">
       {/* Neumorphic Header */}
-      <div className="neu-card rounded-2xl p-6">
+      <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl neu-btn-accent flex items-center justify-center text-[#FFFFE3]">
+            <div className="w-12 h-12 rounded-xl bg-[#3386E7] text-white rounded-xl flex items-center justify-center text-white">
               <FileSearch className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-2xl font-extrabold text-[#4A4A4A] tracking-tight">
+              <h1 className="text-2xl font-extrabold text-[#000000] tracking-tight">
                 Audit Trail & Governance Log
               </h1>
-              <p className="text-xs text-[#6D8196] font-bold mt-0.5">
+              <p className="text-xs text-[#64748B] font-bold mt-0.5">
                 Field-level enrichment decisions, reviewer actions, and pipeline outcomes.
                 {total !== null && (
-                  <span className="ml-1 font-extrabold text-[#4A4A4A]">
+                  <span className="ml-1 font-extrabold text-[#000000]">
                     ({total.toLocaleString()} total events)
                   </span>
                 )}
@@ -304,9 +304,9 @@ export default function AuditPage() {
             type="button"
             onClick={refresh}
             disabled={isLoading}
-            className="neu-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-[#4A4A4A] disabled:opacity-50"
+            className="bg-white border border-[#E2E8F0] rounded-xl hover:bg-[#F8FAFC] transition-colors flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-[#000000] disabled:opacity-50"
           >
-            <RefreshCw className={`w-4 h-4 text-[#6D8196] ${isLoading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`w-4 h-4 text-[#64748B] ${isLoading ? "animate-spin" : ""}`} />
             Refresh Log
           </button>
         </div>
@@ -314,7 +314,7 @@ export default function AuditPage() {
 
       {/* Error Banner */}
       {hookState === "error" && errorMessage && (
-        <div className="neu-card rounded-2xl p-4 border-l-4 border-l-rose-500 flex items-start gap-3">
+        <div className="bg-white border border-[#E2E8F0] rounded-2xl p-4 border-l-4 border-l-rose-500 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
           <div className="flex-1">
             <p className="text-xs font-bold text-rose-900">Unable to load audit events.</p>
@@ -323,7 +323,7 @@ export default function AuditPage() {
           <button
             type="button"
             onClick={refresh}
-            className="neu-btn px-3 py-1 text-xs text-rose-800 font-bold"
+            className="bg-white border border-[#E2E8F0] rounded-xl hover:bg-[#F8FAFC] transition-colors px-3 py-1 text-xs text-rose-800 font-bold"
           >
             Retry
           </button>
@@ -331,12 +331,12 @@ export default function AuditPage() {
       )}
 
       {/* Neumorphic Table */}
-      <div className="neu-card rounded-2xl p-5 space-y-4">
-        <div className="neu-inset rounded-xl overflow-hidden p-1">
+      <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 space-y-4">
+        <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl overflow-hidden p-1">
           <div className="overflow-x-auto rounded-lg">
             <table className="w-full text-xs text-left" aria-label="Audit log events">
               <thead>
-                <tr className="border-b border-[#CBCBCB]/40 text-[#4A4A4A] bg-[#E2E6E9]/60">
+                <tr className="border-b border-[#E2E8F0] text-[#000000] bg-[#E2E6E9]/60">
                   <th scope="col" className="pl-3 py-3 w-8" aria-label="Expand" />
                   {[
                     "Timestamp",
@@ -368,13 +368,13 @@ export default function AuditPage() {
                   <tr>
                     <td colSpan={9} className="px-6 py-16 text-center">
                       <div className="flex flex-col items-center gap-3">
-                        <div className="w-14 h-14 rounded-2xl neu-icon-well text-[#6D8196] flex items-center justify-center">
+                        <div className="w-14 h-14 rounded-2xl bg-[#F1F5F9] rounded-xl text-[#64748B] flex items-center justify-center">
                           <ClipboardList className="w-7 h-7" />
                         </div>
-                        <p className="text-sm font-extrabold text-[#4A4A4A]">
+                        <p className="text-sm font-extrabold text-[#000000]">
                           No audit events available
                         </p>
-                        <p className="text-xs text-[#6D8196] font-bold max-w-xs">
+                        <p className="text-xs text-[#64748B] font-bold max-w-xs">
                           Audit events are recorded when the enrichment pipeline processes rows and reviewers take actions.
                         </p>
                       </div>
@@ -392,18 +392,18 @@ export default function AuditPage() {
         </div>
 
         {!isLoading && events.length > 0 && (
-          <div className="pt-2 flex items-center justify-between text-xs text-[#4A4A4A] font-bold">
+          <div className="pt-2 flex items-center justify-between text-xs text-[#000000] font-bold">
             <span>
               Page {page}
               {totalPages !== null ? ` of ${totalPages}` : ""}
-              {total !== null ? ` · ${total.toLocaleString()} total events` : ""}
+              {total !== null ? ` Â· ${total.toLocaleString()} total events` : ""}
             </span>
             <div className="flex gap-2">
               <button
                 type="button"
                 disabled={page <= 1}
                 onClick={() => setPage(page - 1)}
-                className="neu-btn px-3 py-1.5 rounded-lg text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed"
+                className="bg-white border border-[#E2E8F0] rounded-xl hover:bg-[#F8FAFC] transition-colors px-3 py-1.5 rounded-lg text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Previous
               </button>
@@ -411,7 +411,7 @@ export default function AuditPage() {
                 type="button"
                 disabled={totalPages !== null && page >= totalPages}
                 onClick={() => setPage(page + 1)}
-                className="neu-btn px-3 py-1.5 rounded-lg text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed"
+                className="bg-white border border-[#E2E8F0] rounded-xl hover:bg-[#F8FAFC] transition-colors px-3 py-1.5 rounded-lg text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Next
               </button>
