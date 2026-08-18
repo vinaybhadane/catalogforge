@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   Eye,
@@ -64,8 +65,15 @@ export default function LoginPage() {
         {/* Logo / Brand */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex flex-col items-center group">
-            <div className="w-14 h-14 rounded-2xl bg-[#3386E7] text-white flex items-center justify-center mx-auto mb-4 border border-[#3386E7]/30 shadow-[0_0_20px_rgba(51,134,231,0.35)] group-hover:scale-105 transition-transform">
-              <Layers className="w-7 h-7" />
+            <div className="w-16 h-16 rounded-2xl bg-white border border-[#E2E8F0] p-1.5 flex items-center justify-center mx-auto mb-4 shadow-[0_0_20px_rgba(51,134,231,0.25)] group-hover:scale-105 transition-transform">
+              <Image
+                src="/logo-icon.png"
+                alt="CatalogForge Logo"
+                width={56}
+                height={56}
+                className="w-full h-full object-contain"
+                priority
+              />
             </div>
             <h1 className="text-3xl font-black tracking-tight">
               <span className="text-[#3386E7]">Catalog</span>

@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -97,8 +98,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </button>
 
           <Link href="/dashboard" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-lg bg-[#3386E7] flex items-center justify-center text-white shadow-[0_0_12px_rgba(51,134,231,0.4)] transition-transform group-hover:scale-105">
-              <Layers className="w-4 h-4" />
+            <div className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center bg-white/10 p-1 shadow-[0_0_12px_rgba(51,134,231,0.35)] transition-transform group-hover:scale-105">
+              <Image
+                src="/logo-icon.png"
+                alt="CatalogForge Logo"
+                width={36}
+                height={36}
+                className="w-full h-full object-contain"
+                priority
+              />
             </div>
             <span className="font-black text-lg tracking-tight hidden sm:inline-block">
               <span className="text-[#3386E7]">Catalog</span>
@@ -255,8 +263,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               {/* Mobile Sheet Header */}
               <div className="h-16 px-4 flex items-center justify-between border-b border-[#1F2937]">
                 <Link href="/dashboard" className="flex items-center gap-2.5" onClick={() => setMobileMenuOpen(false)}>
-                  <div className="w-7 h-7 rounded-lg bg-[#3386E7] text-white flex items-center justify-center">
-                    <Layers className="w-3.5 h-3.5" />
+                  <div className="w-8 h-8 rounded-lg overflow-hidden bg-white/10 p-0.5 flex items-center justify-center">
+                    <Image
+                      src="/logo-icon.png"
+                      alt="CatalogForge Logo"
+                      width={32}
+                      height={32}
+                      className="w-full h-full object-contain"
+                    />
                   </div>
                   <span className="font-black text-base text-white">
                     <span className="text-[#3386E7]">Catalog</span>Forge

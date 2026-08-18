@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Layers,
   ArrowRight,
@@ -32,12 +33,22 @@ export default function MarketingLandingPage() {
   return (
     <div className="min-h-screen flex flex-col bg-[#F8FAFC] text-[#000000] overflow-x-hidden">
       {/* ─────────────────────────────────────────────────────────────
-       * Black Responsive Header with CatalogForge Brand Name (SVG logo removed)
+       * Black Responsive Header with CatalogForge Brand Logo & Name
        * ───────────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-50 bg-[#000000] border-b border-[#1E293B] shadow-2xl backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 sm:h-24 flex items-center justify-between">
-          {/* Brand Name Text Link (SVG icon removed) */}
-          <Link href="/" className="flex flex-col group py-1">
+          {/* Brand Logo & Name */}
+          <Link href="/" className="flex items-center gap-3 group py-1">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl overflow-hidden bg-white/10 p-1 flex items-center justify-center shadow-[0_0_16px_rgba(51,134,231,0.4)] group-hover:scale-105 transition-transform">
+              <Image
+                src="/logo-icon.png"
+                alt="CatalogForge Logo"
+                width={44}
+                height={44}
+                className="w-full h-full object-contain"
+                priority
+              />
+            </div>
             <span className="font-black text-xl sm:text-2xl tracking-tight leading-none group-hover:opacity-90 transition-opacity">
               <span className="text-[#3386E7]">Catalog</span>
               <span className="text-[#FFFFFF]">Forge</span>
@@ -452,8 +463,14 @@ export default function MarketingLandingPage() {
       <footer className="mt-auto py-8 sm:py-10 bg-[#000000] border-t border-[#1E293B] text-center text-xs text-gray-400 font-medium">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-[#3386E7] text-white flex items-center justify-center font-bold text-xs shadow-[0_0_12px_rgba(51,134,231,0.35)]">
-              <Layers className="w-4 h-4" />
+            <div className="w-8 h-8 rounded-xl overflow-hidden bg-white/10 p-0.5 flex items-center justify-center shadow-[0_0_12px_rgba(51,134,231,0.35)]">
+              <Image
+                src="/logo-icon.png"
+                alt="CatalogForge Logo"
+                width={32}
+                height={32}
+                className="w-full h-full object-contain"
+              />
             </div>
             <span className="font-extrabold text-base tracking-tight">
               <span className="text-[#3386E7]">Catalog</span>
