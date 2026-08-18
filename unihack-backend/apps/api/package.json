@@ -17,6 +17,7 @@
     "@fastify/multipart": "^8.1.0",
     "@fastify/swagger": "^8.14.0",
     "@fastify/swagger-ui": "^3.0.0",
+    "@types/pdf-parse": "^1.1.5",
     "@unihack/contracts": "*",
     "csv-parse": "^5.5.5",
     "dotenv": "^16.4.5",
@@ -24,6 +25,7 @@
     "fastify-plugin": "^4.5.1",
     "firebase-admin": "^12.0.0",
     "mssql": "^10.0.2",
+    "pdf-parse": "^2.4.5",
     "xlsx": "^0.18.5",
     "zod": "^3.22.4"
   },

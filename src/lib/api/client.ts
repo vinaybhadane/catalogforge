@@ -52,10 +52,11 @@ export class ApiClient {
     this.getAccessToken = provider;
   }
 
-  private async getHeaders(customHeaders?: HeadersInit): Promise<Headers> {
+  private async getHeaders(body?: unknown, customHeaders?: HeadersInit): Promise<Headers> {
     const headers = new Headers(customHeaders);
+    const isFormData = typeof FormData !== "undefined" && body instanceof FormData;
 
-    if (!headers.has("Content-Type")) {
+    if (!isFormData && !headers.has("Content-Type") && typeof body !== "string") {
       headers.set("Content-Type", "application/json");
     }
 
@@ -107,14 +108,25 @@ export class ApiClient {
       customSignal.addEventListener("abort", () => controller.abort());
     }
 
-    const headers = await this.getHeaders(customHeaders);
+    const isFormData = typeof FormData !== "undefined" && body instanceof FormData;
+    const headers = await this.getHeaders(body, customHeaders);
+    
+    // If FormData, let the browser/fetch automatically assign the multipart boundary
+    if (isFormData) {
+      headers.delete("Content-Type");
+    }
+
     const url = this.buildUrl(endpoint, params);
 
     try {
       const response = await fetch(url, {
         ...fetchOptions,
         headers,
-        body: body ? JSON.stringify(body) : undefined,
+        body: isFormData
+          ? (body as BodyInit)
+          : body !== undefined
+          ? (typeof body === "string" ? body : JSON.stringify(body))
+          : undefined,
         signal: controller.signal,
       });
 

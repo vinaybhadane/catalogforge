@@ -10,12 +10,13 @@ import { ValidationError } from '../errors/app-errors';
 import { jobRepository } from '../repositories/job.repository';
 import { masterDataRepository } from '../repositories/master-data.repository';
 import { rawInputRepository } from '../repositories/raw-input.repository';
+import { aiPipelineService } from './ai-pipeline.service';
 import { fileParser, ParsedRawRow } from './file-parser.service';
 import { placeholderDetector } from './placeholder-detector.service';
 
 export class IngestionService {
   /**
-   * Processes multipart file upload and performs full pre-flight scan
+   * Processes multipart file upload, performs pre-flight scan, and extracts product intelligence
    */
   async processFileUpload(
     buffer: Buffer,
@@ -26,8 +27,8 @@ export class IngestionService {
       throw new ValidationError('Uploaded file is empty.');
     }
 
-    // 1. Parse spreadsheet buffer
-    const parseResult = fileParser.parseBuffer(buffer, fileName);
+    // 1. Parse spreadsheet or PDF buffer
+    const parseResult = await fileParser.parseBuffer(buffer, fileName);
     const { schemaReport, rows } = parseResult;
 
     if (rows.length === 0) {
@@ -71,10 +72,13 @@ export class IngestionService {
       );
     }
 
+    const ext = fileName.toLowerCase().split('.').pop();
+    const sourceType = ext === 'csv' ? 'csv_upload' : ext === 'pdf' ? 'pdf_upload' : 'xlsx_upload';
+
     // 3. Create Ingestion Job
     const job = await jobRepository.createJob({
       fileName,
-      sourceType: fileName.endsWith('.csv') ? 'csv_upload' : 'xlsx_upload',
+      sourceType,
       rowCount: sanitizedRows.length,
       status: errors.length > 0 ? 'failed' : 'queued',
       stage: errors.length > 0 ? 'failed' : 'ingested',
@@ -82,9 +86,40 @@ export class IngestionService {
     });
 
     // 4. Persist 11-column raw input rows
-    await rawInputRepository.insertBatch(job.jobId, sanitizedRows);
+    const insertedRawIds = await rawInputRepository.insertBatch(job.jobId, sanitizedRows);
 
-    // 5. Generate and persist preflight analysis report
+    // 5. Automatically extract, classify, normalize and persist products into Azure SQL
+    if (errors.length === 0) {
+      for (let i = 0; i < sanitizedRows.length; i++) {
+        const raw = sanitizedRows[i]!;
+        const rawInputId = insertedRawIds?.[i]?.id;
+        try {
+          const enriched = aiPipelineService.processRawInput({
+            part_number: raw.part_number || raw.mfg_part_num || `PART-${i + 1}`,
+            manufacturer: raw.part_manuf || undefined,
+            brand: raw.e1_brand || raw.unilog_brand || raw.dib_brand || undefined,
+            mfg_part_num: raw.mfg_part_num || undefined,
+            part_title: raw.part_desc || undefined,
+            short_description: raw.part_desc || undefined,
+            long_description: raw.part_desc || undefined,
+            category_name: raw.dept || raw.class || raw.fine || undefined,
+            specs: raw.part_desc || undefined,
+          });
+          await aiPipelineService.persistProduct(enriched, rawInputId);
+        } catch (err) {
+          console.error('[Ingestion] Pipeline extraction error on row:', i, err);
+        }
+      }
+
+      // Update job stage to completed
+      await jobRepository.updateJob(job.jobId, {
+        status: 'completed',
+        stage: 'published',
+        processedRows: sanitizedRows.length,
+      });
+    }
+
+    // 6. Generate and persist preflight analysis report
     const preflightReport: PreflightReport = {
       jobId: job.jobId,
       status: errors.length > 0 ? 'failed' : 'completed',

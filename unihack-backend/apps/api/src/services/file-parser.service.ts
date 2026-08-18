@@ -276,9 +276,85 @@ export class FileParserService {
   }
 
   /**
+   * Parses PDF document buffer extracting part specifications and catalog rows
+   */
+  async parsePdf(buffer: Buffer, fileName: string): Promise<ParseResult> {
+    try {
+      // Dynamic require to avoid startup overhead
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const pdfParse = require('pdf-parse');
+      const data = await pdfParse(buffer);
+      const text = (data.text || '').trim();
+
+      const lines = text
+        .split(/\r\n|\n/)
+        .map((l: string) => l.trim())
+        .filter((l: string) => l.length > 0);
+
+      const rows: ParsedRawRow[] = [];
+      const partNumRegex = /(?:part\s*(?:no|number|#)?|catalog\s*(?:no|number|#)?|model\s*(?:no|number|#)?|cat\s*#?)[:\s]+([A-Z0-9\-_./]{3,30})/gi;
+      let match: RegExpExecArray | null;
+      const foundPartNums = new Set<string>();
+
+      while ((match = partNumRegex.exec(text)) !== null) {
+        const pn = match[1]?.trim();
+        if (pn && pn.length >= 3 && !foundPartNums.has(pn.toUpperCase())) {
+          foundPartNums.add(pn.toUpperCase());
+          rows.push({
+            part_number: pn,
+            dept: 'Industrial & Electrical',
+            class: 'Technical Datasheet',
+            fine: 'PDF Extraction',
+            sku_my_part_number: pn,
+            mfg_part_num: pn,
+            part_desc: lines.slice(0, 3).join(' - ').substring(0, 150) || `Datasheet Specification for ${pn}`,
+            e1_brand: null,
+            unilog_brand: null,
+            dib_brand: null,
+            part_manuf: null,
+          });
+        }
+      }
+
+      // Fallback: If no regex match, extract page title and top lines
+      if (rows.length === 0) {
+        const docTitle = fileName.replace(/\.pdf$/i, '').replace(/[-_]/g, ' ');
+        const cleanPn = fileName.replace(/\.pdf$/i, '').toUpperCase().substring(0, 40);
+        rows.push({
+          part_number: cleanPn,
+          dept: 'Catalog Document',
+          class: 'Manufacturer Datasheet',
+          fine: 'PDF Extraction',
+          sku_my_part_number: cleanPn,
+          mfg_part_num: cleanPn,
+          part_desc: lines.slice(0, 4).join(' ').substring(0, 150) || docTitle,
+          e1_brand: null,
+          unilog_brand: null,
+          dib_brand: null,
+          part_manuf: null,
+        });
+      }
+
+      return {
+        schemaReport: {
+          valid: true,
+          detectedColumns: ['part_number', 'part_desc', 'mfg_part_num', 'class'],
+          missingColumns: ['e1_brand', 'unilog_brand', 'dept'],
+          extraColumns: [],
+        },
+        rows,
+        totalRows: rows.length,
+      };
+    } catch (err) {
+      if (err instanceof ValidationError) throw err;
+      throw new ValidationError(`Failed to parse PDF document: ${(err as Error).message}`);
+    }
+  }
+
+  /**
    * Unified parser dispatcher based on filename extension
    */
-  parseBuffer(buffer: Buffer, fileName: string): ParseResult {
+  async parseBuffer(buffer: Buffer, fileName: string): Promise<ParseResult> {
     const ext = fileName.toLowerCase().split('.').pop();
     if (ext === 'csv') {
       return this.parseCsv(buffer);
@@ -286,7 +362,10 @@ export class FileParserService {
     if (ext === 'xlsx' || ext === 'xls') {
       return this.parseXlsx(buffer);
     }
-    throw new ValidationError(`Unsupported file extension '.${ext}'. Allowed: .csv, .xlsx, .xls`);
+    if (ext === 'pdf') {
+      return this.parsePdf(buffer, fileName);
+    }
+    throw new ValidationError(`Unsupported file extension '.${ext}'. Allowed: .csv, .xlsx, .xls, .pdf`);
   }
 }
 
