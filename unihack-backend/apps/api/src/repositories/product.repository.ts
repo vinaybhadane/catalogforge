@@ -306,6 +306,80 @@ export class ProductRepository {
 
     return { items, total };
   }
+
+  /**
+   * Updates product fields, increments version, and records change to audit_log
+   */
+  async updateProduct(
+    productId: string,
+    updates: Partial<Product> & { status?: ProductStatus },
+    reviewerUid: string,
+    reason?: string,
+  ): Promise<Product | null> {
+    const pool = getSqlPool();
+    if (!pool || !pool.connected) {
+      const existing = inMemoryProducts.get(productId);
+      if (!existing) return null;
+      const updated: Product = {
+        ...existing,
+        ...updates,
+        status: (updates.status as ProductStatus) || existing.status,
+        version: (existing.version || 1) + 1,
+        updatedAt: new Date().toISOString(),
+      };
+      inMemoryProducts.set(productId, updated);
+      return updated;
+    }
+
+    const request = pool.request();
+    request.input('product_id', sql.BigInt, productId);
+    request.input('reviewer', sql.VarChar(255), reviewerUid);
+    request.input('reason', sql.NVarChar(1000), reason || 'Reviewer correction');
+
+    if (updates.status) {
+      request.input('status', sql.VarChar(30), updates.status);
+      await request.query(`
+        UPDATE dbo.product
+        SET status = @status, version = version + 1, updated_at = SYSUTCDATETIME()
+        WHERE product_id = @product_id;
+
+        INSERT INTO dbo.audit_log (product_id, reviewer, action, final_value, reason, timestamp)
+        VALUES (@product_id, @reviewer, 'STATUS_UPDATE', @status, @reason, SYSUTCDATETIME());
+      `);
+    }
+
+    if (updates.manufacturerName) {
+      request.input('mfg', sql.VarChar(255), updates.manufacturerName);
+      await request.query(`
+        UPDATE dbo.product SET manufacturer_name = @mfg, updated_at = SYSUTCDATETIME() WHERE product_id = @product_id;
+        INSERT INTO dbo.audit_log (product_id, reviewer, action, field_name, final_value, reason, timestamp)
+        VALUES (@product_id, @reviewer, 'EDIT_FIELD', 'manufacturerName', @mfg, @reason, SYSUTCDATETIME());
+      `);
+    }
+
+    if (updates.descriptions?.shortDescription) {
+      request.input('short_desc', sql.VarChar(150), updates.descriptions.shortDescription);
+      await request.query(`
+        UPDATE dbo.product SET short_desc = @short_desc, updated_at = SYSUTCDATETIME() WHERE product_id = @product_id;
+        INSERT INTO dbo.audit_log (product_id, reviewer, action, field_name, final_value, reason, timestamp)
+        VALUES (@product_id, @reviewer, 'EDIT_FIELD', 'shortDesc', @short_desc, @reason, SYSUTCDATETIME());
+      `);
+    }
+
+    return this.findById(productId);
+  }
+
+  /**
+   * Retrieves products in review queue sorted by lowest confidence / highest priority
+   */
+  async getReviewQueue(limit = 50, offset = 0): Promise<{ items: Product[]; total: number }> {
+    return this.listProducts({
+      status: 'pending_review' as ProductStatus,
+      page: Math.floor(offset / limit) + 1,
+      pageSize: limit,
+    });
+  }
 }
 
 export const productRepository = new ProductRepository();
+

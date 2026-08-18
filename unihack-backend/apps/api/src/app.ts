@@ -11,10 +11,14 @@ import { corsPlugin } from './plugins/cors.plugin';
 import { dbPlugin } from './plugins/db.plugin';
 import { multipartPlugin } from './plugins/multipart.plugin';
 import { swaggerPlugin } from './plugins/swagger.plugin';
+import { analyticsRoutes } from './routes/analytics/analytics.routes';
 import { authRoutes } from './routes/auth/auth.routes';
 import { configRoutes } from './routes/config/config.routes';
 import { healthRoutes } from './routes/health/health.routes';
 import { ingestionRoutes } from './routes/ingestion/ingestion.routes';
+import { masterDataRoutes } from './routes/master-data/master-data.routes';
+import { productRoutes } from './routes/products/product.routes';
+import { reviewRoutes } from './routes/reviews/review.routes';
 import { CurrentUserResponseSchema } from './schemas/auth.schemas';
 import {
   ApiErrorResponseSchema,
@@ -27,6 +31,11 @@ import {
   IngestionUploadResponseSchema,
   PreflightReportSchema,
 } from './schemas/ingestion.schemas';
+import {
+  ProductDetailResponseSchema,
+  ProductListResponseSchema,
+  ProductSchema,
+} from './schemas/product.schemas';
 
 export async function buildApp(opts: FastifyServerOptions = {}): Promise<FastifyInstance> {
   const app = fastify({
@@ -49,6 +58,9 @@ export async function buildApp(opts: FastifyServerOptions = {}): Promise<Fastify
   app.addSchema(PreflightReportSchema);
   app.addSchema(IngestionJobDetailSchema);
   app.addSchema(BackendConfigResponseSchema);
+  app.addSchema(ProductSchema);
+  app.addSchema(ProductListResponseSchema);
+  app.addSchema(ProductDetailResponseSchema);
 
   // 3. Register core plugins
   await app.register(corsPlugin);
@@ -76,6 +88,10 @@ export async function buildApp(opts: FastifyServerOptions = {}): Promise<Fastify
   await app.register(authRoutes, { prefix: '/api/v1/auth' });
   await app.register(ingestionRoutes, { prefix: '/api/v1/ingestion' });
   await app.register(configRoutes, { prefix: '/api/v1/config' });
+  await app.register(productRoutes, { prefix: '/api/v1/products' });
+  await app.register(reviewRoutes, { prefix: '/api/v1/reviews' });
+  await app.register(masterDataRoutes, { prefix: '/api/v1/master-data' });
+  await app.register(analyticsRoutes, { prefix: '/api/v1/analytics' });
 
   return app;
 }
