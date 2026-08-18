@@ -151,6 +151,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (auth.currentUser) {
         return auth.currentUser.getIdToken();
       }
+      if (process.env.NODE_ENV === "development") {
+        return "dev-token";
+      }
       return null;
     });
 
