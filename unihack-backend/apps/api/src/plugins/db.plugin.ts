@@ -65,7 +65,11 @@ const dbPluginAsync: FastifyPluginAsync = async (fastify: FastifyInstance) => {
 
   try {
     fastify.log.info('Initializing Azure SQL connection pool...');
-    activePool = await sql.connect(dbConfig as SqlConfig);
+    const connectPromise = sql.connect(dbConfig as SqlConfig);
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Azure SQL connection timed out (fallback to offline/mock mode)')), 3500)
+    );
+    activePool = await Promise.race([connectPromise, timeoutPromise]);
     fastify.log.info('Azure SQL connection pool successfully established.');
 
     fastify.decorate('sql', activePool);
@@ -96,7 +100,7 @@ const dbPluginAsync: FastifyPluginAsync = async (fastify: FastifyInstance) => {
       }
     });
   } catch (err) {
-    fastify.log.error(err, 'Failed to connect to Azure SQL Database at startup. Server will continue with degraded DB status.');
+    fastify.log.warn((err as Error).message);
     fastify.decorate('sql', null);
     fastify.decorate('isDbConnected', () => false);
     fastify.decorate('pingDb', async () => ({
