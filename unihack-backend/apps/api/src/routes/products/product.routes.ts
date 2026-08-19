@@ -1,5 +1,5 @@
 /**
- * Fastify Routes for Products Management & Live Web Enrichment
+ * Fastify Routes for Products Management, Live Web Enrichment & 252-Column Delivery Export
  */
 
 import { ProductFilterQuery } from '@unihack/contracts';
@@ -8,6 +8,7 @@ import { NotFoundError, ValidationError } from '../../errors/app-errors';
 import { authenticate } from '../../middleware/auth.middleware';
 import { requireRole } from '../../middleware/rbac.middleware';
 import { productRepository } from '../../repositories/product.repository';
+import { deliveryExporterService } from '../../services/delivery-exporter.service';
 import {
   GetProductByIdRouteSchema,
   ListProductsRouteSchema,
@@ -67,6 +68,36 @@ export const productRoutes: FastifyPluginAsync = async (fastify: FastifyInstance
 
       const intelligence = await geminiSearchService.searchProduct(partNumber, manufacturer);
       return reply.status(200).send(intelligence);
+    },
+  );
+
+  // GET /api/v1/products/export - Export products in exact 252-column Unihack Delivery Format (.xlsx / .csv)
+  fastify.get<{
+    Querystring: ProductFilterQuery & { format?: 'xlsx' | 'csv'; limit?: number; jobId?: string };
+  }>(
+    '/export',
+    {
+      preHandler: [authenticate],
+    },
+    async (request, reply) => {
+      const query = request.query;
+      const format = query.format === 'csv' ? 'csv' : 'xlsx';
+
+      const contexts = await productRepository.getProductsForExport(query);
+
+      if (format === 'csv') {
+        const buffer = deliveryExporterService.exportToCsv(contexts);
+        return reply
+          .header('Content-Type', 'text/csv; charset=utf-8')
+          .header('Content-Disposition', 'attachment; filename="CatalogForge_Delivery_Export.csv"')
+          .send(buffer);
+      }
+
+      const buffer = deliveryExporterService.exportToExcel(contexts);
+      return reply
+        .header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        .header('Content-Disposition', 'attachment; filename="CatalogForge_Delivery_Export.xlsx"')
+        .send(buffer);
     },
   );
 

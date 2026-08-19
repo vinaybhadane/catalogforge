@@ -10,6 +10,9 @@ import {
   UploadCloud,
   Search,
   Filter,
+  Download,
+  FileSpreadsheet,
+  Loader2,
 } from "lucide-react";
 import { apiClient, ApiClientError } from "@/lib/api/client";
 import { Product, PaginatedResponse } from "@/types";
@@ -89,6 +92,30 @@ export default function ProductsPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchTimer, setSearchTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const [isExporting, setIsExporting] = useState<"xlsx" | "csv" | null>(null);
+
+  const handleExportDelivery = async (format: "xlsx" | "csv" = "xlsx") => {
+    try {
+      setIsExporting(format);
+      const params: Record<string, string | number> = { format };
+      if (statusFilter !== "all") params.status = statusFilter;
+      if (search.trim()) params.search = search.trim();
+
+      const blob = await apiClient.downloadBlob("/products/export", { params });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `CatalogForge_Delivery_Export.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch {
+      alert("Failed to export delivery file. Please try again.");
+    } finally {
+      setIsExporting(null);
+    }
+  };
 
   const loadProducts = useCallback(async (p: number, q: string, status: string) => {
     setFetchState("loading");
@@ -138,20 +165,36 @@ export default function ProductsPage() {
       <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-[#3386E7] text-white rounded-xl flex items-center justify-center text-white">
+            <div className="w-12 h-12 rounded-xl bg-[#3386E7] text-white flex items-center justify-center">
               <Package className="w-6 h-6" />
             </div>
             <div>
               <h1 className="text-2xl font-extrabold text-[#000000] tracking-tight">Product Repository</h1>
-              <p className="text-xs text-[#64748B] font-bold mt-0.5">Browse, search, and inspect enriched catalog records.</p>
+              <p className="text-xs text-[#64748B] font-bold mt-0.5">Browse, search, and inspect enriched catalog records in the 252-column delivery format.</p>
             </div>
           </div>
-          <Link
-            href="/upload"
-            className="bg-[#3386E7] text-white rounded-xl flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all"
-          >
-            <UploadCloud className="w-4 h-4" /> Ingest Data
-          </Link>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => handleExportDelivery("xlsx")}
+              disabled={isExporting !== null}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex items-center gap-2 px-4 py-2.5 text-xs font-bold transition-all disabled:opacity-50 shadow-sm"
+              title="Download full catalog in 252-column Expected Output Delivery Format (.xlsx)"
+            >
+              {isExporting === "xlsx" ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <FileSpreadsheet className="w-4 h-4" />
+              )}
+              Export Delivery Format (.xlsx)
+            </button>
+            <Link
+              href="/upload"
+              className="bg-[#3386E7] hover:bg-[#2563EB] text-white rounded-xl flex items-center gap-2 px-5 py-2.5 text-xs font-bold transition-all"
+            >
+              <UploadCloud className="w-4 h-4" /> Ingest Data
+            </Link>
+          </div>
         </div>
       </div>
 

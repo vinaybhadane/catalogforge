@@ -39,6 +39,7 @@ export default function UploadPage() {
     progress,
     preflightResult,
     errorMessage,
+    jobId,
     reset,
     submitUpload,
     proceedToJobDetail,
@@ -509,6 +510,7 @@ export default function UploadPage() {
         <PreflightSummary
           result={preflightResult}
           state={uploadState}
+          jobId={jobId}
           onProceed={proceedToJobDetail}
           onReset={reset}
         />

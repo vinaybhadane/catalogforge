@@ -201,6 +201,32 @@ export class ApiClient {
   public delete<T>(endpoint: string, options?: Omit<RequestOptions, "method">): Promise<T> {
     return this.request<T>(endpoint, { ...options, method: "DELETE" });
   }
+
+  public async downloadBlob(endpoint: string, options: RequestOptions = {}): Promise<Blob> {
+    const { params, headers: customHeaders, timeoutMs = this.defaultTimeoutMs } = options;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    const headers = await this.getHeaders(undefined, customHeaders);
+    headers.delete("Accept");
+    const url = this.buildUrl(endpoint, params);
+
+    try {
+      const response = await fetch(url, {
+        method: "GET",
+        headers,
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (!response.ok) {
+        throw new ApiClientError(response.status, `HTTP_${response.status}`, "Failed to download export file.");
+      }
+      return await response.blob();
+    } catch (err) {
+      clearTimeout(timeoutId);
+      if (err instanceof ApiClientError) throw err;
+      throw new ApiClientError(500, "NETWORK_ERROR", err instanceof Error ? err.message : "Download error");
+    }
+  }
 }
 
 // Export singleton instance

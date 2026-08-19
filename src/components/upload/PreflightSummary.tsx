@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React from "react";
 import {
@@ -12,13 +12,17 @@ import {
   ArrowRight,
   RefreshCw,
   Info,
+  FileSpreadsheet,
+  Loader2,
 } from "lucide-react";
+import { apiClient } from "@/lib/api/client";
 import { PreflightScanResult, UploadState } from "@/hooks/useUpload";
 import { cn } from "@/lib/utils";
 
 interface PreflightSummaryProps {
   result: PreflightScanResult | null;
   state: UploadState;
+  jobId?: string | null;
   onProceed: () => void;
   onReset: () => void;
 }
@@ -26,13 +30,37 @@ interface PreflightSummaryProps {
 export const PreflightSummary: React.FC<PreflightSummaryProps> = ({
   result,
   state,
+  jobId,
   onProceed,
   onReset,
 }) => {
+  const [isExporting, setIsExporting] = React.useState(false);
+
   if (!result) return null;
 
   const isRejected = state === "rejected" || !result.passedPreflight;
   const hasWarnings = state === "completed_with_warnings" || result.warnings.length > 0;
+
+  const handleExportDelivery = async () => {
+    try {
+      setIsExporting(true);
+      const params: Record<string, string> = { format: "xlsx" };
+      if (jobId) params.jobId = jobId;
+      const blob = await apiClient.downloadBlob("/products/export", { params });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `CatalogForge_Delivery_Export_${jobId || "latest"}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch {
+      alert("Failed to export delivery file. Please try again.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   return (
     <div className="bg-white border border-[#E2E8F0] rounded-2xl overflow-hidden">
@@ -196,7 +224,7 @@ export const PreflightSummary: React.FC<PreflightSummaryProps> = ({
       </div>
 
       {/* ── Action Footer ── */}
-      <div className="px-6 py-4 border-t border-[#E2E8F0] bg-[#FAFAFA] flex items-center justify-between">
+      <div className="px-6 py-4 border-t border-[#E2E8F0] bg-[#FAFAFA] flex items-center justify-between flex-wrap gap-3">
         <button
           type="button"
           onClick={onReset}
@@ -207,14 +235,26 @@ export const PreflightSummary: React.FC<PreflightSummaryProps> = ({
         </button>
 
         {!isRejected && (
-          <button
-            type="button"
-            onClick={onProceed}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#3386E7] hover:bg-[#2563EB] text-white text-sm font-semibold transition-colors shadow-sm"
-          >
-            Proceed to Batch Processing
-            <ArrowRight className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleExportDelivery}
+              disabled={isExporting}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors shadow-sm disabled:opacity-50"
+              title="Download 252-column Expected Output Delivery Format (.xlsx)"
+            >
+              {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSpreadsheet className="w-4 h-4" />}
+              Export Delivery Format (.xlsx)
+            </button>
+            <button
+              type="button"
+              onClick={onProceed}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#3386E7] hover:bg-[#2563EB] text-white text-sm font-semibold transition-colors shadow-sm"
+            >
+              View Processed Pipeline
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
         )}
       </div>
     </div>
