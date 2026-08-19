@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   LayoutDashboard,
   UploadCloud,
@@ -65,9 +65,9 @@ const NAV_SECTIONS: NavSection[] = [
   },
 ];
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, signOut } = useAuth();
   const [collapsed, setCollapsed] = useState<boolean>(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
@@ -89,37 +89,47 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     if (pathname.includes("/products")) return "Product Master Catalog";
     if (pathname.includes("/analytics")) return "Catalog Intelligence & Analytics";
     if (pathname.includes("/audit")) return "Governance Audit Logs";
-    if (pathname.includes("/settings")) return "System & Governance Settings";
+    if (pathname.includes("/settings")) {
+      const tab = searchParams?.get("tab");
+      if (tab === "access") return "Team Management & Access";
+      if (tab === "notifications") return "Notification Alerts";
+      return "System & Governance Settings";
+    }
     if (pathname.includes("/profile")) return "Account Profile";
     return "Enterprise Workspace";
   })();
 
   const isItemActive = (href: string) => {
-    if (typeof window === "undefined") {
-      return pathname === href.split("?")[0];
+    const [targetPath, targetQuery] = href.split("?");
+    if (targetQuery) {
+      const targetParams = new URLSearchParams(targetQuery);
+      const targetTab = targetParams.get("tab");
+      const currentTab = searchParams?.get("tab");
+      return pathname === targetPath && currentTab === targetTab;
     }
-    const currentFullUrl = pathname + window.location.search;
-    if (href.includes("?")) {
-      const queryPart = href.split("?")[1];
-      return pathname === href.split("?")[0] && currentFullUrl.includes(queryPart);
+    if (href === "/settings") {
+      const currentTab = searchParams?.get("tab");
+      return pathname === "/settings" && (!currentTab || currentTab === "general");
     }
     if (href === "/upload") {
-      return pathname === "/upload" && !currentFullUrl.includes("tab=ai-search");
+      const currentTab = searchParams?.get("tab");
+      return pathname === "/upload" && currentTab !== "ai-search";
     }
     if (href === "/products") {
-      return pathname === "/products" && !currentFullUrl.includes("status=needs_review");
+      const currentStatus = searchParams?.get("status");
+      return pathname === "/products" && currentStatus !== "needs_review";
     }
-    return pathname === href || pathname.startsWith(`${href}/`);
+    return pathname === href || (href !== "/dashboard" && pathname.startsWith(`${href}/`));
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F0F2F5] text-[#0F172A]">
+    <div className="min-h-screen flex flex-col bg-[#F0F2F5] text-[#0F172A]" suppressHydrationWarning>
 
       {/* ── Enterprise B2B Top Header (Strictly Responsive) ─────────── */}
-      <header className="sticky top-0 z-40 h-16 bg-[#0B0F17] border-b border-[#1E293B] px-3 sm:px-6 flex items-center justify-between shrink-0 shadow-lg select-none">
+      <header className="sticky top-0 z-40 h-16 bg-[#0B0F17] border-b border-[#1E293B] px-3 sm:px-6 flex items-center justify-between shrink-0 shadow-lg select-none" suppressHydrationWarning>
         
         {/* Left: Mobile Toggle + Brand Logo + Breadcrumb */}
-        <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0" suppressHydrationWarning>
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -131,7 +141,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </button>
 
           {/* Logo & Brand Identity using Actual Logo Image */}
-          <Link href="/dashboard" className="flex items-center gap-2 sm:gap-2.5 group py-1 shrink-0">
+          <Link href="/dashboard" className="flex items-center gap-2 sm:gap-2.5 group py-1 shrink-0" suppressHydrationWarning>
             <img
               src="/logo-icon.png"
               alt="CatalogForge Logo"
@@ -147,18 +157,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="hidden sm:block w-px h-5 bg-slate-800 shrink-0" />
 
           {/* Current Section Name */}
-          <div className="hidden sm:flex items-center text-xs font-semibold text-slate-400 truncate">
+          <div className="hidden sm:flex items-center text-xs font-semibold text-slate-400 truncate" suppressHydrationWarning>
             <span>{currentSectionName}</span>
           </div>
         </div>
 
         {/* Right: Quick Ingest CTA, Notifications, and User Menu */}
-        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0" suppressHydrationWarning>
           
           {/* Quick Action: Ingest Dataset CTA */}
           <Link
             href="/upload"
             className="inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold rounded-xl transition shadow-sm border border-blue-400/30"
+            suppressHydrationWarning
           >
             <Plus className="w-3.5 h-3.5" />
             <span className="hidden xs:inline sm:inline">Ingest Data</span>
@@ -180,17 +191,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="w-px h-5 bg-slate-800 mx-0.5 hidden xs:block" />
 
           {/* User Profile Dropdown Pill */}
-          <div className="relative">
+          <div className="relative" suppressHydrationWarning>
             <button
               type="button"
               onClick={() => setUserDropdownOpen(!userDropdownOpen)}
               className="flex items-center gap-1.5 sm:gap-2 p-1 sm:pl-1.5 sm:pr-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 transition-colors text-left group"
+              suppressHydrationWarning
             >
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] text-white flex items-center justify-center text-xs font-black ring-1 ring-blue-400/30 shadow-sm shrink-0">
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] text-white flex items-center justify-center text-xs font-black ring-1 ring-blue-400/30 shadow-sm shrink-0" suppressHydrationWarning>
                 {userInitial}
               </div>
-              <div className="hidden md:flex flex-col min-w-0 max-w-[110px]">
-                <span className="text-xs font-bold text-slate-200 truncate leading-none">
+              <div className="hidden md:flex flex-col min-w-0 max-w-[110px]" suppressHydrationWarning>
+                <span className="text-xs font-bold text-slate-200 truncate leading-none" suppressHydrationWarning>
                   {userLabel.split("@")[0]}
                 </span>
                 <span className="text-[9px] text-slate-400 truncate leading-none mt-1">
@@ -207,7 +219,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   className="fixed inset-0 z-40"
                   onClick={() => setUserDropdownOpen(false)}
                 />
-                <div className="absolute right-0 mt-2 w-52 bg-[#0F172A] border border-slate-800 rounded-2xl p-2 shadow-2xl z-50 space-y-1 text-xs text-slate-300">
+                <div className="absolute right-0 mt-2 w-52 bg-[#0F172A] border border-slate-800 rounded-2xl p-2 shadow-2xl z-50 space-y-1 text-xs text-slate-300" suppressHydrationWarning>
                   <div className="px-3 py-2 border-b border-slate-800">
                     <p className="font-bold text-white truncate">{userLabel}</p>
                     <p className="text-[10px] text-slate-400 mt-0.5">Administrator Account</p>
@@ -216,14 +228,25 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     href="/profile"
                     onClick={() => setUserDropdownOpen(false)}
                     className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-slate-800 text-slate-200 transition"
+                    suppressHydrationWarning
                   >
                     <User className="w-3.5 h-3.5 text-blue-400" />
                     <span>User Profile</span>
                   </Link>
                   <Link
+                    href="/settings?tab=access"
+                    onClick={() => setUserDropdownOpen(false)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-slate-800 text-slate-200 transition"
+                    suppressHydrationWarning
+                  >
+                    <Users className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>Team Management</span>
+                  </Link>
+                  <Link
                     href="/settings"
                     onClick={() => setUserDropdownOpen(false)}
                     className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-slate-800 text-slate-200 transition"
+                    suppressHydrationWarning
                   >
                     <Settings className="w-3.5 h-3.5 text-slate-400" />
                     <span>Workspace Settings</span>
@@ -232,6 +255,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     href="/audit"
                     onClick={() => setUserDropdownOpen(false)}
                     className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-slate-800 text-slate-200 transition"
+                    suppressHydrationWarning
                   >
                     <FileText className="w-3.5 h-3.5 text-emerald-400" />
                     <span>Governance Audit Logs</span>
@@ -244,6 +268,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                       signOut();
                     }}
                     className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-rose-500/10 text-rose-400 transition text-left font-bold"
+                    suppressHydrationWarning
                   >
                     <LogOut className="w-3.5 h-3.5" />
                     <span>Sign Out</span>
@@ -262,6 +287,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             "hidden md:flex flex-col bg-[#0B0F17] border-r border-[#1E293B] transition-all duration-300 select-none relative z-30 shrink-0",
             collapsed ? "w-[72px]" : "w-[245px] lg:w-[250px]"
           )}
+          suppressHydrationWarning
         >
           {/* Nav Sections */}
           <div className="flex-1 overflow-y-auto py-5 space-y-4 px-3 custom-scrollbar">
@@ -293,6 +319,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                             : "text-slate-400 hover:text-white hover:bg-slate-900/80 border border-transparent hover:border-slate-800",
                           collapsed && "justify-center px-1.5"
                         )}
+                        suppressHydrationWarning
                       >
                         {/* Left Active Accent Pill */}
                         {isActive && !collapsed && (
@@ -331,18 +358,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           {/* Sidebar Footer: User mini card + Collapse Toggle */}
-          <div className="border-t border-[#1E293B] p-3 space-y-2 bg-[#0B0F17]">
+          <div className="border-t border-[#1E293B] p-3 space-y-2 bg-[#0B0F17]" suppressHydrationWarning>
             {/* User Mini Card */}
             {!collapsed && (
-              <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-[#141B2D] border border-slate-800/80">
+              <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-[#141B2D] border border-slate-800/80" suppressHydrationWarning>
                 <div className="relative">
-                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] text-white flex items-center justify-center text-xs font-black shrink-0 shadow-sm">
+                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] text-white flex items-center justify-center text-xs font-black shrink-0 shadow-sm" suppressHydrationWarning>
                     {userInitial}
                   </div>
                   <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-500 rounded-full ring-2 ring-[#141B2D]" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-bold text-slate-200 truncate leading-none">{userLabel.split("@")[0]}</p>
+                <div className="flex-1 min-w-0" suppressHydrationWarning>
+                  <p className="text-xs font-bold text-slate-200 truncate leading-none" suppressHydrationWarning>{userLabel.split("@")[0]}</p>
                   <p className="text-[10px] text-slate-400 truncate leading-none mt-1 font-mono">Administrator</p>
                 </div>
               </div>
@@ -384,7 +411,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <div className="relative w-[280px] max-w-[85vw] bg-[#0B0F17] flex flex-col z-10 border-r border-[#1E293B] shadow-2xl animate-in slide-in-from-left duration-250">
               {/* Mobile Sheet Header */}
               <div className="h-16 px-4 flex items-center justify-between border-b border-[#1E293B]">
-                <Link href="/dashboard" className="flex items-center gap-2.5" onClick={() => setMobileMenuOpen(false)}>
+                <Link href="/dashboard" className="flex items-center gap-2.5" onClick={() => setMobileMenuOpen(false)} suppressHydrationWarning>
                   <img
                     src="/logo-icon.png"
                     alt="CatalogForge Logo"
@@ -427,6 +454,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                                 ? "bg-[#2563EB]/20 text-white border border-[#2563EB]/40 shadow-sm"
                                 : "text-slate-400 hover:text-white hover:bg-slate-900/80 active:bg-slate-800"
                             )}
+                            suppressHydrationWarning
                           >
                             <div
                               className={cn(
@@ -452,12 +480,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
               {/* Mobile Sheet Footer */}
               <div className="border-t border-[#1E293B] p-3 space-y-2">
-                <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-[#141B2D] border border-slate-800">
-                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] text-white flex items-center justify-center text-xs font-black">
+                <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-[#141B2D] border border-slate-800" suppressHydrationWarning>
+                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] text-white flex items-center justify-center text-xs font-black" suppressHydrationWarning>
                     {userInitial}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-slate-200 truncate">{userLabel.split("@")[0]}</p>
+                  <div className="flex-1 min-w-0" suppressHydrationWarning>
+                    <p className="text-xs font-bold text-slate-200 truncate" suppressHydrationWarning>{userLabel.split("@")[0]}</p>
                     <p className="text-[10px] text-slate-400 truncate">Administrator</p>
                   </div>
                 </div>
@@ -469,6 +497,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     signOut();
                   }}
                   className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-bold border border-rose-500/20 transition min-h-[40px]"
+                  suppressHydrationWarning
                 >
                   <LogOut className="w-3.5 h-3.5" />
                   <span>Sign Out</span>
@@ -486,5 +515,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </main>
       </div>
     </div>
+  );
+}
+
+export default function AppLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#F0F2F5]" />}>
+      <AppLayoutContent>{children}</AppLayoutContent>
+    </Suspense>
   );
 }
