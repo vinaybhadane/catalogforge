@@ -331,6 +331,24 @@ export class AiPipelineService {
           }
         }
 
+        // Persist assets (images, spec sheets, warranty docs)
+        if (enriched.assets && enriched.assets.length > 0) {
+          for (let i = 0; i < enriched.assets.length; i++) {
+            const ast = enriched.assets[i]!;
+            const astReq = pool.request();
+            astReq.input('product_id', sql.BigInt, productId);
+            astReq.input('asset_type', sql.VarChar(50), (ast.assetType || 'spec_sheet').substring(0, 50));
+            astReq.input('sequence', sql.TinyInt, i + 1);
+            astReq.input('file_name', sql.VarChar(255), (ast.fileName || `${enriched.partNumber}-asset`).substring(0, 255));
+            astReq.input('blob_url', sql.VarChar(1000), (ast.sourceUrl || '').substring(0, 1000));
+            astReq.input('source_url', sql.VarChar(1000), (ast.sourceUrl || '').substring(0, 1000));
+            await astReq.query(`
+              INSERT INTO dbo.product_asset (product_id, asset_type, sequence, file_name, blob_url, source_url)
+              VALUES (@product_id, @asset_type, @sequence, @file_name, @blob_url, @source_url);
+            `).catch(() => null);
+          }
+        }
+
         // If pending review, create review item
         if (enriched.status === 'pending_review') {
           const revReq = pool.request();

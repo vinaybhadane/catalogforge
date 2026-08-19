@@ -311,4 +311,88 @@ export const ingestionRoutes: FastifyPluginAsync = async (fastify: FastifyInstan
       return reply.status(200).send(response);
     },
   );
+
+  /**
+   * POST /api/v1/ingestion/single-product
+   * Directly saves a single AI-grounded product into catalog database
+   */
+  fastify.post<{
+    Body: {
+      partNumber: string;
+      manufacturer?: string;
+      brand?: string;
+      officialTitle?: string;
+      officialDescription?: string;
+      classpath?: string;
+      features?: string[];
+      attributes?: Array<{ label: string; value: string; uom?: string | null; confidence?: number }>;
+      assets?: Array<{ assetType: string; fileName: string; sourceUrl: string }>;
+    };
+  }>(
+    '/single-product',
+    {
+      preHandler: [authenticate],
+      schema: {
+        description: 'Directly ingest an AI-enriched single product into the catalog',
+        tags: ['Ingestion', 'Products'],
+        summary: 'Ingest Single Product',
+        body: {
+          type: 'object',
+          required: ['partNumber'],
+          properties: {
+            partNumber: { type: 'string' },
+            manufacturer: { type: 'string' },
+            brand: { type: 'string' },
+            officialTitle: { type: 'string' },
+            officialDescription: { type: 'string' },
+            classpath: { type: 'string' },
+            features: { type: 'array', items: { type: 'string' } },
+            attributes: { type: 'array' },
+            assets: { type: 'array' },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const b = request.body;
+      if (!b.partNumber || !b.partNumber.trim()) {
+        throw new ValidationError('partNumber is required.');
+      }
+
+      const { aiPipelineService } = await import('../../services/ai-pipeline.service');
+
+      const productId = await aiPipelineService.persistProduct({
+        partNumber: b.partNumber.trim(),
+        manufacturerName: b.manufacturer || 'Unknown Manufacturer',
+        brandName: b.brand || null,
+        manufacturerPartNumber: b.partNumber.trim(),
+        classpath: b.classpath || 'Industrial > Abrasives > General',
+        shortDesc: (b.officialTitle || b.partNumber).substring(0, 150),
+        longDesc1: b.officialDescription || null,
+        unspsc: null,
+        rowConfidence: 0.95,
+        status: 'published',
+        features: b.features || [],
+        attributes: (b.attributes || []).map((a) => ({
+          label: a.label,
+          value: a.value,
+          uom: a.uom || null,
+          confidence: a.confidence || 0.95,
+        })),
+        assets: (b.assets || []).map((a) => ({
+          assetType: a.assetType,
+          fileName: a.fileName,
+          sourceUrl: a.sourceUrl,
+          isFromManufacturer: true,
+        })),
+      });
+
+      return reply.status(201).send({
+        success: true,
+        message: 'Product successfully ingested and published.',
+        productId,
+        partNumber: b.partNumber,
+      });
+    },
+  );
 };
