@@ -5,10 +5,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
-  Sparkles,
   UploadCloud,
   Zap,
-  ClipboardCheck,
   Package,
   BarChart3,
   FileText,
@@ -18,10 +16,8 @@ import {
   ChevronRight,
   Menu,
   X,
-  Layers,
   Bell,
   LogOut,
-  ShieldCheck,
   Plus,
   ChevronDown,
 } from "lucide-react";
@@ -46,10 +42,8 @@ const NAV_SECTIONS: NavSection[] = [
     title: "OPERATIONS",
     items: [
       { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-      { label: "AI Product Lookup", href: "/upload?tab=ai-search", icon: Sparkles },
       { label: "Upload & Ingest", href: "/upload", icon: UploadCloud },
       { label: "Pipeline Jobs", href: "/jobs", icon: Zap },
-      { label: "Review Queue", href: "/products?status=needs_review", icon: ClipboardCheck, badge: "22" },
       { label: "Product Master", href: "/products", icon: Package },
     ],
   },
