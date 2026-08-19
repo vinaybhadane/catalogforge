@@ -104,23 +104,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </Link>
         </div>
 
-        {/* Right: Status + User */}
+        {/* Right: Notifications + User */}
         <div className="flex items-center gap-3">
-          {/* AI Status */}
-          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-950/80 border border-emerald-500/30 text-xs font-semibold text-emerald-300">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span>AI Ready</span>
-          </div>
-
-          {/* Notifications */}
-          <button
-            type="button"
+          {/* Notifications Link */}
+          <Link
+            href="/settings?tab=notifications"
             className="p-2 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors relative"
-            aria-label="Notifications"
+            title="Notification Settings"
+            aria-label="Notification Settings"
             suppressHydrationWarning
           >
-            <Bell className="w-4.5 h-4.5 w-[18px] h-[18px]" />
-          </button>
+            <Bell className="w-[18px] h-[18px]" />
+          </Link>
 
           {/* Divider */}
           <div className="w-px h-6 bg-neutral-700" />
