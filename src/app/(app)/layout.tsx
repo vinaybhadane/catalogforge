@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -19,14 +19,12 @@ import {
   X,
   Layers,
   Bell,
-  Search,
   LogOut,
   Sparkles,
   ShieldCheck,
-  Command,
   Plus,
-  ExternalLink,
   ChevronDown,
+  Database,
 } from "lucide-react";
 import { BRANDING } from "@/lib/constants/branding";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -46,26 +44,26 @@ interface NavSection {
 
 const NAV_SECTIONS: NavSection[] = [
   {
-    title: "WORKSPACE",
+    title: "OPERATIONS",
     items: [
       { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-      { label: "Upload Data", href: "/upload", icon: UploadCloud },
-      { label: "Processing Jobs", href: "/jobs", icon: Activity },
-      { label: "Products", href: "/products", icon: Package },
+      { label: "Upload & Ingest", href: "/upload", icon: UploadCloud },
+      { label: "Pipeline Jobs", href: "/jobs", icon: Activity },
+      { label: "Product Master", href: "/products", icon: Package },
     ],
   },
   {
-    title: "INTELLIGENCE",
+    title: "INTELLIGENCE & AUDIT",
     items: [
-      { label: "Analytics", href: "/analytics", icon: BarChart3 },
-      { label: "Audit Logs", href: "/audit", icon: FileText },
+      { label: "Catalog Analytics", href: "/analytics", icon: BarChart3 },
+      { label: "Audit & Governance", href: "/audit", icon: FileText },
     ],
   },
   {
-    title: "SYSTEM",
+    title: "CONFIGURATION",
     items: [
-      { label: "Settings", href: "/settings", icon: Settings },
-      { label: "Profile", href: "/profile", icon: User },
+      { label: "Workspace Settings", href: "/settings", icon: Settings },
+      { label: "User Profile", href: "/profile", icon: User },
     ],
   },
 ];
@@ -76,7 +74,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
   const [collapsed, setCollapsed] = useState<boolean>(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
-  const [searchQuery, setSearchQuery] = useState<string>("");
   const [userDropdownOpen, setUserDropdownOpen] = useState<boolean>(false);
 
   const userInitial = user?.displayName
@@ -100,19 +97,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return "Enterprise Workspace";
   })();
 
-  const handleGlobalSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
-    router.push(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
-  };
-
   return (
     <div className="min-h-screen flex flex-col bg-[#F0F2F5] text-[#0F172A]">
 
       {/* ── Enterprise B2B Top Header ───────────────────────────────── */}
       <header className="sticky top-0 z-40 h-16 bg-[#0B0F17] border-b border-[#1E293B] px-4 sm:px-6 flex items-center justify-between shrink-0 shadow-lg select-none">
         
-        {/* Left: Mobile Toggle + Brand Logo + Breadcrumb / Workspace Pill */}
+        {/* Left: Mobile Toggle + Brand Logo + Breadcrumb */}
         <div className="flex items-center gap-3 sm:gap-4">
           <button
             type="button"
@@ -124,67 +115,35 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
 
-          {/* Logo & Brand Identity */}
+          {/* Logo & Brand Identity using Actual Logo Image */}
           <Link href="/dashboard" className="flex items-center gap-2.5 group py-1">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] border border-blue-400/30 flex items-center justify-center text-white shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
-              <Layers className="w-4 h-4 text-white" />
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="font-black text-base sm:text-lg tracking-tight">
-                <span className="text-[#38BDF8]">Catalog</span>
-                <span className="text-white">Forge</span>
-              </span>
-              <span className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded-md bg-blue-500/10 border border-blue-500/20 text-[#38BDF8] text-[9px] font-extrabold tracking-wider uppercase">
-                Enterprise
-              </span>
-            </div>
+            <img
+              src="/logo-icon.png"
+              alt="CatalogForge Logo"
+              className="w-8 h-8 rounded-lg object-contain bg-[#141B2D] p-1 border border-slate-700/80 shadow-sm group-hover:scale-105 transition-transform"
+            />
+            <span className="font-black text-lg tracking-tight">
+              <span className="text-[#38BDF8]">Catalog</span>
+              <span className="text-white">Forge</span>
+            </span>
           </Link>
 
           {/* Divider */}
-          <div className="hidden lg:block w-px h-5 bg-slate-800" />
+          <div className="hidden sm:block w-px h-5 bg-slate-800" />
 
-          {/* Breadcrumb / Workspace Context Badge */}
-          <div className="hidden lg:flex items-center gap-2 text-xs">
-            <span className="text-slate-400 font-medium">{currentSectionName}</span>
-            <span className="text-slate-600">•</span>
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-900 border border-slate-800 text-[11px] text-slate-300">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="font-mono text-[10px] font-semibold text-slate-400">UniHack US-East</span>
-            </div>
+          {/* Current Section Name */}
+          <div className="hidden sm:flex items-center text-xs font-semibold text-slate-400">
+            <span>{currentSectionName}</span>
           </div>
         </div>
 
-        {/* Center: Global Search Omnibar */}
-        <div className="hidden md:flex flex-1 max-w-md mx-4 lg:mx-8">
-          <form onSubmit={handleGlobalSearch} className="w-full relative">
-            <Search className="w-3.5 h-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search catalog, MPN, batch jobs, attributes... (⌘K)"
-              className="w-full pl-9 pr-12 py-1.5 bg-[#141B2D] border border-slate-700/80 hover:border-slate-600 focus:border-[#2563EB] rounded-xl text-xs text-slate-200 placeholder-slate-400 focus:outline-none transition-colors shadow-inner"
-            />
-            <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-slate-800 text-[10px] font-mono text-slate-400 rounded border border-slate-700">
-              <Command className="w-2.5 h-2.5" />K
-            </kbd>
-          </form>
-        </div>
-
-        {/* Right: Telemetry SLA, Quick Ingest CTA, Notifications, and User Menu */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        {/* Right: Quick Ingest CTA, Notifications, and User Menu */}
+        <div className="flex items-center gap-2.5 sm:gap-3">
           
-          {/* AI Engine Status Pill */}
-          <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-800 text-[11px] font-semibold text-slate-300">
-            <Sparkles className="w-3.5 h-3.5 text-blue-400" />
-            <span>Gemini 3.5 SLA</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-          </div>
-
           {/* Quick Action: Ingest Dataset CTA */}
           <Link
             href="/upload"
-            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold rounded-xl transition shadow-sm border border-blue-400/30"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold rounded-xl transition shadow-sm border border-blue-400/30"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Ingest Data</span>
@@ -282,62 +241,70 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* ── Desktop Sidebar ──────────────────────────────────────── */}
+        {/* ── Modern B2B Desktop Sidebar ───────────────────────────── */}
         <aside
           className={cn(
-            "hidden md:flex flex-col bg-[#111827] border-r border-[#1F2937] transition-all duration-250 select-none relative z-30 shrink-0",
-            collapsed ? "w-[68px]" : "w-[240px]"
+            "hidden md:flex flex-col bg-[#0B0F17] border-r border-[#1E293B] transition-all duration-300 select-none relative z-30 shrink-0",
+            collapsed ? "w-[72px]" : "w-[250px]"
           )}
         >
           {/* Nav Sections */}
-          <div className="flex-1 overflow-y-auto py-4 space-y-1 px-2">
+          <div className="flex-1 overflow-y-auto py-5 space-y-4 px-3 custom-scrollbar">
             {NAV_SECTIONS.map((section) => (
-              <div key={section.title} className="mb-1">
+              <div key={section.title} className="space-y-1">
                 {/* Section Header */}
                 {!collapsed && (
-                  <p className="px-3 pt-3 pb-1.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest select-none">
+                  <p className="px-3 pb-1.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest select-none">
                     {section.title}
                   </p>
                 )}
-                {collapsed && <div className="h-5" />}
+                {collapsed && <div className="h-2" />}
 
                 {/* Nav Items */}
-                <div className="space-y-0.5">
+                <div className="space-y-1">
                   {section.items.map((item) => {
                     const Icon = item.icon;
                     const isActive =
                       pathname === item.href || pathname.startsWith(`${item.href}/`);
+
                     return (
                       <Link
                         key={item.href}
                         href={item.href}
                         title={collapsed ? item.label : undefined}
                         className={cn(
-                          "flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13.5px] font-medium transition-all duration-150 group relative",
+                          "flex items-center gap-3 px-2.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 group relative",
                           isActive
-                            ? "bg-[#1E3A5F] text-white shadow-sm"
-                            : "text-gray-400 hover:text-gray-100 hover:bg-[#1F2937]",
-                          collapsed && "justify-center px-2"
+                            ? "bg-gradient-to-r from-[#2563EB]/20 via-[#2563EB]/10 to-transparent text-white border border-[#2563EB]/40 shadow-sm shadow-blue-500/10"
+                            : "text-slate-400 hover:text-white hover:bg-slate-900/80 border border-transparent hover:border-slate-800",
+                          collapsed && "justify-center px-1.5"
                         )}
                       >
-                        {/* Active indicator bar */}
+                        {/* Left Active Accent Pill */}
                         {isActive && !collapsed && (
-                          <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-[#3386E7] rounded-r-full" />
+                          <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-[#38BDF8] rounded-r-full shadow-sm shadow-blue-400" />
                         )}
 
-                        <Icon
+                        {/* Icon Container with glowing active well */}
+                        <div
                           className={cn(
-                            "w-[18px] h-[18px] shrink-0 transition-colors",
-                            isActive ? "text-[#3386E7]" : "text-gray-500 group-hover:text-gray-300"
+                            "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all",
+                            isActive
+                              ? "bg-[#2563EB] text-white shadow-md shadow-blue-500/30"
+                              : "bg-[#141B2D] border border-slate-800 text-slate-400 group-hover:text-[#38BDF8] group-hover:border-slate-700"
                           )}
-                        />
+                        >
+                          <Icon className="w-4 h-4" />
+                        </div>
+
+                        {/* Label */}
                         {!collapsed && (
-                          <span className="truncate">{item.label}</span>
+                          <span className="truncate tracking-wide">{item.label}</span>
                         )}
 
                         {/* Badge */}
                         {!collapsed && item.badge && (
-                          <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#3386E7]/20 text-[#3386E7]">
+                          <span className="ml-auto text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-blue-500/20 text-[#38BDF8] border border-blue-500/30">
                             {item.badge}
                           </span>
                         )}
@@ -349,61 +316,66 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             ))}
           </div>
 
-          {/* Sidebar Footer: User mini card + collapse */}
-          <div className="border-t border-[#1F2937] p-2 space-y-1">
-            {/* User row */}
+          {/* Sidebar Footer: User mini card + Collapse Toggle */}
+          <div className="border-t border-[#1E293B] p-3 space-y-2 bg-[#0B0F17]">
+            {/* User Mini Card */}
             {!collapsed && (
-              <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-[#1F2937]">
-                <div className="w-7 h-7 rounded-md bg-gradient-to-br from-[#3386E7] to-[#1D4ED8] text-white flex items-center justify-center text-xs font-black shrink-0">
-                  {userInitial}
+              <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-[#141B2D] border border-slate-800/80">
+                <div className="relative">
+                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] text-white flex items-center justify-center text-xs font-black shrink-0 shadow-sm">
+                    {userInitial}
+                  </div>
+                  <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-500 rounded-full ring-2 ring-[#141B2D]" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-gray-200 truncate leading-none">{userLabel.split("@")[0]}</p>
-                  <p className="text-[10px] text-gray-500 truncate leading-none mt-0.5">Administrator</p>
+                  <p className="text-xs font-bold text-slate-200 truncate leading-none">{userLabel.split("@")[0]}</p>
+                  <p className="text-[10px] text-slate-400 truncate leading-none mt-1 font-mono">Tier-1 Admin</p>
                 </div>
               </div>
             )}
 
-            {/* Collapse toggle */}
+            {/* Collapse Toggle Button */}
             <button
               type="button"
               onClick={() => setCollapsed(!collapsed)}
               className={cn(
-                "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-gray-400 hover:text-gray-100 hover:bg-[#1F2937] transition-colors text-xs font-medium",
-                collapsed && "justify-center"
+                "w-full flex items-center gap-2 px-3 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent hover:border-slate-800 transition-all text-xs font-bold",
+                collapsed && "justify-center px-0"
               )}
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
               suppressHydrationWarning
             >
               {collapsed ? (
-                <ChevronRight className="w-4 h-4 text-gray-500" />
+                <ChevronRight className="w-4 h-4 text-slate-400" />
               ) : (
                 <>
-                  <ChevronLeft className="w-4 h-4 text-gray-500" />
-                  <span>Collapse</span>
+                  <ChevronLeft className="w-4 h-4 text-slate-400" />
+                  <span>Collapse Sidebar</span>
                 </>
               )}
             </button>
           </div>
         </aside>
 
-        {/* ── Mobile Drawer ─────────────────────────────────────────── */}
+        {/* ── Modern Mobile Drawer ───────────────────────────────────── */}
         {mobileMenuOpen && (
           <div className="md:hidden fixed inset-0 z-50 flex" suppressHydrationWarning>
             {/* Backdrop */}
             <div
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm"
               onClick={() => setMobileMenuOpen(false)}
             />
 
             {/* Sheet */}
-            <div className="relative w-[260px] bg-[#111827] max-w-full flex flex-col z-10 border-r border-[#1F2937] shadow-2xl">
+            <div className="relative w-[270px] bg-[#0B0F17] max-w-full flex flex-col z-10 border-r border-[#1E293B] shadow-2xl">
               {/* Mobile Sheet Header */}
-              <div className="h-16 px-4 flex items-center justify-between border-b border-[#1F2937]">
-                <Link href="/dashboard" className="flex items-center gap-2" onClick={() => setMobileMenuOpen(false)}>
-                  <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white">
-                    <Layers className="w-4 h-4" />
-                  </div>
+              <div className="h-16 px-4 flex items-center justify-between border-b border-[#1E293B]">
+                <Link href="/dashboard" className="flex items-center gap-2.5" onClick={() => setMobileMenuOpen(false)}>
+                  <img
+                    src="/logo-icon.png"
+                    alt="CatalogForge Logo"
+                    className="w-7 h-7 rounded-lg object-contain bg-[#141B2D] p-0.5 border border-slate-700"
+                  />
                   <span className="font-black text-base text-white">
                     <span className="text-[#38BDF8]">Catalog</span>Forge
                   </span>
@@ -411,7 +383,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <button
                   type="button"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="p-1.5 text-gray-400 hover:text-white hover:bg-[#1F2937] rounded-lg transition-colors"
+                  className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors"
                   suppressHydrationWarning
                 >
                   <X className="w-4 h-4" />
@@ -419,13 +391,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </div>
 
               {/* Mobile Nav */}
-              <div className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
+              <div className="flex-1 overflow-y-auto py-4 px-3 space-y-4">
                 {NAV_SECTIONS.map((section) => (
-                  <div key={section.title} className="mb-1">
-                    <p className="px-3 pt-3 pb-1.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                  <div key={section.title} className="space-y-1">
+                    <p className="px-3 pb-1 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
                       {section.title}
                     </p>
-                    <div className="space-y-0.5">
+                    <div className="space-y-1">
                       {section.items.map((item) => {
                         const Icon = item.icon;
                         const isActive =
@@ -436,21 +408,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                             href={item.href}
                             onClick={() => setMobileMenuOpen(false)}
                             className={cn(
-                              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all relative",
+                              "flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all relative",
                               isActive
-                                ? "bg-[#1E3A5F] text-white"
-                                : "text-gray-400 hover:text-gray-100 hover:bg-[#1F2937]"
+                                ? "bg-[#2563EB]/20 text-white border border-[#2563EB]/40 shadow-sm"
+                                : "text-slate-400 hover:text-white hover:bg-slate-900/80"
                             )}
                           >
-                            {isActive && (
-                              <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-[#3386E7] rounded-r-full" />
-                            )}
-                            <Icon
+                            <div
                               className={cn(
-                                "w-[18px] h-[18px] shrink-0",
-                                isActive ? "text-[#3386E7]" : "text-gray-500"
+                                "w-7 h-7 rounded-lg flex items-center justify-center shrink-0",
+                                isActive ? "bg-[#2563EB] text-white" : "bg-[#141B2D] text-slate-400"
                               )}
-                            />
+                            >
+                              <Icon className="w-3.5 h-3.5" />
+                            </div>
                             <span>{item.label}</span>
                           </Link>
                         );
@@ -461,14 +432,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </div>
 
               {/* Mobile Sheet Footer */}
-              <div className="border-t border-[#1F2937] p-3">
-                <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg bg-[#1F2937]">
-                  <div className="w-7 h-7 rounded-md bg-gradient-to-br from-[#3386E7] to-[#1D4ED8] text-white flex items-center justify-center text-xs font-black">
+              <div className="border-t border-[#1E293B] p-3">
+                <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-[#141B2D] border border-slate-800">
+                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] text-white flex items-center justify-center text-xs font-black">
                     {userInitial}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-gray-200 truncate">{userLabel.split("@")[0]}</p>
-                    <p className="text-[10px] text-gray-500 truncate">Administrator</p>
+                    <p className="text-xs font-bold text-slate-200 truncate">{userLabel.split("@")[0]}</p>
+                    <p className="text-[10px] text-slate-400 truncate">Tier-1 Admin</p>
                   </div>
                 </div>
               </div>
