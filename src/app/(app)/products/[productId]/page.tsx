@@ -456,7 +456,17 @@ function AttributesTab({ attributes }: { attributes?: ProductAttribute[] }) {
                 <td className="px-4 py-2.5 text-xs text-slate-600">{attr.attributeUom ?? "—"}</td>
                 <td className="px-4 py-2.5">
                   {conf !== null ? (
-                    <span className={cn("text-[11px] font-mono font-bold", conf >= 0.85 ? "text-[#047857]" : conf >= 0.6 ? "text-[#B45309]" : "text-[#B91C1C]")}>{Math.round(conf * 100)}%</span>
+                    <div className="flex items-center gap-2">
+                      <span className={cn("text-[11px] font-mono font-bold", conf >= 0.85 ? "text-[#047857]" : conf >= 0.6 ? "text-[#B45309]" : "text-[#B91C1C]")}>
+                        {Math.round(conf * 100)}%
+                      </span>
+                      {conf <= 0.60 && (
+                        <span className="inline-flex items-center gap-1 text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300">
+                          <AlertCircle className="w-2.5 h-2.5 text-amber-600" />
+                          <span>Flag for Human Review</span>
+                        </span>
+                      )}
+                    </div>
                   ) : (<span className="text-[11px] text-slate-400 italic">—</span>)}
                 </td>
                 <td className="px-4 py-2.5">

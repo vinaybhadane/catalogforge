@@ -677,18 +677,61 @@ export default function UploadPage() {
               {/* Normalized Technical Attributes */}
               {urlExtractionResult.attributes && urlExtractionResult.attributes.length > 0 && (
                 <div className="space-y-2">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                    Normalized Technical Attributes (Only Stated Specs)
-                  </h4>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                    {urlExtractionResult.attributes.map((attr: any, idx: number) => (
-                      <div key={idx} className="bg-[#FAFAFA] border border-[#E2E8F0] p-3 rounded-xl">
-                        <p className="text-[10px] text-slate-400 font-bold uppercase">{attr.label}</p>
-                        <p className="text-xs font-bold text-slate-900 mt-0.5">
-                          {attr.value} {attr.uom ? <span className="text-[10px] text-slate-500 font-normal">({attr.uom})</span> : null}
-                        </p>
-                      </div>
-                    ))}
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                      Normalized Technical Attributes (Only Stated Specs)
+                    </h4>
+                    <span className="text-[11px] text-slate-400 font-medium">
+                      Automated Confidence &amp; HITL Governance
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                    {urlExtractionResult.attributes.map((attr: any, idx: number) => {
+                      const conf = attr.confidence ?? attr.confidenceScore ?? attr.lovMatchConfidence ?? 0.98;
+                      const isLowConfidence = conf <= 0.60;
+                      return (
+                        <div
+                          key={idx}
+                          className={cn(
+                            "p-3 rounded-xl border transition-all flex flex-col justify-between gap-1.5",
+                            isLowConfidence
+                              ? "bg-amber-50/60 border-amber-300 shadow-sm"
+                              : "bg-[#FAFAFA] border-[#E2E8F0] hover:border-slate-300"
+                          )}
+                        >
+                          <div className="flex items-start justify-between gap-1.5">
+                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider truncate">
+                              {attr.label}
+                            </p>
+                            {isLowConfidence ? (
+                              <span className="inline-flex items-center gap-1 text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300 shrink-0">
+                                <AlertCircle className="w-2.5 h-2.5 text-amber-600 shrink-0" />
+                                <span>Flag for Human Review</span>
+                              </span>
+                            ) : (
+                              <span className="text-[9px] font-mono font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 shrink-0">
+                                {Math.round(conf * 100)}%
+                              </span>
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-slate-900">
+                              {attr.value}{" "}
+                              {attr.uom ? (
+                                <span className="text-[10px] text-slate-500 font-normal">
+                                  ({attr.uom})
+                                </span>
+                              ) : null}
+                            </p>
+                            {isLowConfidence && (
+                              <p className="text-[10px] text-amber-700 mt-1 font-medium">
+                                Confidence: {Math.round(conf * 100)}% — Requires Review
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -996,16 +1039,61 @@ export default function UploadPage() {
               {/* Normalized Attributes Grid */}
               {aiResult.attributes && aiResult.attributes.length > 0 && (
                 <div className="space-y-2">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Normalized Technical Attributes</h4>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                    {aiResult.attributes.map((attr: any, idx: number) => (
-                      <div key={idx} className="bg-[#FAFAFA] border border-[#E2E8F0] p-3 rounded-xl">
-                        <p className="text-[10px] text-slate-400 font-bold uppercase">{attr.label}</p>
-                        <p className="text-xs font-bold text-slate-900 mt-0.5">
-                          {attr.value} {attr.uom ? <span className="text-[10px] text-slate-500 font-normal">{attr.uom}</span> : null}
-                        </p>
-                      </div>
-                    ))}
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                      Normalized Technical Attributes
+                    </h4>
+                    <span className="text-[11px] text-slate-400 font-medium">
+                      Automated Confidence &amp; HITL Governance
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                    {aiResult.attributes.map((attr: any, idx: number) => {
+                      const conf = attr.confidence ?? attr.confidenceScore ?? attr.lovMatchConfidence ?? 0.95;
+                      const isLowConfidence = conf <= 0.60;
+                      return (
+                        <div
+                          key={idx}
+                          className={cn(
+                            "p-3 rounded-xl border transition-all flex flex-col justify-between gap-1.5",
+                            isLowConfidence
+                              ? "bg-amber-50/60 border-amber-300 shadow-sm"
+                              : "bg-[#FAFAFA] border-[#E2E8F0] hover:border-slate-300"
+                          )}
+                        >
+                          <div className="flex items-start justify-between gap-1.5">
+                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider truncate">
+                              {attr.label}
+                            </p>
+                            {isLowConfidence ? (
+                              <span className="inline-flex items-center gap-1 text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300 shrink-0">
+                                <AlertCircle className="w-2.5 h-2.5 text-amber-600 shrink-0" />
+                                <span>Flag for Human Review</span>
+                              </span>
+                            ) : (
+                              <span className="text-[9px] font-mono font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 shrink-0">
+                                {Math.round(conf * 100)}%
+                              </span>
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-slate-900">
+                              {attr.value}{" "}
+                              {attr.uom ? (
+                                <span className="text-[10px] text-slate-500 font-normal">
+                                  ({attr.uom})
+                                </span>
+                              ) : null}
+                            </p>
+                            {isLowConfidence && (
+                              <p className="text-[10px] text-amber-700 mt-1 font-medium">
+                                Confidence: {Math.round(conf * 100)}% — Requires Review
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
