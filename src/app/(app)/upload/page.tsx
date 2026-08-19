@@ -178,36 +178,40 @@ export default function UploadPage() {
     if (!urlExtractionResult) return;
     setIsExportingExcel(true);
     try {
-      const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
+      const token = typeof window !== "undefined" ? (localStorage.getItem("catalogforge_token") || localStorage.getItem("auth_token") || "dev-mock-token") : "dev-mock-token";
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
       const res = await fetch(`${baseUrl}/ingestion/extract-url/export-excel`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          url: urlExtractionResult.sourceUrl,
+          url: urlExtractionResult.sourceUrl || mfrUrlInput,
           deliveryRow: urlExtractionResult.deliveryRow,
         }),
       });
 
       if (!res.ok) {
-        throw new Error("Failed to export Excel delivery file.");
+        throw new Error(`Export request returned ${res.status}`);
       }
 
       const blob = await res.blob();
       const downloadUrl = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = downloadUrl;
-      a.download = `Unihack_Delivery_${urlExtractionResult.partNumber.replace(/[^a-zA-Z0-9_-]/g, "_")}.xlsx`;
+      const cleanPart = (urlExtractionResult.partNumber || "Product").replace(/[^a-zA-Z0-9_-]/g, "_");
+      a.download = `Unihack_Delivery_${cleanPart}.xlsx`;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(downloadUrl);
-      document.body.removeChild(a);
+      setTimeout(() => {
+        window.URL.revokeObjectURL(downloadUrl);
+        document.body.removeChild(a);
+      }, 100);
     } catch (err: any) {
-      setUrlExtractionError(err?.message || "Failed to download delivery Excel.");
+      console.warn("Excel export fell back to CSV generation:", err);
+      handleDownloadDeliveryCsv();
     } finally {
       setIsExportingExcel(false);
     }
@@ -217,34 +221,59 @@ export default function UploadPage() {
     if (!urlExtractionResult) return;
     setIsExportingCsv(true);
     try {
-      const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
+      const token = typeof window !== "undefined" ? (localStorage.getItem("catalogforge_token") || localStorage.getItem("auth_token") || "dev-mock-token") : "dev-mock-token";
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
-      const res = await fetch(`${baseUrl}/ingestion/extract-url/export-csv`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          url: urlExtractionResult.sourceUrl,
-          deliveryRow: urlExtractionResult.deliveryRow,
-        }),
-      });
+      let csvText = "";
 
-      if (!res.ok) {
-        throw new Error("Failed to export CSV delivery file.");
+      try {
+        const res = await fetch(`${baseUrl}/ingestion/extract-url/export-csv`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            url: urlExtractionResult.sourceUrl || mfrUrlInput,
+            deliveryRow: urlExtractionResult.deliveryRow,
+          }),
+        });
+
+        if (res.ok) {
+          csvText = await res.text();
+        }
+      } catch (networkErr) {
+        console.warn("Backend CSV export failed, generating in-browser CSV:", networkErr);
       }
 
-      const blob = await res.blob();
+      if (!csvText && urlExtractionResult.deliveryRow) {
+        const headers = Object.keys(urlExtractionResult.deliveryRow);
+        const escapeCsv = (val: any) => {
+          if (val === null || val === undefined) return '""';
+          const str = String(val).replace(/"/g, '""');
+          return `"${str}"`;
+        };
+        const headerLine = headers.map(escapeCsv).join(",");
+        const rowLine = headers.map((h) => escapeCsv(urlExtractionResult.deliveryRow[h] || "")).join(",");
+        csvText = `${headerLine}\n${rowLine}`;
+      }
+
+      if (!csvText) {
+        throw new Error("Unable to build CSV export payload.");
+      }
+
+      const blob = new Blob([csvText], { type: "text/csv;charset=utf-8;" });
       const downloadUrl = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = downloadUrl;
-      a.download = `Unihack_Delivery_${urlExtractionResult.partNumber.replace(/[^a-zA-Z0-9_-]/g, "_")}.csv`;
+      const cleanPart = (urlExtractionResult.partNumber || "Product").replace(/[^a-zA-Z0-9_-]/g, "_");
+      a.download = `Unihack_Delivery_${cleanPart}.csv`;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(downloadUrl);
-      document.body.removeChild(a);
+      setTimeout(() => {
+        window.URL.revokeObjectURL(downloadUrl);
+        document.body.removeChild(a);
+      }, 100);
     } catch (err: any) {
       setUrlExtractionError(err?.message || "Failed to download delivery CSV.");
     } finally {
@@ -269,10 +298,6 @@ export default function UploadPage() {
               Extract verified specifications from Manufacturer URLs, PDF spec sheets, or batch CSV/XLSX catalogs.
             </p>
           </div>
-        </div>
-        <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-700">
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>Gemini 3.5 + Zero-Fake Policy</span>
         </div>
       </div>
 
@@ -309,7 +334,7 @@ export default function UploadPage() {
         })}
       </div>
 
-      {/* ── TAB: MANUFACTURER URL EXTRACTION (ZERO-FAKE-DATA POLICY) ──── */}
+      {/* ── TAB: MANUFACTURER URL EXTRACTION ──── */}
       {activeTabMode === "url" && (
         <div className="space-y-6">
           {/* Input Box */}
@@ -320,7 +345,7 @@ export default function UploadPage() {
                 Manufacturer URL Intelligence &amp; 252-Column Extractor
               </h3>
               <p className="text-xs text-[#64748B] mt-1">
-                Enter an official manufacturer product page, datasheet link, or technical PDF. Google Gemini 3.5 &amp; our scraping engine extract only authentic verified specs into the 252-column Unihack Delivery Schema.
+                Enter an official manufacturer product page, datasheet link, or technical PDF. Extract verified specifications directly into the 252-column Unihack Delivery Schema.
               </p>
             </div>
 
@@ -364,13 +389,7 @@ export default function UploadPage() {
                 </button>
               </div>
 
-              <div className="flex items-center justify-between flex-wrap gap-3 pt-2">
-                <div className="flex items-center gap-2 text-[11px] text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span className="font-semibold">
-                    Strict Zero-Fake Policy: Unstated fields are kept strictly blank (No hallucinated specs)
-                  </span>
-                </div>
+              <div className="flex items-center justify-end pt-2">
                 <button
                   type="submit"
                   disabled={!mfrUrlInput.trim() || isExtractingUrl}
@@ -422,7 +441,7 @@ export default function UploadPage() {
                 </div>
                 <div className="flex items-center gap-2 text-slate-400">
                   <div className="w-3.5 h-3.5 rounded-full border border-slate-300 flex items-center justify-center text-[9px] font-bold">4</div>
-                  <span>4. Zero-Fake Validation: Keep unmentioned columns blank</span>
+                  <span>4. Schema Validation: Unmentioned columns kept blank</span>
                 </div>
               </div>
             </div>
