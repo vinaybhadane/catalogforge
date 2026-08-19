@@ -5,10 +5,11 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
+  Sparkles,
   UploadCloud,
-  Activity,
+  Zap,
+  ClipboardCheck,
   Package,
-  CheckSquare,
   BarChart3,
   FileText,
   Settings,
@@ -20,11 +21,9 @@ import {
   Layers,
   Bell,
   LogOut,
-  Sparkles,
   ShieldCheck,
   Plus,
   ChevronDown,
-  Database,
 } from "lucide-react";
 import { BRANDING } from "@/lib/constants/branding";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -47,8 +46,10 @@ const NAV_SECTIONS: NavSection[] = [
     title: "OPERATIONS",
     items: [
       { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { label: "AI Product Lookup", href: "/upload?tab=ai-search", icon: Sparkles },
       { label: "Upload & Ingest", href: "/upload", icon: UploadCloud },
-      { label: "Pipeline Jobs", href: "/jobs", icon: Activity },
+      { label: "Pipeline Jobs", href: "/jobs", icon: Zap },
+      { label: "Review Queue", href: "/products?status=needs_review", icon: ClipboardCheck, badge: "22" },
       { label: "Product Master", href: "/products", icon: Package },
     ],
   },
@@ -96,6 +97,24 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     if (pathname.includes("/profile")) return "Account Profile";
     return "Enterprise Workspace";
   })();
+
+  const isItemActive = (href: string) => {
+    if (typeof window === "undefined") {
+      return pathname === href.split("?")[0];
+    }
+    const currentFullUrl = pathname + window.location.search;
+    if (href.includes("?")) {
+      const queryPart = href.split("?")[1];
+      return pathname === href.split("?")[0] && currentFullUrl.includes(queryPart);
+    }
+    if (href === "/upload") {
+      return pathname === "/upload" && !currentFullUrl.includes("tab=ai-search");
+    }
+    if (href === "/products") {
+      return pathname === "/products" && !currentFullUrl.includes("status=needs_review");
+    }
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F0F2F5] text-[#0F172A]">
@@ -264,8 +283,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <div className="space-y-1">
                   {section.items.map((item) => {
                     const Icon = item.icon;
-                    const isActive =
-                      pathname === item.href || pathname.startsWith(`${item.href}/`);
+                    const isActive = isItemActive(item.href);
 
                     return (
                       <Link
@@ -304,7 +322,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
                         {/* Badge */}
                         {!collapsed && item.badge && (
-                          <span className="ml-auto text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-blue-500/20 text-[#38BDF8] border border-blue-500/30">
+                          <span className="ml-auto text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 font-mono">
                             {item.badge}
                           </span>
                         )}
@@ -400,8 +418,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     <div className="space-y-1">
                       {section.items.map((item) => {
                         const Icon = item.icon;
-                        const isActive =
-                          pathname === item.href || pathname.startsWith(`${item.href}/`);
+                        const isActive = isItemActive(item.href);
                         return (
                           <Link
                             key={item.href}
@@ -423,6 +440,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                               <Icon className="w-3.5 h-3.5" />
                             </div>
                             <span>{item.label}</span>
+                            {item.badge && (
+                              <span className="ml-auto text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 font-mono">
+                                {item.badge}
+                              </span>
+                            )}
                           </Link>
                         );
                       })}

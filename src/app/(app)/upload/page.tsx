@@ -50,6 +50,16 @@ export default function UploadPage() {
 
   const [activeTabMode, setActiveTabMode] = useState<ExtendedUploadMode>("file");
 
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get("tab") || params.get("mode");
+      if (tabParam && (tabParam === "ai-search" || tabParam === "url" || tabParam === "file" || tabParam === "pdf")) {
+        setActiveTabMode(tabParam as ExtendedUploadMode);
+      }
+    }
+  }, []);
+
   // Single Product AI Search state
   const [productSearchInput, setProductSearchInput] = useState("");
   const [mfgSearchInput, setMfgSearchInput] = useState("");
