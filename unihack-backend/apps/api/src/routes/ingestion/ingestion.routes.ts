@@ -490,7 +490,6 @@ export const ingestionRoutes: FastifyPluginAsync = async (fastify: FastifyInstan
   }>(
     '/extract-url/export-excel',
     {
-      preHandler: [authenticate],
       schema: {
         description: 'Export extracted URL product to 252-column delivery Excel spreadsheet (.xlsx)',
         tags: ['Ingestion', 'Export'],
@@ -543,7 +542,6 @@ export const ingestionRoutes: FastifyPluginAsync = async (fastify: FastifyInstan
   }>(
     '/extract-url/export-csv',
     {
-      preHandler: [authenticate],
       schema: {
         description: 'Export extracted URL product to 252-column delivery CSV spreadsheet (.csv)',
         tags: ['Ingestion', 'Export'],
