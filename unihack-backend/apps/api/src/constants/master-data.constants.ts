@@ -4,9 +4,33 @@
 
 export const DEFAULT_MANUFACTURERS = [
   {
+    name: 'Freud Inc',
+    slug: 'freud-inc',
+    aliases: ['Freud Inc (2435)', 'Diablo', 'Freud Tools', 'Diablo Tools', 'Freud'],
+    website_domain: 'diablotools.com',
+  },
+  {
+    name: '3M',
+    slug: '3m',
+    aliases: ['3M Company', 'Jam Industrial Supply LLC (JAMIN)', '3M Abrasives', '3M Industrial'],
+    website_domain: '3m.com',
+  },
+  {
+    name: 'Mirka Abrasives Inc',
+    slug: 'mirka-abrasives',
+    aliases: ['Mirka Abrasives Inc (MIRUS)', 'Mirka', 'Mirka USA', 'Mirka Oy'],
+    website_domain: 'mirka.com',
+  },
+  {
+    name: 'Milwaukee Tool',
+    slug: 'milwaukee-tool',
+    aliases: ['Milwaukee Accessory (4031)', 'Milwaukee', 'Milwaukee Electric Tool', 'Milwaukee Accessory'],
+    website_domain: 'milwaukeetool.com',
+  },
+  {
     name: 'Square D',
     slug: 'square-d',
-    aliases: ['Square D by Schneider Electric', 'Schneider Electric Square D', 'SQD'],
+    aliases: ['Square D by Schneider Electric', 'Schneider Electric Square D', 'SQD', 'Schneider Electric'],
     website_domain: 'se.com',
   },
   {
@@ -20,6 +44,12 @@ export const DEFAULT_MANUFACTURERS = [
     slug: 'siemens',
     aliases: ['Siemens Energy & Automation', 'Siemens Industry'],
     website_domain: 'siemens.com',
+  },
+  {
+    name: 'ABB',
+    slug: 'abb',
+    aliases: ['ABB Inc', 'Asea Brown Boveri'],
+    website_domain: 'abb.com',
   },
   {
     name: 'Hubbell',
@@ -40,16 +70,16 @@ export const DEFAULT_MANUFACTURERS = [
     website_domain: 'kleintools.com',
   },
   {
-    name: 'Milwaukee Tool',
-    slug: 'milwaukee-tool',
-    aliases: ['Milwaukee', 'Milwaukee Electric Tool'],
-    website_domain: 'milwaukeetool.com',
-  },
-  {
     name: 'DeWalt',
     slug: 'dewalt',
     aliases: ['DeWalt Industrial Tool Co', 'Stanley Black & Decker DeWalt'],
     website_domain: 'dewalt.com',
+  },
+  {
+    name: 'Fluke',
+    slug: 'fluke',
+    aliases: ['Fluke Corporation'],
+    website_domain: 'fluke.com',
   },
 ];
 

@@ -45,6 +45,9 @@ const envSchema = z.object({
     .default('http://localhost:3000,http://127.0.0.1:3000')
     .transform((origins) => origins.split(',').map((o) => o.trim()).filter(Boolean)),
 
+  // Brave Search API
+  BRAVE_SEARCH_API_KEY: z.string().optional(),
+
   // Dev Overrides
   ENABLE_MOCK_AUTH_IN_DEV: z.preprocess((val) => val === 'true' || val === true, z.boolean()).default(false),
   MOCK_AUTH_ROLE: z.enum(['admin', 'reviewer', 'viewer']).default('admin'),

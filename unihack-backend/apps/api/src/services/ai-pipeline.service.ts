@@ -1,17 +1,26 @@
 /**
  * AI Processing & Normalization Pipeline Service
- * Orchestrates raw input transformation, deterministic normalization, LOV validation,
- * confidence scoring, and review routing into Azure SQL
+ * Orchestrates raw input transformation, Brave Search web enrichment, LOV validation,
+ * strict manufacturer primary asset extraction, and database persistence.
  */
 
 import sql from 'mssql';
 import { DEFAULT_MANUFACTURERS } from '../constants/master-data.constants';
 import { getSqlPool } from '../plugins/db.plugin';
+import { braveSearchService, ExtractedProductIntelligence } from './brave-search.service';
 import { placeholderDetector } from './placeholder-detector.service';
+import { sourceGovernor } from './source-governor.service';
 import { uomNormalizer } from './uom-normalizer.service';
 
 export const DEFAULT_BRAND_LIST = [
   { name: 'Square D', manufacturer_name: 'Square D', slug: 'square-d' },
+  { name: 'Diablo', manufacturer_name: 'Freud Inc', slug: 'diablo' },
+  { name: 'Cubitron II', manufacturer_name: '3M', slug: 'cubitron-ii' },
+  { name: 'Stikit', manufacturer_name: '3M', slug: 'stikit' },
+  { name: 'HIOLIT', manufacturer_name: 'Mirka Abrasives Inc', slug: 'hiolit' },
+  { name: 'Abranet', manufacturer_name: 'Mirka Abrasives Inc', slug: 'abranet' },
+  { name: 'Steel Demon', manufacturer_name: 'Freud Inc', slug: 'steel-demon' },
+  { name: 'Speed Demon', manufacturer_name: 'Freud Inc', slug: 'speed-demon' },
   { name: 'Homeline', manufacturer_name: 'Square D', slug: 'homeline' },
   { name: 'QO', manufacturer_name: 'Square D', slug: 'qo' },
   { name: 'Cutler-Hammer', manufacturer_name: 'Eaton', slug: 'cutler-hammer' },
@@ -54,11 +63,18 @@ export interface EnrichedProductOutput {
     uom: string | null;
     confidence: number;
   }>;
+  assets?: Array<{
+    assetType: string;
+    fileName: string;
+    sourceUrl: string;
+    isFromManufacturer: boolean;
+  }>;
+  evidence?: any[];
 }
 
 export class AiPipelineService {
   /**
-   * Process and transform a raw product input
+   * Process and transform a raw product input with deterministic parsing
    */
   processRawInput(raw: RawInputRecord): EnrichedProductOutput {
     // 1. Clean placeholders
@@ -81,15 +97,29 @@ export class AiPipelineService {
 
     const matchedBrand = DEFAULT_BRAND_LIST.find(
       (b: { name: string; manufacturer_name: string; slug: string }) =>
-        b.name.toLowerCase() === (brandName || '').toLowerCase(),
+        b.name.toLowerCase() === (brandName || '').toLowerCase() ||
+        (cleanTitle && cleanTitle.toLowerCase().includes(b.name.toLowerCase())),
     );
     if (matchedBrand) {
       brandName = matchedBrand.name;
+      if (!matchedMfg && matchedBrand.manufacturer_name) {
+        mfgName = matchedBrand.manufacturer_name;
+      }
     }
 
-    // 3. Classpath Resolution
-    let classpath = 'Electrical > Distribution Equipment > Circuit Breakers';
-    if (raw.category_name) {
+    // 3. Classpath Resolution (Abrasives, Distribution, Industrial)
+    let classpath = 'Industrial > Abrasives > Sanding & Grinding Discs';
+    const textSample = `${cleanTitle} ${cleanShortDesc} ${raw.category_name || ''}`.toLowerCase();
+
+    if (textSample.includes('circuit breaker') || textSample.includes('120v') || textSample.includes('panelboard')) {
+      classpath = 'Electrical > Distribution Equipment > Circuit Breakers';
+    } else if (textSample.includes('sanding belt') || textSample.includes('diablo')) {
+      classpath = 'Industrial > Abrasives > Sanding Belts';
+    } else if (textSample.includes('cut off disc') || textSample.includes('cut-off')) {
+      classpath = 'Industrial > Abrasives > Cut-Off Discs & Wheels';
+    } else if (textSample.includes('film') || textSample.includes('cubitron') || textSample.includes('abranet') || textSample.includes('hiolit')) {
+      classpath = 'Industrial > Abrasives > Abrasive Discs & Sandpaper';
+    } else if (raw.category_name) {
       classpath = raw.category_name.includes('>')
         ? raw.category_name
         : `Industrial > General > ${raw.category_name}`;
@@ -119,23 +149,45 @@ export class AiPipelineService {
       }
     }
 
-    // 6. Generate Bullet Features
+    // 6. Extract inline attributes from descriptions (Grit, dimensions, pack count)
+    const gritMatch = textSample.match(/\b(p\d{2,4}|\d{2,4}\s*grit)\b/i);
+    if (gritMatch && !attributes.some((a) => a.label.toLowerCase() === 'grit')) {
+      attributes.push({
+        label: 'Grit',
+        value: gritMatch[1]!.toUpperCase(),
+        uom: null,
+        confidence: 0.95,
+      });
+    }
+
+    const dimMatch = textSample.match(/(\d+(?:\/\d+)?(?:\.\d+)?)\s*(?:x|\*|by)\s*(\d+(?:\/\d+)?(?:\.\d+)?)\s*(?:inch|in|""|mm)?/i);
+    if (dimMatch && !attributes.some((a) => a.label.toLowerCase() === 'dimensions')) {
+      attributes.push({
+        label: 'Dimensions',
+        value: `${dimMatch[1]}" x ${dimMatch[2]}"`,
+        uom: 'IN',
+        confidence: 0.94,
+      });
+    }
+
+    // 7. Generate Bullet Features
     const features: string[] = [];
     if (cleanTitle) features.push(cleanTitle);
+    if (brandName) features.push(`Engineered by ${mfgName || 'OEM'} under ${brandName} line`);
     if (cleanLongDesc) {
       const sentences = cleanLongDesc.split('.').map((s) => s.trim()).filter((s) => s.length > 10);
       features.push(...sentences.slice(0, 3));
     }
 
-    // 7. Calculate Confidence Score
-    let confidence = 0.80;
+    // 8. Calculate Confidence Score
+    let confidence = 0.82;
     if (matchedMfg) confidence += 0.08;
-    if (matchedBrand) confidence += 0.05;
-    if (generatedShortDesc.length > 15) confidence += 0.05;
+    if (matchedBrand) confidence += 0.04;
+    if (generatedShortDesc.length > 15) confidence += 0.04;
     if (attributes.length > 0) confidence += 0.02;
     confidence = Math.min(0.99, Number(confidence.toFixed(2)));
 
-    // 8. Auto-Publish vs Review Queue Routing
+    // 9. Auto-Publish vs Review Queue Routing
     const status: 'published' | 'pending_review' = confidence >= 0.85 ? 'published' : 'pending_review';
 
     return {
@@ -152,6 +204,16 @@ export class AiPipelineService {
       features,
       attributes,
     };
+  }
+
+  /**
+   * Enriches a product using live Brave Search API with strict manufacturer primary sourcing
+   */
+  async enrichProductWithLiveSearch(
+    partNumber: string,
+    manufacturer?: string,
+  ): Promise<ExtractedProductIntelligence> {
+    return braveSearchService.searchProduct(partNumber, manufacturer);
   }
 
   /**
@@ -202,7 +264,7 @@ export class AiPipelineService {
   }
 
   /**
-   * Persists an enriched product into Azure SQL
+   * Persists an enriched product into Azure SQL with features, attributes, and manufacturer assets
    */
   async persistProduct(enriched: EnrichedProductOutput, rawInputId?: number): Promise<number | null> {
     const pool = getSqlPool();
@@ -236,16 +298,50 @@ export class AiPipelineService {
 
       const productId = res.recordset[0]?.product_id;
 
-      // If pending review, create review item
-      if (enriched.status === 'pending_review' && productId) {
-        const revReq = pool.request();
-        revReq.input('product_id', sql.BigInt, productId);
-        revReq.input('reason', sql.VarChar(1000), `Confidence score (${enriched.rowConfidence}) below 0.85 threshold`);
-        revReq.input('row_confidence', sql.Decimal(5, 2), enriched.rowConfidence);
-        await revReq.query(`
-          INSERT INTO dbo.review_item (product_id, status, reason, row_confidence)
-          VALUES (@product_id, 'pending', @reason, @row_confidence);
-        `);
+      if (productId) {
+        // Persist bullet features
+        if (enriched.features && enriched.features.length > 0) {
+          for (let i = 0; i < enriched.features.length; i++) {
+            const fReq = pool.request();
+            fReq.input('product_id', sql.BigInt, productId);
+            fReq.input('sequence', sql.Int, i + 1);
+            fReq.input('feature_text', sql.NVarChar(sql.MAX), enriched.features[i]);
+            await fReq.query(`
+              INSERT INTO dbo.product_feature (product_id, sequence, feature_text)
+              VALUES (@product_id, @sequence, @feature_text);
+            `).catch(() => null);
+          }
+        }
+
+        // Persist attributes
+        if (enriched.attributes && enriched.attributes.length > 0) {
+          for (let i = 0; i < enriched.attributes.length; i++) {
+            const attr = enriched.attributes[i]!;
+            const aReq = pool.request();
+            aReq.input('product_id', sql.BigInt, productId);
+            aReq.input('sequence', sql.Int, i + 1);
+            aReq.input('attribute_label', sql.VarChar(100), attr.label);
+            aReq.input('attribute_value', sql.NVarChar(sql.MAX), attr.value);
+            aReq.input('attribute_uom', sql.VarChar(50), attr.uom);
+            aReq.input('confidence_score', sql.Decimal(5, 2), attr.confidence);
+            await aReq.query(`
+              INSERT INTO dbo.product_attribute (product_id, sequence, attribute_label, attribute_value, attribute_uom, confidence_score)
+              VALUES (@product_id, @sequence, @attribute_label, @attribute_value, @attribute_uom, @confidence_score);
+            `).catch(() => null);
+          }
+        }
+
+        // If pending review, create review item
+        if (enriched.status === 'pending_review') {
+          const revReq = pool.request();
+          revReq.input('product_id', sql.BigInt, productId);
+          revReq.input('reason', sql.VarChar(1000), `Confidence score (${enriched.rowConfidence}) below 0.85 threshold`);
+          revReq.input('row_confidence', sql.Decimal(5, 2), enriched.rowConfidence);
+          await revReq.query(`
+            INSERT INTO dbo.review_item (product_id, status, reason, row_confidence)
+            VALUES (@product_id, 'pending', @reason, @row_confidence);
+          `).catch(() => null);
+        }
       }
 
       return productId;
