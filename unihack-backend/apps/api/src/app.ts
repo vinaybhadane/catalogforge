@@ -12,6 +12,7 @@ import { dbPlugin } from './plugins/db.plugin';
 import { multipartPlugin } from './plugins/multipart.plugin';
 import { swaggerPlugin } from './plugins/swagger.plugin';
 import { analyticsRoutes } from './routes/analytics/analytics.routes';
+import { auditRoutes } from './routes/audit/audit.routes';
 import { authRoutes } from './routes/auth/auth.routes';
 import { configRoutes } from './routes/config/config.routes';
 import { healthRoutes } from './routes/health/health.routes';
@@ -93,6 +94,7 @@ export async function buildApp(opts: FastifyServerOptions = {}): Promise<Fastify
   await app.register(reviewRoutes, { prefix: '/api/v1/reviews' });
   await app.register(masterDataRoutes, { prefix: '/api/v1/master-data' });
   await app.register(analyticsRoutes, { prefix: '/api/v1/analytics' });
+  await app.register(auditRoutes, { prefix: '/api/v1/audit' });
 
   return app;
 }

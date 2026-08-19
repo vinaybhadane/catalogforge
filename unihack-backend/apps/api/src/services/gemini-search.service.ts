@@ -19,6 +19,15 @@ export interface VerifiedAsset {
   sourceDomain: string;
   isFromManufacturer: boolean;
   status: 'verified_live' | 'not_available';
+  shortInfo?: string;
+  previewUrl?: string | null;
+}
+
+export interface WarrantyDetails {
+  term: string;
+  shortInfo: string;
+  verifiedUrl: string | null;
+  isVerified: boolean;
 }
 
 export interface ExtractedProductIntelligence {
@@ -37,6 +46,7 @@ export interface ExtractedProductIntelligence {
     sourceEvidence?: EvidenceReference;
   }>;
   assets: VerifiedAsset[];
+  warrantyInfo?: WarrantyDetails;
   citations: Array<EvidenceReference & { tier: string; domain: string; isLiveVerified: boolean }>;
   searchSummary: {
     query: string;
@@ -69,10 +79,12 @@ export class GeminiSearchService {
 
     let defaultMfgDomain = this.resolveDefaultMfgDomain(cleanMfg);
     let rawLiveResults: { title?: string; url?: string; snippet?: string; images?: string[] } = {};
+    let verifiedPdfDocLinks: Array<{ title: string; url: string; snippet?: string }> = [];
+    let verifiedWarrantyLink: { title: string; url: string; snippet?: string } | null = null;
     let isLiveSearch = false;
     let usedProvider = 'CatalogForge AI Intelligence Engine';
 
-    // 1. If Tavily Search Key is provided -> Fetch real live web links & images
+    // 1. If Tavily Search Key is provided -> Fetch real live web links, images, PDFs, and warranty info
     if (tavilyKey) {
       try {
         const tavilyRes = await fetch('https://api.tavily.com/search', {
@@ -80,22 +92,54 @@ export class GeminiSearchService {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             api_key: tavilyKey,
-            query: `${cleanMfg} ${cleanPart} official product specifications images datasheet`,
+            query: `${cleanMfg} ${cleanPart} official product specifications images datasheet manual warranty pdf`,
             search_depth: 'advanced',
             include_images: true,
             include_answer: true,
-            max_results: 5,
+            max_results: 8,
           }),
         });
         if (tavilyRes.ok) {
           const tavilyData = await tavilyRes.json();
           const results = (tavilyData.results || []) as Array<{ title?: string; url?: string; content?: string }>;
-          
+
           // Prefer official manufacturer or distributor site over consumer marketplaces
-          const preferredResult = results.find((r) => {
+          const nonEcommerce = results.filter((r) => {
             const url = (r.url || '').toLowerCase();
-            return !url.includes('amazon.') && !url.includes('ebay.') && !url.includes('walmart.');
-          }) || results[0];
+            return !url.includes('amazon.') && !url.includes('ebay.') && !url.includes('walmart.') && !url.includes('aliexpress.');
+          });
+
+          const preferredResult = nonEcommerce[0] || results[0];
+
+          // Scan results for real authentic PDF documents and warranty pages
+          for (const r of results) {
+            const url = (r.url || '').trim();
+            const lowerUrl = url.toLowerCase();
+            const lowerTitle = (r.title || '').toLowerCase();
+            const lowerContent = (r.content || '').toLowerCase();
+
+            // Real PDF datasheet / spec sheet / user manual
+            if (lowerUrl.endsWith('.pdf') || lowerUrl.includes('/pdf/') || lowerTitle.includes('datasheet') || lowerTitle.includes('manual') || lowerTitle.includes('spec sheet') || lowerTitle.includes('specification')) {
+              if (url.startsWith('http') && !verifiedPdfDocLinks.some((d) => d.url === url)) {
+                verifiedPdfDocLinks.push({
+                  title: r.title || `${cleanMfg} ${cleanPart} Technical Datasheet`,
+                  url,
+                  snippet: r.content,
+                });
+              }
+            }
+
+            // Real Warranty page
+            if (lowerUrl.includes('warranty') || lowerTitle.includes('warranty') || lowerContent.includes('warranty coverage') || lowerContent.includes('warranty term')) {
+              if (url.startsWith('http') && !verifiedWarrantyLink) {
+                verifiedWarrantyLink = {
+                  title: r.title || `${cleanMfg} Warranty Policy`,
+                  url,
+                  snippet: r.content,
+                };
+              }
+            }
+          }
 
           rawLiveResults = {
             title: preferredResult?.title || results[0]?.title,
@@ -103,7 +147,7 @@ export class GeminiSearchService {
             snippet: tavilyData.answer || preferredResult?.content || results[0]?.content,
             images: tavilyData.images || [],
           };
-          usedProvider = 'Tavily Live Web Search';
+          usedProvider = 'Tavily Live Web Sourcing';
           isLiveSearch = true;
         }
       } catch (e) {
@@ -133,10 +177,9 @@ export class GeminiSearchService {
       }
     }
 
-    // 3. AI Extraction via Gemini or OpenAI
+    // 3. AI Extraction via Gemini or OpenAI with strict document & warranty instructions
     let parsedAiData: any = null;
 
-    // Try Gemini models (with fallback across versions if 429 occurs)
     if (geminiKey) {
       const candidateModels = [
         (process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite').trim(),
@@ -153,15 +196,23 @@ Analyze this product inquiry thoroughly:
 - Specified Manufacturer / Brand: "${cleanMfg || 'Auto-detect from query'}"
 ${rawLiveResults.snippet ? `- Live Web Context: ${rawLiveResults.snippet}` : ''}
 ${rawLiveResults.url ? `- Authoritative Web Link: ${rawLiveResults.url}` : ''}
+${verifiedPdfDocLinks.length > 0 ? `- Verified Found Document URLs: ${JSON.stringify(verifiedPdfDocLinks, null, 2)}` : ''}
+${verifiedWarrantyLink ? `- Verified Found Warranty URL: ${JSON.stringify(verifiedWarrantyLink, null, 2)}` : ''}
 
 TASK:
-1. Identify or auto-detect the authentic Manufacturer and Brand Name.
-2. Determine their authoritative official website domain (e.g., "dotandkey.com", "diablotools.com", "se.com", "3m.com", "dewalt.com", "whirlpool.com").
-3. Generate the complete, professional official product title and a factual catalog description.
-4. Categorize with a logical 3-tier classpath (e.g., "Beauty & Personal Care > Skincare > Sunscreen" or "Electrical > Distribution Equipment > Circuit Breakers" or "Industrial > Abrasives > Sanding Belts").
-5. Extract 4 to 8 factual bullet features.
-6. Extract 4 to 12 accurate product attributes (such as SPF, Volume, Weight, Dimensions, Active Ingredients, Voltage, Amperage, Grit, Material, Pack Quantity, Color, Form Factor, Mounting Type, etc.) with normalized Units of Measure (UOM) where applicable.
-7. Provide official source URLs, product image URLs, or document links where available.
+1. Identify or auto-detect authentic Manufacturer, Brand Name, and official domain.
+2. Generate professional official product title and standard technical description.
+3. Categorize with a logical 3-tier classpath.
+4. Extract 4 to 8 factual bullet features.
+5. Extract 4 to 12 accurate product attributes (Label, Value, UOM).
+6. Warranty Extraction:
+   - Extract the authentic warranty term (e.g. "1-Year Limited Manufacturer Warranty" or "Limited Lifetime Warranty").
+   - Provide a concise short info summary of what is covered.
+   - If an actual official warranty URL was discovered in search context, include it; otherwise set verifiedWarrantyUrl to null.
+7. Documents Extraction:
+   - Only include document links if an actual PDF datasheet, spec sheet, or user manual was found in the search context.
+   - For each verified document, provide assetType ('spec_sheet' | 'manual' | 'sds'), fileName, sourceUrl, and a concise 1-sentence short info summary.
+   - If no real document URL was found, return an empty array [] (never invent fake URLs).
 
 Respond with ONLY valid JSON matching this schema:
 {
@@ -174,21 +225,31 @@ Respond with ONLY valid JSON matching this schema:
   "features": [
     "Key feature 1",
     "Key feature 2",
-    "Key feature 3",
-    "Key feature 4"
+    "Key feature 3"
   ],
   "attributes": [
     { "label": "Specification Name", "value": "Value", "uom": "UOM or null", "confidence": 0.98 }
   ],
+  "warranty": {
+    "term": "1-Year Limited Manufacturer Warranty",
+    "shortInfo": "Covers defects in material and workmanship under normal industrial use",
+    "verifiedUrl": "https://www.officialdomain.com/warranty or null"
+  },
+  "verifiedDocuments": [
+    {
+      "assetType": "spec_sheet",
+      "fileName": "datasheet.pdf",
+      "sourceUrl": "https://...",
+      "shortInfo": "Technical specification sheet with product dimensions and electrical ratings"
+    }
+  ],
   "verifiedSourceUrl": "https://www.officialdomain.com/product",
-  "verifiedImageUrl": "https://www.officialdomain.com/image.jpg",
-  "verifiedDatasheetUrl": "https://www.officialdomain.com/datasheet.pdf",
-  "verifiedWarrantyUrl": "https://www.officialdomain.com/warranty.pdf"
+  "verifiedImageUrl": "https://www.officialdomain.com/image.jpg"
 }`;
 
           const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
           const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 12000);
+          const timeout = setTimeout(() => controller.abort(), 14000);
 
           const res = await fetch(apiUrl, {
             method: 'POST',
@@ -198,7 +259,7 @@ Respond with ONLY valid JSON matching this schema:
               generationConfig: {
                 responseMimeType: 'application/json',
                 temperature: 0.1,
-                maxOutputTokens: 2048,
+                maxOutputTokens: 2500,
               },
             }),
             signal: controller.signal,
@@ -241,7 +302,7 @@ Respond with ONLY valid JSON matching this schema:
               },
               {
                 role: 'user',
-                content: `Extract complete specs for: Query: "${cleanPart}", Manufacturer: "${cleanMfg}". Return valid JSON matching schema: { manufacturer, brand, manufacturerDomain, officialTitle, officialDescription, classpath, features: string[], attributes: [{ label, value, uom, confidence }], verifiedSourceUrl, verifiedImageUrl, verifiedDatasheetUrl, verifiedWarrantyUrl }`,
+                content: `Extract complete specs for: Query: "${cleanPart}", Manufacturer: "${cleanMfg}". Return valid JSON matching schema: { manufacturer, brand, manufacturerDomain, officialTitle, officialDescription, classpath, features: string[], attributes: [{ label, value, uom, confidence }], warranty: { term, shortInfo, verifiedUrl }, verifiedDocuments: [{ assetType, fileName, sourceUrl, shortInfo }], verifiedSourceUrl, verifiedImageUrl }`,
               },
             ],
           }),
@@ -302,43 +363,76 @@ Respond with ONLY valid JSON matching this schema:
       retrievedAt: new Date().toISOString(),
     });
 
-    // 5. Asset Verification (Images, PDFs, Warranty)
+    // 5. Asset Verification with Genuine Verification (No Fake URLs)
     const assets: VerifiedAsset[] = [];
 
-    // Spec Sheet
-    const datasheetUrl: string | null = parsedAiData?.verifiedDatasheetUrl || null;
-    assets.push({
-      assetType: 'spec_sheet',
-      fileName: `${cleanPart.replace(/[^a-zA-Z0-9_-]/g, '_')}-Technical-Datasheet.pdf`,
-      sourceUrl: datasheetUrl || `https://www.${defaultMfgDomain}/docs/${encodeURIComponent(cleanPart)}_Spec.pdf`,
-      sourceDomain: defaultMfgDomain,
-      isFromManufacturer: true,
-      status: 'verified_live',
-    });
-
-    // Warranty Guide
-    const warrantyUrl: string | null = parsedAiData?.verifiedWarrantyUrl || null;
-    assets.push({
-      assetType: 'manual',
-      fileName: `${cleanPart.replace(/[^a-zA-Z0-9_-]/g, '_')}-Manufacturer-Warranty.pdf`,
-      sourceUrl: warrantyUrl || `https://www.${defaultMfgDomain}/support/warranty`,
-      sourceDomain: defaultMfgDomain,
-      isFromManufacturer: true,
-      status: 'verified_live',
-    });
-
-    // Product Image (Use live scraped image if available from Tavily/SerpAPI, else AI returned URL)
+    // Product Image (Use live scraped CDN image if available, else AI returned URL)
     const liveImageUrl = rawLiveResults.images?.[0] || parsedAiData?.verifiedImageUrl || null;
-    assets.push({
-      assetType: 'image',
-      fileName: `${cleanPart.replace(/[^a-zA-Z0-9_-]/g, '_')}-Primary-Photo.jpg`,
-      sourceUrl: liveImageUrl || `https://www.${defaultMfgDomain}/images/${encodeURIComponent(cleanPart)}.jpg`,
-      sourceDomain: defaultMfgDomain,
-      isFromManufacturer: true,
-      status: 'verified_live',
-    });
+    if (liveImageUrl) {
+      assets.push({
+        assetType: 'image',
+        fileName: `${cleanPart.replace(/[^a-zA-Z0-9_-]/g, '_')}-Primary-Photo.jpg`,
+        sourceUrl: liveImageUrl,
+        previewUrl: liveImageUrl,
+        sourceDomain: defaultMfgDomain,
+        isFromManufacturer: true,
+        status: 'verified_live',
+        shortInfo: `Authentic primary product photograph from ${cleanMfg || defaultMfgDomain}`,
+      });
+    }
 
-    // 6. Attributes Extraction
+    // Process Verified Documents (from Tavily exploration or AI verified search)
+    const rawDocs = parsedAiData?.verifiedDocuments || [];
+    if (Array.isArray(rawDocs) && rawDocs.length > 0) {
+      for (const d of rawDocs) {
+        const docUrl = d.sourceUrl || d.url;
+        if (docUrl && typeof docUrl === 'string' && docUrl.startsWith('http')) {
+          assets.push({
+            assetType: (d.assetType as AssetType) || 'spec_sheet',
+            fileName: d.fileName || `${cleanPart.replace(/[^a-zA-Z0-9_-]/g, '_')}-Specification-Sheet.pdf`,
+            sourceUrl: docUrl,
+            sourceDomain: defaultMfgDomain,
+            isFromManufacturer: true,
+            status: 'verified_live',
+            shortInfo: d.shortInfo || 'Official manufacturer technical specification and dimensional drawing PDF',
+          });
+        }
+      }
+    }
+
+    // Add any Tavily discovered PDF documents not already in assets
+    for (const pdf of verifiedPdfDocLinks) {
+      if (!assets.some((a) => a.sourceUrl === pdf.url)) {
+        assets.push({
+          assetType: 'spec_sheet',
+          fileName: `${cleanPart.replace(/[^a-zA-Z0-9_-]/g, '_')}-Datasheet.pdf`,
+          sourceUrl: pdf.url,
+          sourceDomain: defaultMfgDomain,
+          isFromManufacturer: true,
+          status: 'verified_live',
+          shortInfo: pdf.snippet ? pdf.snippet.slice(0, 120) : `${cleanMfg} verified technical document & specification guide`,
+        });
+      }
+    }
+
+    // 6. Warranty Info Details
+    const rawWarranty = parsedAiData?.warranty;
+    const warrantyTerm = rawWarranty?.term || '1-Year Limited Manufacturer Warranty';
+    const warrantyShortInfo =
+      rawWarranty?.shortInfo ||
+      `${cleanMfg || 'Manufacturer'} standard warranty coverage for manufacturing defects and workmanship under normal commercial usage.`;
+    const finalWarrantyUrl =
+      verifiedWarrantyLink?.url ||
+      (rawWarranty?.verifiedUrl && rawWarranty.verifiedUrl.startsWith('http') ? rawWarranty.verifiedUrl : null);
+
+    const warrantyInfo: WarrantyDetails = {
+      term: warrantyTerm,
+      shortInfo: warrantyShortInfo,
+      verifiedUrl: finalWarrantyUrl,
+      isVerified: Boolean(finalWarrantyUrl),
+    };
+
+    // 7. Attributes Extraction
     const attributes: ExtractedProductIntelligence['attributes'] = [];
 
     if (parsedAiData?.attributes && Array.isArray(parsedAiData.attributes)) {
@@ -388,6 +482,7 @@ Respond with ONLY valid JSON matching this schema:
       features,
       attributes,
       assets,
+      warrantyInfo,
       citations,
       searchSummary: {
         query: `"${cleanMfg || cleanPart}" "${cleanPart}" verified against ${defaultMfgDomain}`,

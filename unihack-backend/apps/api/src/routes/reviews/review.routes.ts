@@ -9,27 +9,38 @@ import { requireRole } from '../../middleware/rbac.middleware';
 import { productRepository } from '../../repositories/product.repository';
 
 export const reviewRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
+  const handleGetReviewQueue = async (request: any, reply: any) => {
+    const page = Number(request.query?.page) || 1;
+    const pageSize = Number(request.query?.pageSize) || 25;
+    const offset = (page - 1) * pageSize;
+
+    const result = await productRepository.getReviewQueue(pageSize, offset);
+
+    return reply.status(200).send({
+      items: result.items,
+      total: result.total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(result.total / pageSize) || 1,
+    });
+  };
+
+  // GET /api/v1/reviews - Get review queue
+  fastify.get(
+    '/',
+    {
+      preHandler: [authenticate, requireRole(['admin', 'reviewer'])],
+    },
+    handleGetReviewQueue,
+  );
+
   // GET /api/v1/reviews/queue - Get review queue items
   fastify.get<{ Querystring: { page?: number; pageSize?: number } }>(
     '/queue',
     {
       preHandler: [authenticate, requireRole(['admin', 'reviewer'])],
     },
-    async (request, reply) => {
-      const page = request.query.page || 1;
-      const pageSize = request.query.pageSize || 25;
-      const offset = (page - 1) * pageSize;
-
-      const result = await productRepository.getReviewQueue(pageSize, offset);
-
-      return reply.status(200).send({
-        items: result.items,
-        total: result.total,
-        page,
-        pageSize,
-        totalPages: Math.ceil(result.total / pageSize) || 1,
-      });
-    },
+    handleGetReviewQueue,
   );
 
   // PUT /api/v1/reviews/:id/decision - Submit reviewer correction or approval

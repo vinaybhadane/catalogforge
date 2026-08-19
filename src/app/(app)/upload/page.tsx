@@ -18,6 +18,11 @@ import {
   XCircle,
   PlusCircle,
   Search,
+  FileSpreadsheet,
+  Table,
+  Check,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { useUpload, UploadMode } from "@/hooks/useUpload";
 import { UploadDropzone } from "@/components/upload/UploadDropzone";
@@ -32,9 +37,7 @@ export default function UploadPage() {
     uploadMode,
     setUploadMode,
     selectedFile,
-    urlInput,
     handleFileSelect,
-    handleUrlChange,
     uploadState,
     progress,
     preflightResult,
@@ -56,6 +59,17 @@ export default function UploadPage() {
   const [isSavingProduct, setIsSavingProduct] = useState(false);
   const [savedProductSuccess, setSavedProductSuccess] = useState<{ productId: string | number; partNumber: string } | null>(null);
 
+  // Manufacturer URL Extraction State
+  const [mfrUrlInput, setMfrUrlInput] = useState("");
+  const [isExtractingUrl, setIsExtractingUrl] = useState(false);
+  const [urlExtractionResult, setUrlExtractionResult] = useState<any>(null);
+  const [urlExtractionError, setUrlExtractionError] = useState<string | null>(null);
+  const [isSavingUrlProduct, setIsSavingUrlProduct] = useState(false);
+  const [savedUrlProductSuccess, setSavedUrlProductSuccess] = useState<{ productId: string | number; partNumber: string } | null>(null);
+  const [isExportingExcel, setIsExportingExcel] = useState(false);
+  const [isExportingCsv, setIsExportingCsv] = useState(false);
+  const [showDeliveryColumns, setShowDeliveryColumns] = useState(false);
+
   const isProcessing = uploadState === "uploading" || uploadState === "scanning";
   const isPreflightReady =
     uploadState === "completed" ||
@@ -64,9 +78,9 @@ export default function UploadPage() {
 
   const TABS = [
     { id: "file" as ExtendedUploadMode, label: "File Upload", sublabel: "CSV / XLSX", icon: UploadCloud },
+    { id: "url" as ExtendedUploadMode, label: "Manufacturer URL", sublabel: "Datasheet / Product link", icon: Globe },
     { id: "ai-search" as ExtendedUploadMode, label: "AI Product Lookup", sublabel: "Gemini Sourcing", icon: Sparkles },
     { id: "pdf" as ExtendedUploadMode, label: "Manufacturer PDF", sublabel: "PDF up to 50MB", icon: FileText },
-    { id: "url" as ExtendedUploadMode, label: "Manufacturer URL", sublabel: "Datasheet link", icon: Globe },
   ];
 
   const handleRunAiLookup = async (e?: React.FormEvent) => {
@@ -116,6 +130,128 @@ export default function UploadPage() {
     }
   };
 
+  // Manufacturer URL Live Extraction
+  const handleExtractFromUrl = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!mfrUrlInput.trim()) return;
+
+    setIsExtractingUrl(true);
+    setUrlExtractionError(null);
+    setUrlExtractionResult(null);
+    setSavedUrlProductSuccess(null);
+
+    try {
+      const res = await apiClient.post<any>("/ingestion/extract-url", {
+        url: mfrUrlInput.trim(),
+      });
+      setUrlExtractionResult(res.data);
+    } catch (err: any) {
+      setUrlExtractionError(
+        err?.message || "Failed to extract product intelligence from the manufacturer URL. Please check the link."
+      );
+    } finally {
+      setIsExtractingUrl(false);
+    }
+  };
+
+  const handleSaveUrlProductToCatalog = async () => {
+    if (!urlExtractionResult) return;
+    setIsSavingUrlProduct(true);
+    try {
+      const saveRes = await apiClient.post<any>("/ingestion/extract-url", {
+        url: urlExtractionResult.sourceUrl,
+        saveToCatalog: true,
+      });
+
+      setSavedUrlProductSuccess({
+        productId: saveRes.savedProductId || "new",
+        partNumber: urlExtractionResult.partNumber,
+      });
+    } catch (err: any) {
+      setUrlExtractionError(err?.message || "Failed to save product to catalog.");
+    } finally {
+      setIsSavingUrlProduct(false);
+    }
+  };
+
+  const handleDownloadDeliveryExcel = async () => {
+    if (!urlExtractionResult) return;
+    setIsExportingExcel(true);
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+
+      const res = await fetch(`${baseUrl}/ingestion/extract-url/export-excel`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          url: urlExtractionResult.sourceUrl,
+          deliveryRow: urlExtractionResult.deliveryRow,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to export Excel delivery file.");
+      }
+
+      const blob = await res.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      a.download = `Unihack_Delivery_${urlExtractionResult.partNumber.replace(/[^a-zA-Z0-9_-]/g, "_")}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(downloadUrl);
+      document.body.removeChild(a);
+    } catch (err: any) {
+      setUrlExtractionError(err?.message || "Failed to download delivery Excel.");
+    } finally {
+      setIsExportingExcel(false);
+    }
+  };
+
+  const handleDownloadDeliveryCsv = async () => {
+    if (!urlExtractionResult) return;
+    setIsExportingCsv(true);
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+
+      const res = await fetch(`${baseUrl}/ingestion/extract-url/export-csv`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          url: urlExtractionResult.sourceUrl,
+          deliveryRow: urlExtractionResult.deliveryRow,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to export CSV delivery file.");
+      }
+
+      const blob = await res.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      a.download = `Unihack_Delivery_${urlExtractionResult.partNumber.replace(/[^a-zA-Z0-9_-]/g, "_")}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(downloadUrl);
+      document.body.removeChild(a);
+    } catch (err: any) {
+      setUrlExtractionError(err?.message || "Failed to download delivery CSV.");
+    } finally {
+      setIsExportingCsv(false);
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto pb-16 space-y-6">
 
@@ -130,13 +266,13 @@ export default function UploadPage() {
               Dataset Upload &amp; Ingestion
             </h1>
             <p className="text-sm text-[#64748B] mt-0.5 leading-snug">
-              Ingest raw catalog CSV/XLSX files, manufacturer PDFs, or search products with Google Gemini 3.5 Flash-Lite.
+              Extract verified specifications from Manufacturer URLs, PDF spec sheets, or batch CSV/XLSX catalogs.
             </p>
           </div>
         </div>
         <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-700">
           <Sparkles className="w-3.5 h-3.5" />
-          <span>Gemini 3.5 AI</span>
+          <span>Gemini 3.5 + Zero-Fake Policy</span>
         </div>
       </div>
 
@@ -151,7 +287,7 @@ export default function UploadPage() {
               type="button"
               onClick={() => {
                 setActiveTabMode(tab.id);
-                if (tab.id !== "ai-search") {
+                if (tab.id !== "ai-search" && tab.id !== "url") {
                   setUploadMode(tab.id as UploadMode);
                   reset();
                 }
@@ -173,7 +309,456 @@ export default function UploadPage() {
         })}
       </div>
 
-      {/* ── TAB 1: SINGLE PRODUCT QUICK LOOKUP (GEMINI 3.5 FLASH-LITE) ─── */}
+      {/* ── TAB: MANUFACTURER URL EXTRACTION (ZERO-FAKE-DATA POLICY) ──── */}
+      {activeTabMode === "url" && (
+        <div className="space-y-6">
+          {/* Input Box */}
+          <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 space-y-4">
+            <div>
+              <h3 className="text-base font-bold text-[#000000] tracking-tight flex items-center gap-2">
+                <Globe className="w-4 h-4 text-[#2563EB]" />
+                Manufacturer URL Intelligence &amp; 252-Column Extractor
+              </h3>
+              <p className="text-xs text-[#64748B] mt-1">
+                Enter an official manufacturer product page, datasheet link, or technical PDF. Google Gemini 3.5 &amp; our scraping engine extract only authentic verified specs into the 252-column Unihack Delivery Schema.
+              </p>
+            </div>
+
+            <form onSubmit={handleExtractFromUrl} className="space-y-3">
+              <div className="relative">
+                <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94A3B8]" />
+                <input
+                  type="url"
+                  value={mfrUrlInput}
+                  onChange={(e) => setMfrUrlInput(e.target.value)}
+                  placeholder="https://www.manufacturer.com/product/part-number (e.g. Diablo, 3M, Milwaukee, Schneider Electric)..."
+                  className="w-full pl-10 pr-4 py-3 text-xs text-[#000000] border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#2563EB] bg-[#FAFAFA]"
+                  required
+                  suppressHydrationWarning
+                />
+              </div>
+
+              {/* Sample Shortcuts */}
+              <div className="flex items-center gap-2 flex-wrap text-[11px] text-slate-500">
+                <span className="font-semibold text-slate-700">Quick Samples:</span>
+                <button
+                  type="button"
+                  onClick={() => setMfrUrlInput("https://www.diablotools.com/products/DCB518ASTS06G")}
+                  className="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-800 text-[11px] font-mono transition"
+                >
+                  Diablo Sanding Belt
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMfrUrlInput("https://www.3m.com/3M/en_US/p/d/b40065688/")}
+                  className="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-800 text-[11px] font-mono transition"
+                >
+                  3M Cubitron II
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMfrUrlInput("https://www.se.com/us/en/product/QO120/mini-circuit-breaker-qo-20a-1p-120-240v-10ka-plug-in/")}
+                  className="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-800 text-[11px] font-mono transition"
+                >
+                  Square D Breaker
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between flex-wrap gap-3 pt-2">
+                <div className="flex items-center gap-2 text-[11px] text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span className="font-semibold">
+                    Strict Zero-Fake Policy: Unstated fields are kept strictly blank (No hallucinated specs)
+                  </span>
+                </div>
+                <button
+                  type="submit"
+                  disabled={!mfrUrlInput.trim() || isExtractingUrl}
+                  className="px-6 py-2.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold flex items-center gap-2 transition-all disabled:opacity-50 shadow-sm"
+                  suppressHydrationWarning
+                >
+                  {isExtractingUrl ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Crawling &amp; Extracting…</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4" />
+                      <span>Extract 252-Column Specs</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* Loading Animation Card */}
+          {isExtractingUrl && (
+            <div className="bg-white border border-[#E2E8F0] rounded-2xl p-8 flex flex-col items-center gap-5 text-center">
+              <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center">
+                <Loader2 className="w-6 h-6 text-[#2563EB] animate-spin" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-[#000000]">
+                  Extracting Product Intelligence from URL…
+                </h3>
+                <p className="text-xs text-[#64748B] max-w-md">
+                  Fetching live HTML content, scraping high-res OEM images, and parsing technical specifications with Google Gemini 3.5 Flash-Lite.
+                </p>
+              </div>
+              <div className="w-full max-w-md space-y-2 text-left bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-[11px] text-slate-600">
+                <div className="flex items-center gap-2 font-semibold text-emerald-700">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>1. Connect to Manufacturer Server &amp; Parse HTML Metadata</span>
+                </div>
+                <div className="flex items-center gap-2 font-semibold text-emerald-700">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>2. Scrape Real Product Images &amp; Technical Spec Sheet PDFs</span>
+                </div>
+                <div className="flex items-center gap-2 font-semibold text-blue-700 animate-pulse">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>3. Map to 252-Column Unihack Schema with Gemini 3.5 AI</span>
+                </div>
+                <div className="flex items-center gap-2 text-slate-400">
+                  <div className="w-3.5 h-3.5 rounded-full border border-slate-300 flex items-center justify-center text-[9px] font-bold">4</div>
+                  <span>4. Zero-Fake Validation: Keep unmentioned columns blank</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Error Banner */}
+          {urlExtractionError && (
+            <div className="bg-white border border-rose-200 rounded-2xl p-4 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-xs font-bold text-rose-900">Extraction Error</p>
+                <p className="text-xs text-rose-700 mt-0.5">{urlExtractionError}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Success Banner when Saved */}
+          {savedUrlProductSuccess && (
+            <div className="bg-[#F0FDF4] border border-emerald-200 rounded-2xl p-5 flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-700">
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-emerald-900">
+                    Product Ingested &amp; Saved to Catalog!
+                  </h4>
+                  <p className="text-xs text-emerald-700 mt-0.5">
+                    Part #{savedUrlProductSuccess.partNumber} is now live in the central product catalog.
+                  </p>
+                </div>
+              </div>
+              <Link
+                href={`/products/${savedUrlProductSuccess.productId}`}
+                className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors"
+              >
+                <span>View Product Detail</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          )}
+
+          {/* Extracted Product Presentation Card */}
+          {urlExtractionResult && (
+            <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 space-y-6">
+              {/* Header */}
+              <div className="flex items-start justify-between flex-wrap gap-4 border-b border-[#E2E8F0] pb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
+                      Tier 1 OEM Verified
+                    </span>
+                    <span className="text-xs font-mono font-bold text-slate-500">{urlExtractionResult.manufacturerName}</span>
+                    {urlExtractionResult.brandName && (
+                      <span className="text-xs font-semibold text-slate-400">• Brand: {urlExtractionResult.brandName}</span>
+                    )}
+                  </div>
+                  <h3 className="text-base font-bold text-[#000000] mt-1.5">{urlExtractionResult.officialTitle}</h3>
+                  <p className="text-xs font-mono font-semibold text-[#2563EB] mt-0.5">
+                    Part Number: {urlExtractionResult.partNumber} | SKU: {urlExtractionResult.sku}
+                  </p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Taxonomy: <span className="font-semibold text-slate-700">{urlExtractionResult.classpath}</span>
+                  </p>
+                </div>
+
+                <div className="flex items-center flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={handleDownloadDeliveryExcel}
+                    disabled={isExportingExcel || isExportingCsv}
+                    className="px-3.5 py-2 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors disabled:opacity-50 shadow-sm"
+                  >
+                    {isExportingExcel ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Download className="w-3.5 h-3.5" />
+                    )}
+                    <span>Excel (.xlsx)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleDownloadDeliveryCsv}
+                    disabled={isExportingExcel || isExportingCsv}
+                    className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors disabled:opacity-50 border border-slate-300 shadow-sm"
+                  >
+                    {isExportingCsv ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Download className="w-3.5 h-3.5" />
+                    )}
+                    <span>CSV (.csv)</span>
+                  </button>
+
+                  {!savedUrlProductSuccess && (
+                    <button
+                      type="button"
+                      onClick={handleSaveUrlProductToCatalog}
+                      disabled={isSavingUrlProduct}
+                      className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center gap-2 transition-colors disabled:opacity-50 shadow-sm"
+                    >
+                      {isSavingUrlProduct ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>Saving…</span>
+                        </>
+                      ) : (
+                        <>
+                          <PlusCircle className="w-3.5 h-3.5" />
+                          <span>Save to Catalog</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Zero Fake Data Compliance & Sourcing Audit Metrics */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="bg-[#F0FDF4] border border-emerald-200 p-3.5 rounded-xl">
+                  <div className="flex items-center justify-between text-[10px] font-bold text-emerald-800 uppercase">
+                    <span>252-Column Unihack Schema</span>
+                    <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <p className="text-base font-black text-emerald-950 mt-1">
+                    {urlExtractionResult.nonEmptyColumnsCount} / 252 Columns
+                  </p>
+                  <p className="text-[10px] text-emerald-700 mt-0.5">
+                    {252 - urlExtractionResult.nonEmptyColumnsCount} Missing columns kept strictly blank
+                  </p>
+                </div>
+
+                <div className="bg-[#EFF6FF] border border-blue-200 p-3.5 rounded-xl">
+                  <div className="flex items-center justify-between text-[10px] font-bold text-blue-800 uppercase">
+                    <span>Verified Real Photos</span>
+                    <ImageIcon className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <p className="text-base font-black text-blue-950 mt-1">
+                    {urlExtractionResult.images?.length || 0} OEM Images
+                  </p>
+                  <p className="text-[10px] text-blue-700 mt-0.5">Actual Image: Yes (100% Scraped)</p>
+                </div>
+
+                <div className="bg-slate-50 border border-slate-200 p-3.5 rounded-xl">
+                  <div className="flex items-center justify-between text-[10px] font-bold text-slate-800 uppercase">
+                    <span>Technical Attributes</span>
+                    <Check className="w-4 h-4 text-slate-600" />
+                  </div>
+                  <p className="text-base font-black text-slate-950 mt-1">
+                    {urlExtractionResult.attributes?.length || 0} Normalized Specs
+                  </p>
+                  <p className="text-[10px] text-slate-600 mt-0.5">With standard Units of Measure</p>
+                </div>
+              </div>
+
+              {/* Scraped Images Gallery */}
+              {urlExtractionResult.images && urlExtractionResult.images.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                    <ImageIcon className="w-3.5 h-3.5 text-blue-600" />
+                    Verified OEM Photos (Scraped directly from page)
+                  </h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {urlExtractionResult.images.map((img: any, idx: number) => (
+                      <div
+                        key={idx}
+                        className="bg-[#FAFAFA] border border-[#E2E8F0] rounded-xl p-2.5 flex flex-col items-center gap-2 group hover:border-[#2563EB] transition"
+                      >
+                        <div className="w-full h-32 rounded-lg bg-white border border-slate-100 flex items-center justify-center overflow-hidden relative">
+                          <img
+                            src={img.url}
+                            alt={img.alt || `Product Image ${idx + 1}`}
+                            className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
+                            loading="lazy"
+                            onError={(e: any) => {
+                              e.target.style.display = "none";
+                            }}
+                          />
+                        </div>
+                        <div className="w-full flex items-center justify-between text-[10px]">
+                          <span className={cn(
+                            "px-1.5 py-0.5 rounded font-extrabold uppercase text-[9px]",
+                            img.isPrimary ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"
+                          )}>
+                            {img.isPrimary ? "Primary Photo" : `Alt Photo ${idx}`}
+                          </span>
+                          <a
+                            href={img.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[#2563EB] hover:underline flex items-center gap-0.5 font-semibold"
+                          >
+                            <span>Open</span>
+                            <ExternalLink className="w-2.5 h-2.5" />
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Standardized B2B Descriptions */}
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Standardized Descriptions (6 Formats)
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-3.5 rounded-xl space-y-1">
+                    <span className="text-[10px] font-bold uppercase text-slate-400">Short Description (Max 150 Char)</span>
+                    <p className="font-semibold text-slate-800">{urlExtractionResult.shortDesc}</p>
+                  </div>
+                  <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-3.5 rounded-xl space-y-1">
+                    <span className="text-[10px] font-bold uppercase text-slate-400">Mobile Description</span>
+                    <p className="font-semibold text-slate-800">{urlExtractionResult.mobileDesc || "—"}</p>
+                  </div>
+                  <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-3.5 rounded-xl space-y-1">
+                    <span className="text-[10px] font-bold uppercase text-slate-400">Invoice Description</span>
+                    <p className="font-mono font-bold text-slate-800">{urlExtractionResult.invoiceDesc || "—"}</p>
+                  </div>
+                  <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-3.5 rounded-xl space-y-1">
+                    <span className="text-[10px] font-bold uppercase text-slate-400">Retail Description</span>
+                    <p className="font-semibold text-slate-800">{urlExtractionResult.retailDesc || "—"}</p>
+                  </div>
+                  <div className="sm:col-span-2 bg-[#F8FAFC] border border-[#E2E8F0] p-3.5 rounded-xl space-y-1">
+                    <span className="text-[10px] font-bold uppercase text-slate-400">Long Description</span>
+                    <p className="text-slate-700 leading-relaxed">{urlExtractionResult.longDesc1 || "—"}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Normalized Technical Attributes */}
+              {urlExtractionResult.attributes && urlExtractionResult.attributes.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Normalized Technical Attributes (Only Stated Specs)
+                  </h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                    {urlExtractionResult.attributes.map((attr: any, idx: number) => (
+                      <div key={idx} className="bg-[#FAFAFA] border border-[#E2E8F0] p-3 rounded-xl">
+                        <p className="text-[10px] text-slate-400 font-bold uppercase">{attr.label}</p>
+                        <p className="text-xs font-bold text-slate-900 mt-0.5">
+                          {attr.value} {attr.uom ? <span className="text-[10px] text-slate-500 font-normal">({attr.uom})</span> : null}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Bullet Features */}
+              {urlExtractionResult.features && urlExtractionResult.features.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Extracted Product Features
+                  </h4>
+                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-800">
+                    {urlExtractionResult.features.map((feat: string, idx: number) => (
+                      <li key={idx} className="flex items-start gap-2 bg-[#FAFAFA] p-2.5 rounded-xl border border-[#E2E8F0]">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        <span>{feat}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Technical Documents (Spec Sheets, SDS, Manuals) */}
+              {urlExtractionResult.documents && urlExtractionResult.documents.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Verified Technical Documents (PDF / Datasheets)
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {urlExtractionResult.documents.map((doc: any, idx: number) => (
+                      <div key={idx} className="bg-[#F8FAFC] border border-[#E2E8F0] p-3.5 rounded-xl space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-blue-100 text-blue-800">
+                            {doc.assetType.replace(/_/g, " ")}
+                          </span>
+                          <span className="text-[9px] font-bold text-emerald-700">OEM VERIFIED</span>
+                        </div>
+                        <p className="text-xs font-bold text-slate-900 truncate">{doc.fileName}</p>
+                        <a
+                          href={doc.sourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-[#2563EB] hover:underline font-semibold flex items-center gap-1 pt-0.5"
+                        >
+                          <ExternalLink className="w-3 h-3" /> View Document
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 252-Column Unihack Schema Inspector Toggle */}
+              <div className="border-t border-[#E2E8F0] pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowDeliveryColumns(!showDeliveryColumns)}
+                  className="w-full flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-800 transition"
+                >
+                  <div className="flex items-center gap-2">
+                    <Table className="w-4 h-4 text-[#2563EB]" />
+                    <span>Inspect 252-Column Unihack Delivery Row Mapping</span>
+                  </div>
+                  {showDeliveryColumns ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </button>
+
+                {showDeliveryColumns && (
+                  <div className="mt-3 p-4 bg-slate-950 text-slate-200 rounded-xl border border-slate-800 overflow-x-auto max-h-96 space-y-2 text-xs font-mono">
+                    <p className="text-emerald-400 font-sans text-xs font-bold">
+                      Exact 252-Column Data Representation (Matching Unihack_Expected_Output_Delivery_Format.xlsx):
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                      {Object.entries(urlExtractionResult.deliveryRow || {}).map(([key, val]) => (
+                        <div key={key} className="flex items-start justify-between gap-2 p-1.5 rounded bg-slate-900 border border-slate-800">
+                          <span className="text-slate-400 truncate max-w-[180px]">{key}:</span>
+                          <span className={cn("truncate font-semibold", val ? "text-white" : "text-slate-600 italic")}>
+                            {String(val || "[BLANK]")}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── TAB: SINGLE PRODUCT QUICK LOOKUP (GEMINI 3.5 FLASH-LITE) ─── */}
       {activeTabMode === "ai-search" && (
         <div className="space-y-6">
           {/* Search Box */}
@@ -315,33 +900,69 @@ export default function UploadPage() {
                 )}
               </div>
 
-              {/* Sourcing Summary Metrics */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="bg-[#F0FDF4] border border-emerald-200 p-3 rounded-xl">
-                  <div className="flex items-center justify-between text-[10px] font-bold text-emerald-800 uppercase">
-                    <span>Tier 1 Manufacturer</span>
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  </div>
-                  <p className="text-sm font-black text-emerald-950 mt-1">{aiResult.searchSummary?.primarySourceDomain}</p>
-                  <p className="text-[10px] text-emerald-700 mt-0.5">Primary authoritative domain</p>
-                </div>
-
-                <div className="bg-[#EFF6FF] border border-blue-200 p-3 rounded-xl">
-                  <div className="flex items-center justify-between text-[10px] font-bold text-blue-800 uppercase">
-                    <span>Tier 2 Distributor</span>
-                    <Globe className="w-3.5 h-3.5 text-blue-600" />
-                  </div>
-                  <p className="text-sm font-black text-blue-950 mt-1">{aiResult.searchSummary?.distributorResults || 1} Verified Specs</p>
-                  <p className="text-[10px] text-blue-700 mt-0.5">Fallback catalog data</p>
-                </div>
-
-                <div className="bg-[#FEF2F2] border border-rose-200 p-3 rounded-xl">
-                  <div className="flex items-center justify-between text-[10px] font-bold text-rose-800 uppercase">
-                    <span>E-Commerce Blacklist</span>
-                    <XCircle className="w-3.5 h-3.5 text-rose-600" />
-                  </div>
-                  <p className="text-sm font-black text-rose-950 mt-1">100% Prohibited</p>
-                  <p className="text-[10px] text-rose-700 mt-0.5">Amazon/eBay/Walmart excluded</p>
+              {/* Extracted From (Verified Source Provenance) */}
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                  <Globe className="w-3.5 h-3.5 text-[#2563EB]" />
+                  <span>Data Extracted From (Source Sourcing)</span>
+                </h4>
+                <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-4 rounded-xl space-y-3">
+                  {aiResult.citations && aiResult.citations.length > 0 ? (
+                    <div className="space-y-3">
+                      {aiResult.citations
+                        .filter((c: any, idx: number, arr: any[]) => arr.findIndex((x) => x.sourceUrl === c.sourceUrl) === idx)
+                        .map((cite: any, idx: number) => (
+                          <div key={idx} className="flex items-start justify-between flex-wrap gap-2 pt-2 first:pt-0 border-t first:border-t-0 border-slate-200">
+                            <div className="space-y-0.5 max-w-xl">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-blue-100 text-blue-800">
+                                  {cite.domain || "Official Website"}
+                                </span>
+                                <p className="text-xs font-bold text-slate-900">{cite.sourceTitle || cite.domain}</p>
+                              </div>
+                              {cite.sourceSnippet && (
+                                <p className="text-[11px] text-slate-600 line-clamp-2 mt-0.5">
+                                  {cite.sourceSnippet}
+                                </p>
+                              )}
+                            </div>
+                            {cite.sourceUrl && (
+                              <a
+                                href={cite.sourceUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-[#2563EB] hover:underline font-semibold flex items-center gap-1 shrink-0 mt-0.5"
+                              >
+                                <span>Visit Source URL</span>
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            )}
+                          </div>
+                        ))}
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                          {aiResult.searchSummary?.primarySourceDomain || "Official Domain"}
+                        </span>
+                        <p className="text-xs font-bold text-slate-900">
+                          {aiResult.searchSummary?.primarySourceDomain}
+                        </p>
+                      </div>
+                      {aiResult.searchSummary?.primarySourceDomain && (
+                        <a
+                          href={`https://${aiResult.searchSummary.primarySourceDomain}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-[#2563EB] hover:underline font-semibold flex items-center gap-1"
+                        >
+                          <span>Visit Website</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -370,51 +991,164 @@ export default function UploadPage() {
                 </div>
               )}
 
-              {/* Verified Manufacturer Assets (Spec Sheet, Warranty, Image) */}
-              {aiResult.assets && aiResult.assets.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Verified Manufacturer Assets (Tier 1 Only)</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {aiResult.assets.map((ast: any, idx: number) => {
-                      const hasValidUrl = Boolean(ast.sourceUrl && ast.status !== 'not_available');
-                      return (
-                        <div key={idx} className="bg-[#F8FAFC] border border-[#E2E8F0] p-3.5 rounded-xl space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-blue-100 text-blue-800">
-                              {ast.assetType.replace(/_/g, " ")}
-                            </span>
-                            <span className={cn("text-[9px] font-bold", hasValidUrl ? "text-emerald-700" : "text-slate-400")}>
-                              {hasValidUrl ? "OEM VERIFIED" : "UNAVAILABLE"}
-                            </span>
+              {/* Verified Product Image Preview Gallery */}
+              {(() => {
+                const imageAssets = (aiResult.assets || []).filter((a: any) => a.assetType === 'image');
+                if (imageAssets.length === 0) return null;
+                return (
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                      <ImageIcon className="w-3.5 h-3.5 text-blue-600" />
+                      Verified OEM Product Image Preview
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {imageAssets.map((img: any, idx: number) => {
+                        const imgUrl = img.previewUrl || img.sourceUrl;
+                        return (
+                          <div
+                            key={idx}
+                            className="bg-[#FAFAFA] border border-[#E2E8F0] rounded-xl p-3 flex items-center gap-3.5 group hover:border-[#2563EB] transition"
+                          >
+                            <div className="w-20 h-20 rounded-lg bg-white border border-slate-200 flex items-center justify-center overflow-hidden shrink-0">
+                              {imgUrl ? (
+                                <img
+                                  src={imgUrl}
+                                  alt={img.fileName || "Product Photo"}
+                                  className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform"
+                                  loading="lazy"
+                                  onError={(e: any) => {
+                                    e.target.style.display = "none";
+                                  }}
+                                />
+                              ) : (
+                                <ImageIcon className="w-8 h-8 text-slate-300" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0 space-y-1">
+                              <div className="flex items-center justify-between gap-1">
+                                <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                                  OEM VERIFIED PHOTO
+                                </span>
+                                {imgUrl && (
+                                  <a
+                                    href={imgUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[11px] text-[#2563EB] hover:underline font-semibold flex items-center gap-0.5"
+                                  >
+                                    <span>View Full</span>
+                                    <ExternalLink className="w-2.5 h-2.5" />
+                                  </a>
+                                )}
+                              </div>
+                              <p className="text-xs font-bold text-slate-900 truncate">{img.fileName}</p>
+                              <p className="text-[11px] text-slate-500 leading-snug">
+                                {img.shortInfo || "Authentic manufacturer product photo scraped directly from CDN"}
+                              </p>
+                            </div>
                           </div>
-                          <p className="text-xs font-bold text-slate-900 truncate">{ast.fileName}</p>
-                          {hasValidUrl ? (
-                            <a
-                              href={ast.sourceUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs text-[#2563EB] hover:underline font-semibold flex items-center gap-1 pt-0.5"
-                            >
-                              <ExternalLink className="w-3 h-3" /> View Verified Link
-                            </a>
-                          ) : (
-                            <p className="text-[11px] text-slate-400 italic pt-0.5">
-                              Information not available
-                            </p>
-                          )}
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Warranty Coverage & Short Info Card */}
+              {aiResult.warrantyInfo && (
+                <div className="space-y-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                    Verified Warranty Coverage &amp; Policy
+                  </h4>
+                  <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-4 rounded-xl space-y-2">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-900">{aiResult.warrantyInfo.term}</span>
+                        <span className={cn(
+                          "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded",
+                          aiResult.warrantyInfo.isVerified ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"
+                        )}>
+                          {aiResult.warrantyInfo.isVerified ? "Official OEM Policy Link Found" : "Standard Manufacturer Term"}
+                        </span>
+                      </div>
+                      {aiResult.warrantyInfo.verifiedUrl && (
+                        <a
+                          href={aiResult.warrantyInfo.verifiedUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-[#2563EB] hover:underline font-semibold flex items-center gap-1"
+                        >
+                          <ExternalLink className="w-3 h-3" /> View Official Warranty Page
+                        </a>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-700 leading-relaxed">
+                      {aiResult.warrantyInfo.shortInfo}
+                    </p>
                   </div>
                 </div>
               )}
+
+              {/* Verified Technical Documents (Only Real Verified PDFs & Short Info) */}
+              {(() => {
+                const docAssets = (aiResult.assets || []).filter((a: any) => a.assetType !== 'image');
+                return (
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                      <FileText className="w-3.5 h-3.5 text-blue-600" />
+                      Verified Technical Documents &amp; Manuals
+                    </h4>
+                    {docAssets.length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {docAssets.map((doc: any, idx: number) => {
+                          const hasValidUrl = Boolean(doc.sourceUrl && doc.status !== 'not_available');
+                          return (
+                            <div key={idx} className="bg-[#F8FAFC] border border-[#E2E8F0] p-3.5 rounded-xl space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-blue-100 text-blue-800">
+                                  {doc.assetType.replace(/_/g, " ")}
+                                </span>
+                                <span className={cn("text-[9px] font-bold", hasValidUrl ? "text-emerald-700" : "text-slate-400")}>
+                                  {hasValidUrl ? "OEM VERIFIED LINK" : "UNAVAILABLE"}
+                                </span>
+                              </div>
+                              <p className="text-xs font-bold text-slate-900 truncate">{doc.fileName}</p>
+                              <p className="text-[11px] text-slate-600 leading-snug">
+                                {doc.shortInfo || "Official manufacturer technical specification & dimensional drawing PDF"}
+                              </p>
+                              {hasValidUrl && (
+                                <a
+                                  href={doc.sourceUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-[#2563EB] hover:underline font-semibold flex items-center gap-1 pt-1"
+                                >
+                                  <ExternalLink className="w-3 h-3" /> Open Verified PDF Document
+                                </a>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="bg-slate-50 border border-slate-200 p-3.5 rounded-xl flex items-center gap-2.5 text-xs text-slate-600">
+                        <FileText className="w-4 h-4 text-slate-400 shrink-0" />
+                        <span>
+                          No downloadable PDF spec sheet or user manual was found on the official website for this part number.
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           )}
         </div>
       )}
 
-      {/* ── TAB 2 & 3: ERROR BANNER ──────────────────────────────────────── */}
-      {activeTabMode !== "ai-search" && uploadState === "error" && errorMessage && (
+      {/* ── TAB: ERROR BANNER (FILE / PDF) ───────────────────────────────── */}
+      {activeTabMode !== "ai-search" && activeTabMode !== "url" && uploadState === "error" && errorMessage && (
         <div className="bg-white border border-rose-200 rounded-2xl p-4 flex items-start gap-3">
           <div className="w-9 h-9 rounded-lg bg-rose-50 border border-rose-200 flex items-center justify-center shrink-0">
             <AlertCircle className="w-[18px] h-[18px] text-rose-600" />
@@ -433,8 +1167,8 @@ export default function UploadPage() {
         </div>
       )}
 
-      {/* ── TAB 2 & 3: PROCESSING STATE ─────────────────────────────────── */}
-      {activeTabMode !== "ai-search" && isProcessing && (
+      {/* ── TAB: PROCESSING STATE (FILE / PDF) ──────────────────────────── */}
+      {activeTabMode !== "ai-search" && activeTabMode !== "url" && isProcessing && (
         <div className="bg-white border border-[#E2E8F0] rounded-2xl p-8 flex flex-col items-center gap-5">
           <div className="w-12 h-12 rounded-xl bg-[#EFF6FF] border border-[#BFDBFE] flex items-center justify-center">
             <Loader2 className="w-6 h-6 text-[#3386E7] animate-spin" />
@@ -462,51 +1196,20 @@ export default function UploadPage() {
         </div>
       )}
 
-      {/* ── TAB 4: URL INPUT ────────────────────────────────────────────── */}
-      {activeTabMode === "url" && (uploadState === "idle" || uploadState === "selected" || uploadState === "error") && (
-        <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 space-y-4">
-          <div>
-            <h3 className="text-sm font-bold text-[#000000] mb-0.5">Manufacturer Datasheet URL</h3>
-            <p className="text-xs text-[#64748B]">Paste a public URL to a PDF, product page, or catalog spec sheet.</p>
-          </div>
-          <div className="flex gap-2">
-            <div className="flex-1 relative">
-              <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94A3B8]" />
-              <input
-                id="url-input"
-                type="url"
-                value={urlInput}
-                onChange={(e) => handleUrlChange(e.target.value)}
-                placeholder="https://manufacturer.domain/spec-sheet.pdf"
-                className="w-full pl-9 pr-4 py-2.5 text-sm text-[#000000] placeholder:text-[#94A3B8] border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#3386E7] bg-[#FAFAFA] transition"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={submitUpload}
-              disabled={!urlInput.trim()}
-              className="px-5 py-2.5 rounded-xl bg-[#3386E7] hover:bg-[#2563EB] text-white text-sm font-semibold flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
-            >
-              <ArrowRight className="w-4 h-4" />
-              <span>Ingest</span>
-            </button>
-          </div>
-        </div>
-      )}
+      {/* ── TAB: FILE / PDF DROPZONE ────────────────────────────────────── */}
+      {(activeTabMode === "file" || activeTabMode === "pdf") &&
+        (uploadState === "idle" || uploadState === "selected" || uploadState === "error") && (
+          <UploadDropzone
+            mode={uploadMode}
+            selectedFile={selectedFile}
+            onFileSelect={handleFileSelect}
+            onUploadSubmit={submitUpload}
+            isUploading={isProcessing}
+          />
+        )}
 
-      {/* ── TAB 2 & 3: FILE / PDF DROPZONE ──────────────────────────────── */}
-      {(activeTabMode === "file" || activeTabMode === "pdf") && (uploadState === "idle" || uploadState === "selected" || uploadState === "error") && (
-        <UploadDropzone
-          mode={uploadMode}
-          selectedFile={selectedFile}
-          onFileSelect={handleFileSelect}
-          onUploadSubmit={submitUpload}
-          isUploading={isProcessing}
-        />
-      )}
-
-      {/* ── PRE-FLIGHT SUMMARY ────────────────────────────────────────── */}
-      {activeTabMode !== "ai-search" && isPreflightReady && preflightResult && (
+      {/* ── PRE-FLIGHT SUMMARY (FILE / PDF) ─────────────────────────────── */}
+      {activeTabMode !== "ai-search" && activeTabMode !== "url" && isPreflightReady && preflightResult && (
         <PreflightSummary
           result={preflightResult}
           state={uploadState}

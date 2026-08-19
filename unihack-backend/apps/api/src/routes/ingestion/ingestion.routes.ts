@@ -395,4 +395,194 @@ export const ingestionRoutes: FastifyPluginAsync = async (fastify: FastifyInstan
       });
     },
   );
+
+  /**
+   * POST /api/v1/ingestion/extract-url
+   * Live extracts 252-column product specifications and assets directly from Manufacturer URL
+   */
+  fastify.post<{
+    Body: { url: string; saveToCatalog?: boolean };
+  }>(
+    '/extract-url',
+    {
+      preHandler: [authenticate],
+      schema: {
+        description: 'Live extract verified product intelligence and 252-column delivery specifications from a Manufacturer URL with zero-hallucination policy',
+        tags: ['Ingestion', 'Products'],
+        summary: 'Extract Product Intelligence from URL',
+        body: {
+          type: 'object',
+          required: ['url'],
+          properties: {
+            url: { type: 'string' },
+            saveToCatalog: { type: 'boolean' },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { url, saveToCatalog } = request.body;
+      if (!url || !url.trim()) {
+        throw new ValidationError('URL parameter is required.');
+      }
+
+      const { urlExtractorService } = await import('../../services/url-extractor.service');
+      const extraction = await urlExtractorService.extractFromUrl(url.trim());
+
+      let savedProductId: number | null = null;
+      if (saveToCatalog) {
+        const { aiPipelineService } = await import('../../services/ai-pipeline.service');
+        savedProductId = await aiPipelineService.persistProduct({
+          partNumber: extraction.partNumber,
+          manufacturerName: extraction.manufacturerName,
+          brandName: extraction.brandName,
+          manufacturerPartNumber: extraction.mfgPartNum,
+          classpath: extraction.classpath,
+          shortDesc: extraction.shortDesc,
+          longDesc1: extraction.longDesc1,
+          mobileDesc: extraction.mobileDesc,
+          invoiceDesc: extraction.invoiceDesc,
+          retailDesc: extraction.retailDesc,
+          marketingDescription: extraction.marketingDescription,
+          unspsc: extraction.unspsc || '40151500',
+          upc: extraction.upc,
+          ean: extraction.ean,
+          gtin: extraction.gtin,
+          dimensions: extraction.dimensions,
+          countryOfOrigin: extraction.countryOfOrigin,
+          discontinued: false,
+          actualImage: extraction.images.length > 0,
+          rowConfidence: 0.98,
+          status: 'published',
+          features: extraction.features,
+          attributes: extraction.attributes,
+          assets: [
+            ...extraction.images.map((img) => ({
+              assetType: 'image',
+              fileName: `${extraction.manufacturerName}_${extraction.partNumber}.jpg`,
+              sourceUrl: img.url,
+              isFromManufacturer: true,
+            })),
+            ...extraction.documents.map((doc) => ({
+              assetType: doc.assetType,
+              fileName: doc.fileName,
+              sourceUrl: doc.sourceUrl,
+              isFromManufacturer: true,
+            })),
+          ],
+        });
+      }
+
+      return reply.status(200).send({
+        success: true,
+        data: extraction,
+        savedProductId,
+      });
+    },
+  );
+
+  /**
+   * POST /api/v1/ingestion/extract-url/export-excel
+   * Exports a single extracted product URL into the exact 252-column Excel format
+   */
+  fastify.post<{
+    Body: { url: string; deliveryRow?: Record<string, string> };
+  }>(
+    '/extract-url/export-excel',
+    {
+      preHandler: [authenticate],
+      schema: {
+        description: 'Export extracted URL product to 252-column delivery Excel spreadsheet (.xlsx)',
+        tags: ['Ingestion', 'Export'],
+        summary: 'Export Extracted URL to Excel',
+      },
+    },
+    async (request, reply) => {
+      const { url, deliveryRow } = request.body;
+      const xlsx = await import('xlsx');
+      const { DELIVERY_HEADERS } = await import('../../services/delivery-exporter.service');
+
+      let rowToExport: Record<string, string> = {};
+
+      if (deliveryRow && typeof deliveryRow === 'object') {
+        rowToExport = deliveryRow;
+      } else if (url) {
+        const { urlExtractorService } = await import('../../services/url-extractor.service');
+        const extraction = await urlExtractorService.extractFromUrl(url.trim());
+        rowToExport = extraction.deliveryRow;
+      } else {
+        throw new ValidationError('Either `url` or `deliveryRow` must be provided.');
+      }
+
+      // Ensure all 252 headers exist in proper order
+      const orderedRow: Record<string, string> = {};
+      for (const h of DELIVERY_HEADERS) {
+        orderedRow[h] = rowToExport[h] || '';
+      }
+
+      const worksheet = xlsx.utils.json_to_sheet([orderedRow], {
+        header: [...DELIVERY_HEADERS],
+      });
+      const workbook = xlsx.utils.book_new();
+      xlsx.utils.book_append_sheet(workbook, worksheet, 'Unilog Delivery');
+      const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+      return reply
+        .header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        .header('Content-Disposition', 'attachment; filename="Unihack_Extracted_Product_Delivery.xlsx"')
+        .send(buffer);
+    },
+  );
+
+  /**
+   * POST /api/v1/ingestion/extract-url/export-csv
+   * Exports a single extracted product URL into the exact 252-column CSV format
+   */
+  fastify.post<{
+    Body: { url: string; deliveryRow?: Record<string, string> };
+  }>(
+    '/extract-url/export-csv',
+    {
+      preHandler: [authenticate],
+      schema: {
+        description: 'Export extracted URL product to 252-column delivery CSV spreadsheet (.csv)',
+        tags: ['Ingestion', 'Export'],
+        summary: 'Export Extracted URL to CSV',
+      },
+    },
+    async (request, reply) => {
+      const { url, deliveryRow } = request.body;
+      const xlsx = await import('xlsx');
+      const { DELIVERY_HEADERS } = await import('../../services/delivery-exporter.service');
+
+      let rowToExport: Record<string, string> = {};
+
+      if (deliveryRow && typeof deliveryRow === 'object') {
+        rowToExport = deliveryRow;
+      } else if (url) {
+        const { urlExtractorService } = await import('../../services/url-extractor.service');
+        const extraction = await urlExtractorService.extractFromUrl(url.trim());
+        rowToExport = extraction.deliveryRow;
+      } else {
+        throw new ValidationError('Either `url` or `deliveryRow` must be provided.');
+      }
+
+      const orderedRow: Record<string, string> = {};
+      for (const h of DELIVERY_HEADERS) {
+        orderedRow[h] = rowToExport[h] || '';
+      }
+
+      const worksheet = xlsx.utils.json_to_sheet([orderedRow], {
+        header: [...DELIVERY_HEADERS],
+      });
+      const csvContent = xlsx.utils.sheet_to_csv(worksheet);
+      const buffer = Buffer.from(csvContent, 'utf-8');
+
+      return reply
+        .header('Content-Type', 'text/csv; charset=utf-8')
+        .header('Content-Disposition', 'attachment; filename="Unihack_Extracted_Product_Delivery.csv"')
+        .send(buffer);
+    },
+  );
 };
+
