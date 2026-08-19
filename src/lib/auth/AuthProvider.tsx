@@ -15,6 +15,7 @@ import {
   signOut as firebaseSignOut,
   onAuthStateChanged,
   updateProfile,
+  updatePassword,
   User as FirebaseUser,
   AuthError,
 } from "firebase/auth";
@@ -48,6 +49,7 @@ interface AuthContextValue {
   signUp: (data: SignUpData) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  changePassword: (newPassword: string) => Promise<void>;
   refreshToken: () => Promise<string | null>;
 }
 
@@ -255,6 +257,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Change Password
+  const changePassword = useCallback(async (newPassword: string) => {
+    if (!auth.currentUser) {
+      throw new Error("No active user session found. Please log in again.");
+    }
+    try {
+      await updatePassword(auth.currentUser, newPassword);
+    } catch (error) {
+      const message = getReadableAuthErrorMessage(error);
+      throw new Error(message);
+    }
+  }, []);
+
   // Refresh Token
   const refreshToken = useCallback(async (): Promise<string | null> => {
     if (auth.currentUser) {
@@ -272,9 +287,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signUp,
       signInWithGoogle,
       signOut,
+      changePassword,
       refreshToken,
     }),
-    [user, loading, signIn, signUp, signInWithGoogle, signOut, refreshToken]
+    [user, loading, signIn, signUp, signInWithGoogle, signOut, changePassword, refreshToken]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
