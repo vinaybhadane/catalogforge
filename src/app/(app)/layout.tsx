@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, Suspense } from "react";
+import React, { useState, Suspense, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -68,10 +68,54 @@ const NAV_SECTIONS: NavSection[] = [
 function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { user, signOut } = useAuth();
+  const router = useRouter();
+  const { user, loading, signOut } = useAuth();
   const [collapsed, setCollapsed] = useState<boolean>(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState<boolean>(false);
+
+  // Strict Authentication Guard: Block access if not authenticated
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace("/login");
+    }
+  }, [user, loading, router]);
+
+  // Loading Screen while session is validating
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#0B0F17] text-white select-none">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-[#141B2D] border border-slate-700 p-2.5 flex items-center justify-center shadow-xl animate-pulse">
+            <img src="/logo-icon.png" alt="CatalogForge Logo" className="w-full h-full object-contain" />
+          </div>
+          <div className="text-center space-y-1">
+            <h2 className="text-base font-black tracking-tight text-white">
+              <span className="text-[#38BDF8]">Catalog</span>Forge
+            </h2>
+            <p className="text-xs text-slate-400 font-medium">Verifying enterprise session &amp; governance credentials...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // If unauthenticated, render secure blocking redirect state
+  if (!user) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#0B0F17] text-white select-none">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-400 flex items-center justify-center">
+            <LogOut className="w-5 h-5" />
+          </div>
+          <div className="text-center space-y-1">
+            <h2 className="text-sm font-bold text-slate-200">Access Restricted</h2>
+            <p className="text-xs text-slate-400">Redirecting to CatalogForge authentication portal...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const userInitial = user?.displayName
     ? user.displayName.charAt(0).toUpperCase()

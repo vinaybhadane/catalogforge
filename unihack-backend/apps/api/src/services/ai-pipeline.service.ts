@@ -11,6 +11,7 @@ import { geminiSearchService, ExtractedProductIntelligence } from './gemini-sear
 import { placeholderDetector } from './placeholder-detector.service';
 import { sourceGovernor } from './source-governor.service';
 import { uomNormalizer } from './uom-normalizer.service';
+import { sanitizeText, resolveBrandAndManufacturer, resolveAuthoritativeClasspath } from '../utils/text-sanitizer';
 
 export const DEFAULT_BRAND_LIST = [
   { name: 'Square D', manufacturer_name: 'Square D', slug: 'square-d' },
@@ -108,80 +109,40 @@ export class AiPipelineService {
     const cleanShortDesc = placeholderDetector.cleanValue(raw.short_description || '').value || '';
     const cleanLongDesc = placeholderDetector.cleanValue(raw.long_description || '').value || null;
 
-    // 2. Resolve Manufacturer & Brand
-    let mfgName = (raw.manufacturer || '').trim();
-    // Clean manufacturer trailing IDs like "Freud Inc (2435)" -> "Freud Inc"
-    mfgName = mfgName.replace(/\s*\(\d+\)$/g, '').trim();
-
-    let brandName = (raw.brand || '').trim();
-    // Strip brand placeholders
-    if (brandName.startsWith('--') || brandName.toLowerCase().includes('unbranded') || brandName.toLowerCase().includes('no brand')) {
-      brandName = '';
-    }
-
-    // Try detecting brand from description if empty
-    if (!brandName && rawDesc) {
-      for (const b of DEFAULT_BRAND_LIST) {
-        if (new RegExp(`\\b${b.name}\\b`, 'i').test(rawDesc)) {
-          brandName = b.name;
-          if (!mfgName || mfgName.toLowerCase() === 'unknown') {
-            mfgName = b.manufacturer_name;
-          }
-          break;
-        }
-      }
-    }
-
-    const matchedMfg = DEFAULT_MANUFACTURERS.find(
-      (m) =>
-        m.name.toLowerCase() === mfgName.toLowerCase() ||
-        (Array.isArray(m.aliases) && m.aliases.some((a) => a.toLowerCase() === mfgName.toLowerCase())),
+    // 2. Resolve Manufacturer & Brand (Separating OEM from Distributor)
+    const rawPartNum = raw.mfg_part_num || raw.part_number || '';
+    const resolved = resolveBrandAndManufacturer(
+      raw.brand,
+      raw.manufacturer,
+      rawPartNum,
+      rawDesc,
     );
-    if (matchedMfg) {
-      mfgName = matchedMfg.name;
-    }
+    const mfgName = resolved.manufacturerName;
+    const brandName = resolved.brandName;
 
-    const matchedBrand = DEFAULT_BRAND_LIST.find(
-      (b: { name: string; manufacturer_name: string; slug: string }) =>
-        b.name.toLowerCase() === (brandName || '').toLowerCase() ||
-        (cleanTitle && cleanTitle.toLowerCase().includes(b.name.toLowerCase())),
+    // 3. Classpath Resolution (Authoritative leaf mapping)
+    const classpath = resolveAuthoritativeClasspath(
+      mfgName,
+      rawPartNum,
+      rawDesc,
+      raw.category_name,
     );
-    if (matchedBrand) {
-      brandName = matchedBrand.name;
-      if (!matchedMfg && matchedBrand.manufacturer_name) {
-        mfgName = matchedBrand.manufacturer_name;
-      }
-    }
-
-    // 3. Classpath Resolution
-    let classpath = 'Industrial Supplies > General Industrial > Industrial Components';
-    const lowerDesc = rawDesc.toLowerCase();
-    if (raw.category_name && raw.category_name.includes('>')) {
-      classpath = raw.category_name;
-    } else if (lowerDesc.includes('sanding belt') || lowerDesc.includes('abrasive belt')) {
-      classpath = 'Abrasives > Sanding Belts & Discs > Sanding Belts';
-    } else if (lowerDesc.includes('cut off disc') || lowerDesc.includes('cut-off') || lowerDesc.includes('grinding disc')) {
-      classpath = 'Abrasives > Cutting & Grinding Wheels > Cut-Off Discs';
-    } else if (lowerDesc.includes('circuit breaker') || lowerDesc.includes('breaker') || lowerDesc.includes('distribution panel')) {
-      classpath = 'Electrical > Distribution Equipment > Circuit Breakers';
-    } else if (lowerDesc.includes('fastener') || lowerDesc.includes('hardware') || lowerDesc.includes('bolt') || lowerDesc.includes('screw')) {
-      classpath = 'Hardware > Industrial Fasteners > Bolts & Screws';
-    }
 
     // 4. Generate Standardized Descriptions (6 tiers)
-    const effectivePart = raw.mfg_part_num || raw.part_number;
-    let generatedShortDesc = cleanShortDesc || cleanTitle || `${mfgName} ${effectivePart}`;
+    const effectivePart = sanitizeText(raw.mfg_part_num || raw.part_number);
+    let generatedShortDesc = sanitizeText(cleanShortDesc || cleanTitle || `${mfgName} ${effectivePart}`);
     generatedShortDesc = generatedShortDesc.substring(0, 150);
 
-    const mobileDesc = `${mfgName} ${brandName || ''}, ${effectivePart}`.replace(/\s+/g, ' ').trim().substring(0, 80);
-    const invoiceDesc = `${brandName || mfgName || 'PART'} ${effectivePart}`.toUpperCase().substring(0, 40);
-    const retailDesc = `${brandName || mfgName || ''} ${generatedShortDesc}`.trim();
+    const mobileDesc = sanitizeText(`${mfgName} ${brandName}, ${effectivePart}`).substring(0, 80);
+    const invoiceDesc = sanitizeText(`${brandName || mfgName || 'PART'} ${effectivePart}`).toUpperCase().substring(0, 40);
+    const retailDesc = sanitizeText(`${brandName} ${generatedShortDesc}`);
     const marketingDescription =
       'Engineered for heavy-duty industrial and professional use. Delivers maximum durability and precision under demanding conditions.';
 
-    const longDesc =
+    const longDesc = sanitizeText(
       cleanLongDesc ||
-      `${mfgName} ${brandName ? `${brandName} Series ` : ''}${effectivePart} delivers industrial-grade reliability, precision tolerances, and exceptional durability across heavy-duty commercial and manufacturing applications.`;
+      `${mfgName} ${brandName ? `${brandName} Series ` : ''}${effectivePart} delivers industrial-grade reliability, precision tolerances, and exceptional durability across heavy-duty commercial and manufacturing applications.`
+    );
 
     // 5. Parse Specs & Dimensions into Attributes
     const attributes: Array<{ label: string; value: string; uom: string | null; confidence: number }> = [];
@@ -279,7 +240,7 @@ export class AiPipelineService {
 
     // 8. Calculate Confidence Score
     let confidence = 0.80;
-    if (matchedMfg) confidence += 0.08;
+    if (mfgName && mfgName !== 'Unknown') confidence += 0.08;
     if (brandName) confidence += 0.05;
     if (generatedShortDesc.length > 15) confidence += 0.05;
     if (attributes.length >= 3) confidence += 0.02;

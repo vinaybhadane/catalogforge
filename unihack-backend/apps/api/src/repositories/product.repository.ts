@@ -18,7 +18,7 @@ export const DEFAULT_CATALOG_PRODUCTS: Product[] = [
     manufacturerName: 'Freud Inc',
     brandName: 'Diablo',
     manufacturerPartNumber: 'DCB518ASTS06G',
-    classpath: 'Abrasives > Sanding Belts & Discs > Sanding Belts',
+    classpath: 'Industrial > Abrasives > Sanding Belts',
     unspsc: '40151500',
     descriptions: {
       shortDescription: 'Diablo 1/2 in. x 18 in. Sanding Belt Assorted Grits (6-Pack)',
@@ -100,7 +100,7 @@ export const DEFAULT_CATALOG_PRODUCTS: Product[] = [
     manufacturerName: '3M',
     brandName: 'Cubitron II',
     manufacturerPartNumber: '784F-80',
-    classpath: 'Abrasives > Sanding Belts & Discs > Cloth Belts',
+    classpath: 'Industrial > Abrasives > Sanding Belts',
     unspsc: '40151500',
     descriptions: {
       shortDescription: '3M Cubitron II Cloth Belt 784F, 80+ YF-weight, 1/2 in x 18 in',
@@ -230,10 +230,10 @@ export const DEFAULT_CATALOG_PRODUCTS: Product[] = [
     productId: '104',
     rawInputId: null,
     partNumber: '9A-125-180',
-    manufacturerName: 'Mirka Abrasives Inc',
+    manufacturerName: 'Mirka',
     brandName: 'Abranet',
     manufacturerPartNumber: '9A-125-180',
-    classpath: 'Abrasives > Sanding Belts & Discs > Hook & Loop Discs',
+    classpath: 'Industrial > Abrasives > Sanding Discs',
     unspsc: '40151500',
     descriptions: {
       shortDescription: 'Mirka Abranet 5 in. Mesh Grip Discs, 180 Grit (50-Pack)',
@@ -363,7 +363,7 @@ export const DEFAULT_CATALOG_PRODUCTS: Product[] = [
     manufacturerName: '3M',
     brandName: 'Stikit',
     manufacturerPartNumber: '255L-P80',
-    classpath: 'Abrasives > Sanding Belts & Discs > Film Discs',
+    classpath: 'Industrial > Abrasives > Sanding Discs',
     unspsc: '40151500',
     descriptions: {
       shortDescription: '3M Stikit Gold Film Disc Roll 255L, 6 in x NH, P80 Grit (125/Roll)',

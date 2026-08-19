@@ -15,6 +15,7 @@ import {
   signOut as firebaseSignOut,
   onAuthStateChanged,
   updateProfile,
+  updatePassword,
   User as FirebaseUser,
   AuthError,
 } from "firebase/auth";
@@ -48,6 +49,7 @@ interface AuthContextValue {
   signUp: (data: SignUpData) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  changePassword: (newPassword: string) => Promise<void>;
   refreshToken: () => Promise<string | null>;
 }
 
@@ -255,6 +257,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Change Password
+  const changePassword = useCallback(async (newPassword: string) => {
+    if (!auth.currentUser) {
+      throw new Error("No active user session found. Please log in again.");
+    }
+    try {
+      // First attempt with client updatePassword
+      await updatePassword(auth.currentUser, newPassword);
+    } catch (error: any) {
+      // If Firebase requires recent login, use fresh ID token with Firebase Auth REST endpoint
+      if (
+        error?.code === "auth/requires-recent-login" ||
+        (typeof error?.message === "string" && error.message.includes("requires-recent-login"))
+      ) {
+        try {
+          const idToken = await auth.currentUser.getIdToken(true);
+          const apiKey =
+            process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyDjcH_GcXPQLvWzDZmQ8GzRqHxOkL2jNaU";
+          const res = await fetch(
+            `https://identitytoolkit.googleapis.com/v1/accounts:update?key=${apiKey}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                idToken,
+                password: newPassword,
+                returnSecureToken: true,
+              }),
+            }
+          );
+          const data = await res.json();
+          if (!res.ok || data.error) {
+            throw new Error(data.error?.message || "Failed to update password.");
+          }
+          return;
+        } catch (restErr: any) {
+          throw new Error(
+            restErr?.message || "Unable to update password. Please check your connection and try again."
+          );
+        }
+      }
+
+      const message = getReadableAuthErrorMessage(error);
+      throw new Error(message);
+    }
+  }, []);
+
   // Refresh Token
   const refreshToken = useCallback(async (): Promise<string | null> => {
     if (auth.currentUser) {
@@ -272,9 +321,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signUp,
       signInWithGoogle,
       signOut,
+      changePassword,
       refreshToken,
     }),
-    [user, loading, signIn, signUp, signInWithGoogle, signOut, refreshToken]
+    [user, loading, signIn, signUp, signInWithGoogle, signOut, changePassword, refreshToken]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

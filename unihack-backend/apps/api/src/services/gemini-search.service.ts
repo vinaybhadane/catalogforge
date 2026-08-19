@@ -11,6 +11,7 @@
 import { AssetType, EvidenceReference } from '@unihack/contracts';
 import { env } from '../config/env';
 import { sourceGovernor } from './source-governor.service';
+import { sanitizeText, resolveBrandAndManufacturer, resolveAuthoritativeClasspath } from '../utils/text-sanitizer';
 
 export interface VerifiedAsset {
   assetType: AssetType;
@@ -461,31 +462,53 @@ Respond with ONLY valid JSON matching this schema:
       this.extractDeterministicAttributes(cleanPart, cleanMfg, defaultMfgDomain, attributes);
     }
 
-    const officialTitle =
-      rawLiveResults.title || parsedAiData?.officialTitle || (cleanMfg ? `${cleanMfg} ${cleanPart}` : cleanPart);
-    const officialDescription =
+    const officialTitle = sanitizeText(
+      rawLiveResults.title || parsedAiData?.officialTitle || (cleanMfg ? `${cleanMfg} ${cleanPart}` : cleanPart),
+    );
+    const officialDescription = sanitizeText(
       rawLiveResults.snippet ||
       parsedAiData?.officialDescription ||
-      `Official catalog record for ${cleanMfg || 'OEM'} part number ${cleanPart}. Standardized for industrial procurement.`;
+      `Official catalog record for ${cleanMfg || 'OEM'} part number ${cleanPart}. Standardized for industrial procurement.`,
+    );
     const features =
       parsedAiData?.features && Array.isArray(parsedAiData.features) && parsedAiData.features.length > 0
-        ? parsedAiData.features
+        ? parsedAiData.features.map((f: string) => sanitizeText(f))
         : [`Standard verified specification for ${cleanMfg || 'OEM'} ${cleanPart}`];
 
+    const resolved = resolveBrandAndManufacturer(
+      parsedAiData?.brand,
+      cleanMfg || parsedAiData?.manufacturer,
+      cleanPart,
+      officialTitle + ' ' + officialDescription,
+    );
+
+    const resolvedClasspath = resolveAuthoritativeClasspath(
+      resolved.manufacturerName,
+      cleanPart,
+      officialTitle + ' ' + officialDescription,
+      parsedAiData?.classpath,
+    );
+
     return {
-      partNumber: cleanPart,
-      manufacturer: cleanMfg || parsedAiData?.manufacturer || 'Manufacturer',
-      brand: parsedAiData?.brand || cleanMfg || null,
-      classpath: parsedAiData?.classpath || 'Industrial > General Supplies > Components',
+      partNumber: sanitizeText(cleanPart),
+      manufacturer: resolved.manufacturerName,
+      brand: resolved.brandName,
+      classpath: resolvedClasspath,
       officialTitle,
       officialDescription,
       features,
-      attributes,
+      attributes: attributes.map((a) => ({
+        label: sanitizeText(a.label),
+        value: sanitizeText(a.value),
+        uom: sanitizeText(a.uom) || null,
+        confidence: a.confidence || 0.98,
+        sourceEvidence: a.sourceEvidence,
+      })),
       assets,
       warrantyInfo,
       citations,
       searchSummary: {
-        query: `"${cleanMfg || cleanPart}" "${cleanPart}" verified against ${defaultMfgDomain}`,
+        query: `"${resolved.manufacturerName}" "${cleanPart}" verified against ${defaultMfgDomain}`,
         aiModel: usedProvider,
         totalResultsFound: citations.length,
         manufacturerResults: 1,
