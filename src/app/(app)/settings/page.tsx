@@ -15,7 +15,9 @@ import {
   Mail,
   Send,
   ShieldCheck,
+  UserCheck,
 } from "lucide-react";
+import { useAuth } from "@/lib/auth/AuthProvider";
 import { cn } from "@/lib/utils";
 
 type SettingsTab = "general" | "notifications" | "access";
@@ -25,12 +27,14 @@ interface TeamMember {
   name: string;
   email: string;
   role: "Administrator" | "Catalog Manager" | "Auditor";
+  isCurrentSession?: boolean;
 }
 
 function SettingsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const tabParam = searchParams.get("tab") as SettingsTab | null;
+  const { user } = useAuth();
 
   const [activeTab, setActiveTab] = useState<SettingsTab>(
     tabParam === "notifications" || tabParam === "access"
@@ -49,20 +53,20 @@ function SettingsContent() {
   const [strictOemOnly, setStrictOemOnly] = useState<boolean>(true);
   const [blockEcommerce, setBlockEcommerce] = useState<boolean>(true);
 
-  // Notifications State
+  // Notifications State (Removed Gemini AI extraction option)
   const [notifyJobSuccess, setNotifyJobSuccess] = useState<boolean>(true);
   const [notifyJobFailure, setNotifyJobFailure] = useState<boolean>(true);
-  const [notifyAiExtraction, setNotifyAiExtraction] = useState<boolean>(false);
-  const [notificationEmail, setNotificationEmail] = useState<string>("admin@catalogforge.tech");
+  const [notificationEmail, setNotificationEmail] = useState<string>(
+    user?.email || "admin@catalogforge.tech"
+  );
   const [webhookUrl, setWebhookUrl] = useState<string>("");
   const [testAlertSent, setTestAlertSent] = useState<boolean>(false);
 
-  // Access & Permissions State
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([
-    { id: "1", name: "Sakshi Patil", email: "patil.sakshi@catalogforge.tech", role: "Administrator" },
-    { id: "2", name: "Vinay Bhadane", email: "vinay.bhadane@catalogforge.tech", role: "Catalog Manager" },
-    { id: "3", name: "Auditor Desk", email: "compliance@catalogforge.tech", role: "Auditor" },
-  ]);
+  // Access & Permissions State (Real Firebase Auth User + Dynamic Team list)
+  const currentUserEmail = user?.email || "user@firebase-auth.com";
+  const currentUserName = user?.displayName || user?.email?.split("@")[0] || "Authorized User";
+
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [newMemberEmail, setNewMemberEmail] = useState("");
   const [newMemberName, setNewMemberName] = useState("");
   const [newMemberRole, setNewMemberRole] = useState<"Administrator" | "Catalog Manager" | "Auditor">("Catalog Manager");
@@ -70,24 +74,45 @@ function SettingsContent() {
   // Feedback State
   const [isSaved, setIsSaved] = useState<boolean>(false);
 
-  // Load saved preferences from localStorage on mount
+  // Initialize team members from real Firebase auth + localStorage
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("catalogforge_user_settings");
-      if (saved) {
-        const parsed = JSON.parse(saved);
+      const savedMembersStr = localStorage.getItem("catalogforge_team_members");
+      let storedList: TeamMember[] = [];
+      if (savedMembersStr) {
+        storedList = JSON.parse(savedMembersStr);
+      }
+
+      // Always ensure the active Firebase Auth user is at the top of the access list
+      const primaryUser: TeamMember = {
+        id: user?.uid || "firebase-current-user",
+        name: currentUserName,
+        email: currentUserEmail,
+        role: "Administrator",
+        isCurrentSession: true,
+      };
+
+      const otherMembers = storedList.filter((m) => m.email.toLowerCase() !== currentUserEmail.toLowerCase());
+      setTeamMembers([primaryUser, ...otherMembers]);
+
+      // If notification email was not explicitly set, default to user's real email
+      const savedSettings = localStorage.getItem("catalogforge_user_settings");
+      if (savedSettings) {
+        const parsed = JSON.parse(savedSettings);
         if (parsed.strictOemOnly !== undefined) setStrictOemOnly(parsed.strictOemOnly);
         if (parsed.blockEcommerce !== undefined) setBlockEcommerce(parsed.blockEcommerce);
         if (parsed.notifyJobSuccess !== undefined) setNotifyJobSuccess(parsed.notifyJobSuccess);
         if (parsed.notifyJobFailure !== undefined) setNotifyJobFailure(parsed.notifyJobFailure);
-        if (parsed.notifyAiExtraction !== undefined) setNotifyAiExtraction(parsed.notifyAiExtraction);
         if (parsed.notificationEmail) setNotificationEmail(parsed.notificationEmail);
+        else if (user?.email) setNotificationEmail(user.email);
         if (parsed.webhookUrl) setWebhookUrl(parsed.webhookUrl);
+      } else if (user?.email) {
+        setNotificationEmail(user.email);
       }
     } catch {
       // Ignore localStorage errors
     }
-  }, []);
+  }, [user, currentUserEmail, currentUserName]);
 
   const handleSaveSettings = () => {
     try {
@@ -96,11 +121,14 @@ function SettingsContent() {
         blockEcommerce,
         notifyJobSuccess,
         notifyJobFailure,
-        notifyAiExtraction,
         notificationEmail,
         webhookUrl,
       };
       localStorage.setItem("catalogforge_user_settings", JSON.stringify(settingsPayload));
+      localStorage.setItem(
+        "catalogforge_team_members",
+        JSON.stringify(teamMembers.filter((m) => !m.isCurrentSession))
+      );
       setIsSaved(true);
       setTimeout(() => setIsSaved(false), 3000);
     } catch {
@@ -117,13 +145,25 @@ function SettingsContent() {
   const handleAddMember = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMemberEmail.trim() || !newMemberName.trim()) return;
+
+    // Prevent duplicate emails
+    if (teamMembers.some((m) => m.email.toLowerCase() === newMemberEmail.trim().toLowerCase())) {
+      alert("A team member with this email address is already added.");
+      return;
+    }
+
     const newMember: TeamMember = {
       id: Date.now().toString(),
       name: newMemberName.trim(),
       email: newMemberEmail.trim(),
       role: newMemberRole,
     };
-    setTeamMembers([...teamMembers, newMember]);
+    const updatedList = [...teamMembers, newMember];
+    setTeamMembers(updatedList);
+    localStorage.setItem(
+      "catalogforge_team_members",
+      JSON.stringify(updatedList.filter((m) => !m.isCurrentSession))
+    );
     setNewMemberName("");
     setNewMemberEmail("");
     setIsSaved(true);
@@ -131,7 +171,12 @@ function SettingsContent() {
   };
 
   const handleRemoveMember = (id: string) => {
-    setTeamMembers(teamMembers.filter((m) => m.id !== id));
+    const updatedList = teamMembers.filter((m) => m.id !== id);
+    setTeamMembers(updatedList);
+    localStorage.setItem(
+      "catalogforge_team_members",
+      JSON.stringify(updatedList.filter((m) => !m.isCurrentSession))
+    );
   };
 
   const handleTabChange = (tab: SettingsTab) => {
@@ -343,30 +388,6 @@ function SettingsContent() {
                   />
                 </button>
               </div>
-
-              {/* AI Sourcing Updates */}
-              <div className="py-3.5 flex items-center justify-between gap-4">
-                <div className="space-y-0.5">
-                  <p className="text-xs font-bold text-[#000000]">Gemini 3.5 AI Extraction Summaries</p>
-                  <p className="text-xs text-[#64748B]">Receive weekly summary reports of newly sourced product attributes and spec sheets.</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setNotifyAiExtraction(!notifyAiExtraction)}
-                  className={cn(
-                    "w-11 h-6 rounded-full transition-colors relative shrink-0",
-                    notifyAiExtraction ? "bg-[#2563EB]" : "bg-slate-200"
-                  )}
-                  suppressHydrationWarning
-                >
-                  <span
-                    className={cn(
-                      "block w-4 h-4 rounded-full bg-white transition-transform absolute top-1",
-                      notifyAiExtraction ? "left-6" : "left-1"
-                    )}
-                  />
-                </button>
-              </div>
             </div>
           </div>
 
@@ -438,10 +459,10 @@ function SettingsContent() {
               <div>
                 <h3 className="text-sm font-bold text-[#000000] flex items-center gap-2">
                   <Users className="w-4 h-4 text-[#2563EB]" />
-                  Team Members &amp; Workspace Roles
+                  Team Members &amp; Authenticated Users
                 </h3>
                 <p className="text-xs text-[#64748B] mt-0.5">
-                  Manage active users with access to CatalogForge enterprise portal.
+                  Real team members authenticated via Firebase Auth for CatalogForge workspace.
                 </p>
               </div>
             </div>
@@ -450,15 +471,27 @@ function SettingsContent() {
             <div className="border border-[#E2E8F0] rounded-xl overflow-hidden divide-y divide-[#E2E8F0]">
               {teamMembers.map((member) => (
                 <div key={member.id} className="p-3.5 flex items-center justify-between gap-3 bg-[#FAFAFA]">
-                  <div>
-                    <p className="text-xs font-bold text-[#000000]">{member.name}</p>
-                    <p className="text-[11px] text-slate-500">{member.email}</p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-[#2563EB] text-white flex items-center justify-center text-xs font-bold">
+                      {member.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs font-bold text-[#000000]">{member.name}</p>
+                        {member.isCurrentSession && (
+                          <span className="text-[9px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-1">
+                            <UserCheck className="w-3 h-3" /> (Current Firebase Session)
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] font-mono text-slate-600 mt-0.5">{member.email}</p>
+                    </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-md bg-[#EFF6FF] text-[#2563EB] border border-[#BFDBFE]">
                       {member.role}
                     </span>
-                    {member.id !== "1" && (
+                    {!member.isCurrentSession && (
                       <button
                         type="button"
                         onClick={() => handleRemoveMember(member.id)}
