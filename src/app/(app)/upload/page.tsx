@@ -374,25 +374,36 @@ export default function UploadPage() {
                 <div className="space-y-2">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Verified Manufacturer Assets (Tier 1 Only)</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {aiResult.assets.map((ast: any, idx: number) => (
-                      <div key={idx} className="bg-[#F8FAFC] border border-[#E2E8F0] p-3 rounded-xl space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-blue-100 text-blue-800">
-                            {ast.assetType.replace(/_/g, " ")}
-                          </span>
-                          <span className="text-[9px] font-bold text-emerald-700">OEM ONLY</span>
+                    {aiResult.assets.map((ast: any, idx: number) => {
+                      const hasValidUrl = Boolean(ast.sourceUrl && ast.status !== 'not_available');
+                      return (
+                        <div key={idx} className="bg-[#F8FAFC] border border-[#E2E8F0] p-3.5 rounded-xl space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-blue-100 text-blue-800">
+                              {ast.assetType.replace(/_/g, " ")}
+                            </span>
+                            <span className={cn("text-[9px] font-bold", hasValidUrl ? "text-emerald-700" : "text-slate-400")}>
+                              {hasValidUrl ? "OEM VERIFIED" : "UNAVAILABLE"}
+                            </span>
+                          </div>
+                          <p className="text-xs font-bold text-slate-900 truncate">{ast.fileName}</p>
+                          {hasValidUrl ? (
+                            <a
+                              href={ast.sourceUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-[#2563EB] hover:underline font-semibold flex items-center gap-1 pt-0.5"
+                            >
+                              <ExternalLink className="w-3 h-3" /> View Verified Link
+                            </a>
+                          ) : (
+                            <p className="text-[11px] text-slate-400 italic pt-0.5">
+                              Information not available
+                            </p>
+                          )}
                         </div>
-                        <p className="text-xs font-bold text-slate-900 truncate">{ast.fileName}</p>
-                        <a
-                          href={ast.sourceUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-[#2563EB] hover:underline font-semibold flex items-center gap-1 pt-1"
-                        >
-                          <ExternalLink className="w-3 h-3" /> View Asset Link
-                        </a>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}

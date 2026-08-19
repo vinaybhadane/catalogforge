@@ -216,67 +216,109 @@ function SourcingEvidenceTab({
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {/* Spec Sheet PDF */}
-          <div className="border border-[#E2E8F0] p-4 rounded-xl space-y-2 bg-[#F8FAFC]">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-extrabold uppercase text-[#0284C7] bg-[#E0F2FE] px-2 py-0.5 rounded">
-                Official Spec Sheet
-              </span>
-              <span className="text-[10px] font-bold text-emerald-700">TIER 1 OEM</span>
-            </div>
-            <p className="text-xs font-bold text-[#000000] truncate">
-              {product.partNumber}-Technical-Datasheet.pdf
-            </p>
-            <a
-              href={`https://www.${searchSummary.primarySourceDomain}/datasheets/${encodeURIComponent(product.partNumber)}.pdf`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs font-bold text-[#2563EB] hover:underline pt-1"
-            >
-              <Download className="w-3.5 h-3.5" /> Download Spec PDF
-            </a>
-          </div>
+          {(() => {
+            const specAsset = liveIntelligence?.assets?.find((a: any) => a.assetType === 'spec_sheet') || product.assets?.find((a: any) => a.assetType === 'spec_sheet');
+            const hasSpec = Boolean(specAsset?.sourceUrl || specAsset?.blobUrl);
+            return (
+              <div className="border border-[#E2E8F0] p-4 rounded-xl space-y-2 bg-[#F8FAFC]">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-extrabold uppercase text-[#0284C7] bg-[#E0F2FE] px-2 py-0.5 rounded">
+                    Official Spec Sheet
+                  </span>
+                  <span className={cn("text-[10px] font-bold", hasSpec ? "text-emerald-700" : "text-slate-400")}>
+                    {hasSpec ? "OEM VERIFIED" : "UNAVAILABLE"}
+                  </span>
+                </div>
+                <p className="text-xs font-bold text-[#000000] truncate">
+                  {specAsset?.fileName || `${product.partNumber}-Technical-Datasheet.pdf`}
+                </p>
+                {hasSpec ? (
+                  <a
+                    href={specAsset.sourceUrl || specAsset.blobUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs font-bold text-[#2563EB] hover:underline pt-1"
+                  >
+                    <Download className="w-3.5 h-3.5" /> View Verified Spec PDF
+                  </a>
+                ) : (
+                  <p className="text-[11px] text-slate-400 italic pt-1">
+                    Information not available from manufacturer
+                  </p>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Warranty File */}
-          <div className="border border-[#E2E8F0] p-4 rounded-xl space-y-2 bg-[#F8FAFC]">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-extrabold uppercase text-[#0284C7] bg-[#E0F2FE] px-2 py-0.5 rounded">
-                Warranty Document
-              </span>
-              <span className="text-[10px] font-bold text-emerald-700">TIER 1 OEM</span>
-            </div>
-            <p className="text-xs font-bold text-[#000000] truncate">
-              {product.partNumber}-Manufacturer-Warranty.pdf
-            </p>
-            <a
-              href={`https://www.${searchSummary.primarySourceDomain}/support/warranty.pdf`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs font-bold text-[#2563EB] hover:underline pt-1"
-            >
-              <ExternalLink className="w-3.5 h-3.5" /> View Warranty Policy
-            </a>
-          </div>
+          {(() => {
+            const warAsset = liveIntelligence?.assets?.find((a: any) => a.assetType === 'manual') || product.assets?.find((a: any) => a.assetType === 'manual');
+            const hasWar = Boolean(warAsset?.sourceUrl || warAsset?.blobUrl);
+            return (
+              <div className="border border-[#E2E8F0] p-4 rounded-xl space-y-2 bg-[#F8FAFC]">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-extrabold uppercase text-[#0284C7] bg-[#E0F2FE] px-2 py-0.5 rounded">
+                    Warranty Document
+                  </span>
+                  <span className={cn("text-[10px] font-bold", hasWar ? "text-emerald-700" : "text-slate-400")}>
+                    {hasWar ? "OEM VERIFIED" : "UNAVAILABLE"}
+                  </span>
+                </div>
+                <p className="text-xs font-bold text-[#000000] truncate">
+                  {warAsset?.fileName || `${product.partNumber}-Manufacturer-Warranty.pdf`}
+                </p>
+                {hasWar ? (
+                  <a
+                    href={warAsset.sourceUrl || warAsset.blobUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs font-bold text-[#2563EB] hover:underline pt-1"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" /> View Verified Warranty
+                  </a>
+                ) : (
+                  <p className="text-[11px] text-slate-400 italic pt-1">
+                    Information not available from manufacturer
+                  </p>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Primary Photo */}
-          <div className="border border-[#E2E8F0] p-4 rounded-xl space-y-2 bg-[#F8FAFC]">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-extrabold uppercase text-[#0284C7] bg-[#E0F2FE] px-2 py-0.5 rounded">
-                Product Image
-              </span>
-              <span className="text-[10px] font-bold text-emerald-700">TIER 1 OEM</span>
-            </div>
-            <p className="text-xs font-bold text-[#000000] truncate">
-              {product.partNumber}-Official-Photo.jpg
-            </p>
-            <a
-              href={`https://www.${searchSummary.primarySourceDomain}/images/${encodeURIComponent(product.partNumber)}.jpg`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs font-bold text-[#2563EB] hover:underline pt-1"
-            >
-              <ImageIcon className="w-3.5 h-3.5" /> View Manufacturer Image
-            </a>
-          </div>
+          {(() => {
+            const imgAsset = liveIntelligence?.assets?.find((a: any) => a.assetType === 'image') || product.assets?.find((a: any) => a.assetType === 'image');
+            const hasImg = Boolean(imgAsset?.sourceUrl || imgAsset?.blobUrl);
+            return (
+              <div className="border border-[#E2E8F0] p-4 rounded-xl space-y-2 bg-[#F8FAFC]">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-extrabold uppercase text-[#0284C7] bg-[#E0F2FE] px-2 py-0.5 rounded">
+                    Product Image
+                  </span>
+                  <span className={cn("text-[10px] font-bold", hasImg ? "text-emerald-700" : "text-slate-400")}>
+                    {hasImg ? "OEM VERIFIED" : "UNAVAILABLE"}
+                  </span>
+                </div>
+                <p className="text-xs font-bold text-[#000000] truncate">
+                  {imgAsset?.fileName || `${product.partNumber}-Official-Photo.jpg`}
+                </p>
+                {hasImg ? (
+                  <a
+                    href={imgAsset.sourceUrl || imgAsset.blobUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs font-bold text-[#2563EB] hover:underline pt-1"
+                  >
+                    <ImageIcon className="w-3.5 h-3.5" /> View Verified Image
+                  </a>
+                ) : (
+                  <p className="text-[11px] text-slate-400 italic pt-1">
+                    Information not available from manufacturer
+                  </p>
+                )}
+              </div>
+            );
+          })()}
         </div>
       </div>
 
