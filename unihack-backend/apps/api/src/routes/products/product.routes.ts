@@ -23,8 +23,19 @@ export const productRoutes: FastifyPluginAsync = async (fastify: FastifyInstance
     },
     async (request, reply) => {
       const query = request.query;
+      const page = Number(query.page) || 1;
+      const pageSize = Number(query.pageSize) || 20;
+
       const result = await productRepository.listProducts(query);
-      return reply.status(200).send(result);
+      const totalPages = Math.ceil(result.total / pageSize);
+
+      return reply.status(200).send({
+        items: result.items,
+        total: result.total,
+        page,
+        pageSize,
+        totalPages: totalPages > 0 ? totalPages : 1,
+      });
     },
   );
 

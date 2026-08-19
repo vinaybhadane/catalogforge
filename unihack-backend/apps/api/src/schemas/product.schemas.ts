@@ -7,12 +7,12 @@ import { ApiErrorResponseSchema } from './common.schemas';
 export const ProductSchema = {
   $id: 'Product',
   type: 'object',
-  required: ['productId', 'partNumber', 'manufacturerName', 'status', 'version'],
+  required: ['productId', 'partNumber', 'status', 'version'],
   properties: {
     productId: { type: 'string' },
-    rawInputId: { type: 'number', nullable: true },
+    rawInputId: { type: 'string', nullable: true },
     partNumber: { type: 'string' },
-    manufacturerName: { type: 'string' },
+    manufacturerName: { type: 'string', nullable: true },
     brandName: { type: 'string', nullable: true },
     manufacturerPartNumber: { type: 'string', nullable: true },
     classpath: { type: 'string', nullable: true },
@@ -20,12 +20,14 @@ export const ProductSchema = {
     descriptions: {
       type: 'object',
       properties: {
+        shortDescription: { type: 'string', nullable: true },
         shortDesc: { type: 'string', nullable: true },
         mobileDesc: { type: 'string', nullable: true },
         invoiceDesc: { type: 'string', nullable: true },
         longDesc1: { type: 'string', nullable: true },
         retailDesc: { type: 'string', nullable: true },
         marketingDescription: { type: 'string', nullable: true },
+        bulletPoints: { type: 'array', items: { type: 'string' } },
       },
     },
     identifiers: {
