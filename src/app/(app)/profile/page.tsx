@@ -372,7 +372,7 @@ export default function ProfilePage() {
                 <OtpVerification
                   email={user?.email || ""}
                   purpose="password_reset"
-                  onVerified={handleOtpVerified}
+                  onSuccess={handleOtpVerified}
                   onCancel={handleCancelReset}
                 />
               </div>
