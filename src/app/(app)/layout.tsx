@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   UploadCloud,
@@ -22,6 +22,11 @@ import {
   Search,
   LogOut,
   Sparkles,
+  ShieldCheck,
+  Command,
+  Plus,
+  ExternalLink,
+  ChevronDown,
 } from "lucide-react";
 import { BRANDING } from "@/lib/constants/branding";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -67,9 +72,12 @@ const NAV_SECTIONS: NavSection[] = [
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const router = useRouter();
+  const { user, signOut } = useAuth();
   const [collapsed, setCollapsed] = useState<boolean>(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [userDropdownOpen, setUserDropdownOpen] = useState<boolean>(false);
 
   const userInitial = user?.displayName
     ? user.displayName.charAt(0).toUpperCase()
@@ -79,57 +87,197 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const userLabel = user?.displayName || user?.email || "Admin Workspace";
 
+  // Breadcrumb mapping
+  const currentSectionName = (() => {
+    if (pathname.includes("/dashboard")) return "Dashboard";
+    if (pathname.includes("/upload")) return "Upload & Ingestion";
+    if (pathname.includes("/jobs")) return "Pipeline Processing Jobs";
+    if (pathname.includes("/products")) return "Product Master Catalog";
+    if (pathname.includes("/analytics")) return "Catalog Intelligence & Analytics";
+    if (pathname.includes("/audit")) return "Governance Audit Logs";
+    if (pathname.includes("/settings")) return "System & Governance Settings";
+    if (pathname.includes("/profile")) return "Account Profile";
+    return "Enterprise Workspace";
+  })();
+
+  const handleGlobalSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    router.push(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-[#F0F2F5] text-[#0F172A]">
 
-      {/* ── Top Header ─────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-40 h-16 bg-[#000000] border-b border-[#1a1a2e] px-4 sm:px-6 flex items-center justify-between shrink-0 shadow-md">
-        {/* Left: Mobile toggle + Brand */}
-        <div className="flex items-center gap-3">
+      {/* ── Enterprise B2B Top Header ───────────────────────────────── */}
+      <header className="sticky top-0 z-40 h-16 bg-[#0B0F17] border-b border-[#1E293B] px-4 sm:px-6 flex items-center justify-between shrink-0 shadow-lg select-none">
+        
+        {/* Left: Mobile Toggle + Brand Logo + Breadcrumb / Workspace Pill */}
+        <div className="flex items-center gap-3 sm:gap-4">
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 text-gray-300 hover:text-white rounded-lg hover:bg-white/10 transition-colors"
+            className="md:hidden p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors"
             aria-label="Toggle navigation"
             suppressHydrationWarning
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
 
-          <Link href="/dashboard" className="flex items-center group py-1">
-            <span className="font-black text-lg tracking-tight">
-              <span className="text-[#3386E7]">Catalog</span>
-              <span className="text-white">Forge</span>
-            </span>
-          </Link>
-        </div>
-
-        {/* Right: Notifications + User */}
-        <div className="flex items-center gap-3">
-          {/* Notifications Link */}
-          <Link
-            href="/settings?tab=notifications"
-            className="p-2 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors relative"
-            title="Notification Settings"
-            aria-label="Notification Settings"
-            suppressHydrationWarning
-          >
-            <Bell className="w-[18px] h-[18px]" />
+          {/* Logo & Brand Identity */}
+          <Link href="/dashboard" className="flex items-center gap-2.5 group py-1">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] border border-blue-400/30 flex items-center justify-center text-white shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
+              <Layers className="w-4 h-4 text-white" />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="font-black text-base sm:text-lg tracking-tight">
+                <span className="text-[#38BDF8]">Catalog</span>
+                <span className="text-white">Forge</span>
+              </span>
+              <span className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded-md bg-blue-500/10 border border-blue-500/20 text-[#38BDF8] text-[9px] font-extrabold tracking-wider uppercase">
+                Enterprise
+              </span>
+            </div>
           </Link>
 
           {/* Divider */}
-          <div className="w-px h-6 bg-neutral-700" />
+          <div className="hidden lg:block w-px h-5 bg-slate-800" />
 
-          {/* User */}
-          <Link href="/profile" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#3386E7] to-[#1D4ED8] text-white flex items-center justify-center text-sm font-black shadow-sm">
-              {userInitial}
+          {/* Breadcrumb / Workspace Context Badge */}
+          <div className="hidden lg:flex items-center gap-2 text-xs">
+            <span className="text-slate-400 font-medium">{currentSectionName}</span>
+            <span className="text-slate-600">•</span>
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-900 border border-slate-800 text-[11px] text-slate-300">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="font-mono text-[10px] font-semibold text-slate-400">UniHack US-East</span>
             </div>
-            <div className="hidden md:flex flex-col">
-              <span className="text-xs font-bold text-gray-100 leading-none">{userLabel.split("@")[0]}</span>
-              <span className="text-[10px] text-gray-400 leading-none mt-0.5">Administrator</span>
-            </div>
+          </div>
+        </div>
+
+        {/* Center: Global Search Omnibar */}
+        <div className="hidden md:flex flex-1 max-w-md mx-4 lg:mx-8">
+          <form onSubmit={handleGlobalSearch} className="w-full relative">
+            <Search className="w-3.5 h-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search catalog, MPN, batch jobs, attributes... (⌘K)"
+              className="w-full pl-9 pr-12 py-1.5 bg-[#141B2D] border border-slate-700/80 hover:border-slate-600 focus:border-[#2563EB] rounded-xl text-xs text-slate-200 placeholder-slate-400 focus:outline-none transition-colors shadow-inner"
+            />
+            <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-slate-800 text-[10px] font-mono text-slate-400 rounded border border-slate-700">
+              <Command className="w-2.5 h-2.5" />K
+            </kbd>
+          </form>
+        </div>
+
+        {/* Right: Telemetry SLA, Quick Ingest CTA, Notifications, and User Menu */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          
+          {/* AI Engine Status Pill */}
+          <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-800 text-[11px] font-semibold text-slate-300">
+            <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+            <span>Gemini 3.5 SLA</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+          </div>
+
+          {/* Quick Action: Ingest Dataset CTA */}
+          <Link
+            href="/upload"
+            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold rounded-xl transition shadow-sm border border-blue-400/30"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Ingest Data</span>
           </Link>
+
+          {/* Notifications Link */}
+          <Link
+            href="/settings?tab=notifications"
+            className="p-2 text-slate-400 hover:text-white hover:bg-slate-800/80 rounded-xl transition-colors relative"
+            title="Notifications & Alerts"
+            aria-label="Notification Settings"
+            suppressHydrationWarning
+          >
+            <Bell className="w-4 h-4" />
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-emerald-500 rounded-full ring-2 ring-[#0B0F17]" />
+          </Link>
+
+          {/* Vertical Divider */}
+          <div className="w-px h-5 bg-slate-800 mx-0.5" />
+
+          {/* User Profile Dropdown Pill */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+              className="flex items-center gap-2 p-1 pl-1.5 pr-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 transition-colors text-left group"
+            >
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] text-white flex items-center justify-center text-xs font-black ring-1 ring-blue-400/30 shadow-sm shrink-0">
+                {userInitial}
+              </div>
+              <div className="hidden sm:flex flex-col min-w-0 max-w-[110px]">
+                <span className="text-xs font-bold text-slate-200 truncate leading-none">
+                  {userLabel.split("@")[0]}
+                </span>
+                <span className="text-[9px] text-slate-400 truncate leading-none mt-1">
+                  Administrator
+                </span>
+              </div>
+              <ChevronDown className="w-3 h-3 text-slate-500 group-hover:text-slate-300 hidden sm:block" />
+            </button>
+
+            {/* Dropdown Menu */}
+            {userDropdownOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setUserDropdownOpen(false)}
+                />
+                <div className="absolute right-0 mt-2 w-52 bg-[#0F172A] border border-slate-800 rounded-2xl p-2 shadow-2xl z-50 space-y-1 text-xs text-slate-300">
+                  <div className="px-3 py-2 border-b border-slate-800">
+                    <p className="font-bold text-white truncate">{userLabel}</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">UniHack Governance Tier-1</p>
+                  </div>
+                  <Link
+                    href="/profile"
+                    onClick={() => setUserDropdownOpen(false)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-slate-800 text-slate-200 transition"
+                  >
+                    <User className="w-3.5 h-3.5 text-blue-400" />
+                    <span>User Profile</span>
+                  </Link>
+                  <Link
+                    href="/settings"
+                    onClick={() => setUserDropdownOpen(false)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-slate-800 text-slate-200 transition"
+                  >
+                    <Settings className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Workspace Settings</span>
+                  </Link>
+                  <Link
+                    href="/audit"
+                    onClick={() => setUserDropdownOpen(false)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-slate-800 text-slate-200 transition"
+                  >
+                    <FileText className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Governance Audit Logs</span>
+                  </Link>
+                  <div className="border-t border-slate-800 my-1" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUserDropdownOpen(false);
+                      signOut();
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-rose-500/10 text-rose-400 transition text-left"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </header>
 
@@ -252,9 +400,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <div className="relative w-[260px] bg-[#111827] max-w-full flex flex-col z-10 border-r border-[#1F2937] shadow-2xl">
               {/* Mobile Sheet Header */}
               <div className="h-16 px-4 flex items-center justify-between border-b border-[#1F2937]">
-                <Link href="/dashboard" className="flex items-center" onClick={() => setMobileMenuOpen(false)}>
+                <Link href="/dashboard" className="flex items-center gap-2" onClick={() => setMobileMenuOpen(false)}>
+                  <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white">
+                    <Layers className="w-4 h-4" />
+                  </div>
                   <span className="font-black text-base text-white">
-                    <span className="text-[#3386E7]">Catalog</span>Forge
+                    <span className="text-[#38BDF8]">Catalog</span>Forge
                   </span>
                 </Link>
                 <button
@@ -335,7 +486,3 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
-
-
-
-
