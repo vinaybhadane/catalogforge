@@ -363,18 +363,6 @@ export default function ProfilePage() {
           </form>
         )}
       </div>
-
-      {/* Active Session Info */}
-      <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-sm">
-        <h3 className="text-sm font-bold text-[#000000] mb-3 flex items-center gap-2">
-          <Shield className="w-4 h-4 text-[#3386E7]" />
-          Active Session Status
-        </h3>
-        <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-50 border border-emerald-200">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-sm text-emerald-800 font-medium">Session active — you are authenticated with Tier-1 security governance.</span>
-        </div>
-      </div>
     </div>
   );
 }
