@@ -76,7 +76,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
   const [collapsed, setCollapsed] = useState<boolean>(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
-  const [searchQuery, setSearchQuery] = useState<string>("");
   const [userDropdownOpen, setUserDropdownOpen] = useState<boolean>(false);
 
   const userInitial = user?.displayName
@@ -100,19 +99,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return "Enterprise Workspace";
   })();
 
-  const handleGlobalSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
-    router.push(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
-  };
-
   return (
     <div className="min-h-screen flex flex-col bg-[#F0F2F5] text-[#0F172A]">
 
       {/* ── Enterprise B2B Top Header ───────────────────────────────── */}
       <header className="sticky top-0 z-40 h-16 bg-[#0B0F17] border-b border-[#1E293B] px-4 sm:px-6 flex items-center justify-between shrink-0 shadow-lg select-none">
         
-        {/* Left: Mobile Toggle + Brand Logo + Breadcrumb / Workspace Pill */}
+        {/* Left: Mobile Toggle + Brand Logo + Breadcrumb */}
         <div className="flex items-center gap-3 sm:gap-4">
           <button
             type="button"
@@ -124,67 +117,35 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
 
-          {/* Logo & Brand Identity */}
+          {/* Logo & Brand Identity using Actual Logo Image */}
           <Link href="/dashboard" className="flex items-center gap-2.5 group py-1">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] border border-blue-400/30 flex items-center justify-center text-white shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
-              <Layers className="w-4 h-4 text-white" />
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="font-black text-base sm:text-lg tracking-tight">
-                <span className="text-[#38BDF8]">Catalog</span>
-                <span className="text-white">Forge</span>
-              </span>
-              <span className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded-md bg-blue-500/10 border border-blue-500/20 text-[#38BDF8] text-[9px] font-extrabold tracking-wider uppercase">
-                Enterprise
-              </span>
-            </div>
+            <img
+              src="/logo-icon.png"
+              alt="CatalogForge Logo"
+              className="w-8 h-8 rounded-lg object-contain bg-[#141B2D] p-1 border border-slate-700/80 shadow-sm group-hover:scale-105 transition-transform"
+            />
+            <span className="font-black text-lg tracking-tight">
+              <span className="text-[#38BDF8]">Catalog</span>
+              <span className="text-white">Forge</span>
+            </span>
           </Link>
 
           {/* Divider */}
-          <div className="hidden lg:block w-px h-5 bg-slate-800" />
+          <div className="hidden sm:block w-px h-5 bg-slate-800" />
 
-          {/* Breadcrumb / Workspace Context Badge */}
-          <div className="hidden lg:flex items-center gap-2 text-xs">
-            <span className="text-slate-400 font-medium">{currentSectionName}</span>
-            <span className="text-slate-600">•</span>
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-900 border border-slate-800 text-[11px] text-slate-300">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="font-mono text-[10px] font-semibold text-slate-400">UniHack US-East</span>
-            </div>
+          {/* Current Section Name */}
+          <div className="hidden sm:flex items-center text-xs font-semibold text-slate-400">
+            <span>{currentSectionName}</span>
           </div>
         </div>
 
-        {/* Center: Global Search Omnibar */}
-        <div className="hidden md:flex flex-1 max-w-md mx-4 lg:mx-8">
-          <form onSubmit={handleGlobalSearch} className="w-full relative">
-            <Search className="w-3.5 h-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search catalog, MPN, batch jobs, attributes... (⌘K)"
-              className="w-full pl-9 pr-12 py-1.5 bg-[#141B2D] border border-slate-700/80 hover:border-slate-600 focus:border-[#2563EB] rounded-xl text-xs text-slate-200 placeholder-slate-400 focus:outline-none transition-colors shadow-inner"
-            />
-            <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-slate-800 text-[10px] font-mono text-slate-400 rounded border border-slate-700">
-              <Command className="w-2.5 h-2.5" />K
-            </kbd>
-          </form>
-        </div>
-
-        {/* Right: Telemetry SLA, Quick Ingest CTA, Notifications, and User Menu */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        {/* Right: Quick Ingest CTA, Notifications, and User Menu */}
+        <div className="flex items-center gap-2.5 sm:gap-3">
           
-          {/* AI Engine Status Pill */}
-          <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-800 text-[11px] font-semibold text-slate-300">
-            <Sparkles className="w-3.5 h-3.5 text-blue-400" />
-            <span>Gemini 3.5 SLA</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-          </div>
-
           {/* Quick Action: Ingest Dataset CTA */}
           <Link
             href="/upload"
-            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold rounded-xl transition shadow-sm border border-blue-400/30"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold rounded-xl transition shadow-sm border border-blue-400/30"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Ingest Data</span>
@@ -400,10 +361,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <div className="relative w-[260px] bg-[#111827] max-w-full flex flex-col z-10 border-r border-[#1F2937] shadow-2xl">
               {/* Mobile Sheet Header */}
               <div className="h-16 px-4 flex items-center justify-between border-b border-[#1F2937]">
-                <Link href="/dashboard" className="flex items-center gap-2" onClick={() => setMobileMenuOpen(false)}>
-                  <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white">
-                    <Layers className="w-4 h-4" />
-                  </div>
+                <Link href="/dashboard" className="flex items-center gap-2.5" onClick={() => setMobileMenuOpen(false)}>
+                  <img
+                    src="/logo-icon.png"
+                    alt="CatalogForge Logo"
+                    className="w-7 h-7 rounded-lg object-contain bg-[#141B2D] p-0.5 border border-slate-700"
+                  />
                   <span className="font-black text-base text-white">
                     <span className="text-[#38BDF8]">Catalog</span>Forge
                   </span>
