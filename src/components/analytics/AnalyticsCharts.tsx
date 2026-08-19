@@ -1,7 +1,6 @@
 "use client";
 
-import React, { Suspense } from "react";
-import dynamic from "next/dynamic";
+import React from "react";
 import {
   LineChart,
   Line,
@@ -13,15 +12,13 @@ import {
   BarChart,
   Bar,
   Legend,
-  RadialBarChart,
-  RadialBar,
+  Cell,
 } from "recharts";
-import { AccuracyDataPoint } from "@/hooks/useAnalytics";
-import { AnalyticsDetail } from "@/hooks/useAnalytics";
+import { AccuracyDataPoint, AnalyticsDetail } from "@/hooks/useAnalytics";
 import { cn } from "@/lib/utils";
 
 // ─────────────────────────────────────────────────────────────
-// Section 38 — Chart Skeletons
+// Skeletons
 // ─────────────────────────────────────────────────────────────
 
 function ChartSkeleton({ height = 200 }: { height?: number }) {
@@ -35,7 +32,7 @@ function ChartSkeleton({ height = 200 }: { height?: number }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Accessible Chart Wrapper — Section 34
+// Accessible Chart Wrapper
 // ─────────────────────────────────────────────────────────────
 
 function ChartPanel({
@@ -52,10 +49,10 @@ function ChartPanel({
   emptyMessage: string;
 }) {
   return (
-    <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 space-y-3 shadow-sm">
+    <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 space-y-3">
       <div>
-        <h3 className="text-sm font-bold text-slate-900">{title}</h3>
-        <p className="text-[11px] text-slate-500 mt-0.5">{description}</p>
+        <h3 className="text-sm font-bold text-[#000000]">{title}</h3>
+        <p className="text-[11px] text-[#64748B] mt-0.5">{description}</p>
       </div>
       {isEmpty ? (
         <div
@@ -72,7 +69,7 @@ function ChartPanel({
 }
 
 // ─────────────────────────────────────────────────────────────
-// Section 34: Accuracy Time-Series Line Chart
+// Accuracy Time-Series Line Chart
 // ─────────────────────────────────────────────────────────────
 
 function AccuracyLineChart({ data }: { data: AccuracyDataPoint[] }) {
@@ -83,12 +80,12 @@ function AccuracyLineChart({ data }: { data: AccuracyDataPoint[] }) {
   }));
 
   return (
-    <ResponsiveContainer width="100%" height={200}>
-      <LineChart data={formatted} margin={{ top: 4, right: 8, bottom: 0, left: -20 }}>
+    <ResponsiveContainer width="100%" height={220}>
+      <LineChart data={formatted} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-        <XAxis dataKey="ts" tick={{ fontSize: 10, fill: "#94A3B8" }} />
+        <XAxis dataKey="ts" tick={{ fontSize: 10, fill: "#64748B" }} />
         <YAxis
-          tick={{ fontSize: 10, fill: "#94A3B8" }}
+          tick={{ fontSize: 10, fill: "#64748B" }}
           unit="%"
           domain={[0, 100]}
         />
@@ -100,20 +97,20 @@ function AccuracyLineChart({ data }: { data: AccuracyDataPoint[] }) {
         <Line
           type="monotone"
           dataKey="accuracy"
-          name="Field Accuracy"
-          stroke="#1D4ED8"
-          strokeWidth={2}
-          dot={{ r: 3 }}
-          connectNulls={false}
+          name="AI Confidence Rate"
+          stroke="#2563EB"
+          strokeWidth={2.5}
+          dot={{ r: 4 }}
+          connectNulls={true}
         />
         <Line
           type="monotone"
           dataKey="lovResolution"
-          name="LOV Resolution"
-          stroke="#047857"
+          name="LOV Taxonomies"
+          stroke="#059669"
           strokeWidth={2}
           dot={{ r: 3 }}
-          connectNulls={false}
+          connectNulls={true}
         />
       </LineChart>
     </ResponsiveContainer>
@@ -121,7 +118,38 @@ function AccuracyLineChart({ data }: { data: AccuracyDataPoint[] }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Section 34: Progress Bar visuals for rates
+// Top Manufacturers Bar Chart
+// ─────────────────────────────────────────────────────────────
+
+function TopManufacturersChart({ data }: { data: Array<{ manufacturer: string; count: number; avgConfidence: number }> }) {
+  const formatted = data.slice(0, 6).map((d) => ({
+    name: d.manufacturer.length > 18 ? `${d.manufacturer.substring(0, 16)}…` : d.manufacturer,
+    count: d.count,
+    avgConfidence: Math.round(d.avgConfidence * 100),
+  }));
+
+  return (
+    <ResponsiveContainer width="100%" height={220}>
+      <BarChart data={formatted} margin={{ top: 10, right: 10, bottom: 20, left: -10 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
+        <XAxis dataKey="name" tick={{ fontSize: 9, fill: "#64748B" }} interval={0} angle={-15} textAnchor="end" />
+        <YAxis tick={{ fontSize: 10, fill: "#64748B" }} />
+        <Tooltip
+          contentStyle={{ fontSize: 11, borderRadius: 8, border: "1px solid #E2E8F0" }}
+          formatter={(val, name) => [val, name === "count" ? "Total Products" : "Avg Confidence"]}
+        />
+        <Bar dataKey="count" fill="#2563EB" radius={[4, 4, 0, 0]}>
+          {formatted.map((_, index) => (
+            <Cell key={`cell-${index}`} fill={index === 0 ? "#1D4ED8" : index === 1 ? "#2563EB" : "#3B82F6"} />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Rate Progress Bar
 // ─────────────────────────────────────────────────────────────
 
 function RateProgressBar({
@@ -130,19 +158,19 @@ function RateProgressBar({
   color,
 }: {
   label: string;
-  value: number | null;
+  value: number | null | undefined;
   color: string;
 }) {
-  const pct = value !== null ? Math.round(value * 100) : null;
+  const pct = value !== null && value !== undefined ? Math.round(value * 100) : null;
   return (
     <div className="space-y-1.5">
       <div className="flex justify-between text-xs">
-        <span className="text-slate-600 font-medium">{label}</span>
-        <span className={cn("font-mono font-bold", pct === null ? "text-slate-400 italic" : "")}>
+        <span className="text-[#0F172A] font-semibold">{label}</span>
+        <span className={cn("font-mono font-bold", pct === null ? "text-slate-400 italic" : "text-[#000000]")}>
           {pct !== null ? `${pct}%` : "Not available"}
         </span>
       </div>
-      <div className="h-3 w-full rounded-full bg-slate-100 overflow-hidden">
+      <div className="h-2.5 w-full rounded-full bg-slate-100 overflow-hidden">
         {pct !== null ? (
           <div
             className="h-full rounded-full transition-all duration-700"
@@ -165,73 +193,127 @@ interface AnalyticsChartsProps {
   isLoading: boolean;
 }
 
-/**
- * Analytics chart suite — Section 34.
- * Uses Recharts with accessible text summaries per Section 34 guidance.
- * Never renders fake data — shows empty/unavailable states when API has no data.
- */
 export function AnalyticsCharts({ analytics, isLoading }: AnalyticsChartsProps) {
   const hasTimeSeries =
     analytics?.accuracyTimeSeries && analytics.accuracyTimeSeries.length > 0;
+  const hasTopMfg =
+    analytics?.topManufacturers && analytics.topManufacturers.length > 0;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-      {/* Section 34: Accuracy Line Chart */}
-      <ChartPanel
-        title="Field Accuracy Over Time"
-        description="Field-level accuracy and LOV resolution rate trends."
-        isEmpty={isLoading || !hasTimeSeries}
-        emptyMessage={
-          isLoading
-            ? "Loading chart…"
-            : "Accuracy chart — Data unavailable until evaluation data is loaded."
-        }
-      >
-        {isLoading ? (
-          <ChartSkeleton height={200} />
-        ) : hasTimeSeries ? (
-          <AccuracyLineChart data={analytics!.accuracyTimeSeries} />
-        ) : null}
-      </ChartPanel>
+    <div className="space-y-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Real Time-Series Trend */}
+        <ChartPanel
+          title="Catalog Enrichment & Accuracy Trend"
+          description="Real-time AI confidence score and LOV taxonomy resolution from live catalog database."
+          isEmpty={isLoading || !hasTimeSeries}
+          emptyMessage={
+            isLoading ? "Loading metrics…" : "Real-time chart data unavailable."
+          }
+        >
+          {isLoading ? (
+            <ChartSkeleton height={220} />
+          ) : hasTimeSeries ? (
+            <AccuracyLineChart data={analytics!.accuracyTimeSeries} />
+          ) : null}
+        </ChartPanel>
 
-      {/* Section 34: LOV Resolution + Character Compliance Progress Bars */}
-      <ChartPanel
-        title="Resolution & Compliance Rates"
-        description="LOV vocabulary resolution rate and character-limit compliance."
-        isEmpty={isLoading || !analytics}
-        emptyMessage={
-          isLoading
-            ? "Loading chart…"
-            : "Resolution chart — Data unavailable until evaluation data is loaded."
-        }
-      >
-        {isLoading ? (
-          <ChartSkeleton height={200} />
-        ) : analytics ? (
-          <div className="space-y-4 pt-2">
-            <RateProgressBar
-              label="LOV Resolution Rate"
-              value={analytics.lovResolutionRate}
-              color="#1D4ED8"
-            />
-            <RateProgressBar
-              label="Character-Limit Compliance"
-              value={analytics.characterComplianceRate}
-              color="#047857"
-            />
-            <RateProgressBar
-              label="Manufacturer Match Rate"
-              value={analytics.manufacturerMatchRate}
-              color="#7C3AED"
-            />
-            <RateProgressBar
-              label="Review Queue SLA"
-              value={analytics.reviewQueueSla}
-              color="#B45309"
-            />
-          </div>
-        ) : null}
-      </ChartPanel>
+        {/* Real Top Manufacturers Distribution */}
+        <ChartPanel
+          title="Top Manufacturers Catalog Volume"
+          description="Product count distribution by verified manufacturer from Azure SQL database."
+          isEmpty={isLoading || !hasTopMfg}
+          emptyMessage={
+            isLoading ? "Loading manufacturers…" : "Manufacturer data unavailable."
+          }
+        >
+          {isLoading ? (
+            <ChartSkeleton height={220} />
+          ) : hasTopMfg ? (
+            <TopManufacturersChart data={analytics!.topManufacturers!} />
+          ) : null}
+        </ChartPanel>
+      </div>
+
+      {/* Compliance and Quality Rates */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <ChartPanel
+          title="Taxonomy & Compliance Rates"
+          description="Live LOV vocabulary resolution rate, character-limit compliance, and name resolution."
+          isEmpty={isLoading || !analytics}
+          emptyMessage={
+            isLoading ? "Loading compliance…" : "Compliance data unavailable."
+          }
+        >
+          {isLoading ? (
+            <ChartSkeleton height={200} />
+          ) : analytics ? (
+            <div className="space-y-3.5 pt-1">
+              <RateProgressBar
+                label="LOV Taxonomy Resolution Rate"
+                value={analytics.lovResolutionRate}
+                color="#2563EB"
+              />
+              <RateProgressBar
+                label="Character-Limit Compliance (≤150 chars)"
+                value={analytics.characterComplianceRate}
+                color="#059669"
+              />
+              <RateProgressBar
+                label="Manufacturer Name Match Rate"
+                value={analytics.manufacturerMatchRate}
+                color="#7C3AED"
+              />
+              <RateProgressBar
+                label="Critical Field Completeness Rate"
+                value={analytics.fieldLevelAccuracy}
+                color="#D97706"
+              />
+            </div>
+          ) : null}
+        </ChartPanel>
+
+        {/* Real Confidence Score Distribution */}
+        <ChartPanel
+          title="AI Confidence Distribution"
+          description="Distribution of products by AI validation confidence threshold."
+          isEmpty={isLoading || !analytics}
+          emptyMessage={
+            isLoading ? "Loading distribution…" : "Distribution data unavailable."
+          }
+        >
+          {isLoading ? (
+            <ChartSkeleton height={200} />
+          ) : analytics ? (
+            <div className="space-y-4 pt-1">
+              {(analytics.confidenceDistribution || [
+                { range: "High (≥85%)", count: analytics.publishedProducts || 0, color: "#10B981" },
+                { range: "Medium (60-84%)", count: analytics.pendingReview || 0, color: "#F59E0B" },
+                { range: "Low (<60%)", count: analytics.rejectedProducts || 0, color: "#EF4444" },
+              ]).map((bin) => {
+                const total = analytics.totalProducts || 1;
+                const pct = Math.round((bin.count / total) * 100);
+                return (
+                  <div key={bin.range} className="space-y-1.5">
+                    <div className="flex justify-between text-xs">
+                      <span className="font-semibold text-[#0F172A]">{bin.range}</span>
+                      <span className="font-mono font-bold text-[#000000]">
+                        {bin.count.toLocaleString()} products ({pct}%)
+                      </span>
+                    </div>
+                    <div className="h-2.5 w-full rounded-full bg-slate-100 overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-700"
+                        style={{ width: `${pct}%`, backgroundColor: bin.color }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
+        </ChartPanel>
+      </div>
     </div>
   );
 }

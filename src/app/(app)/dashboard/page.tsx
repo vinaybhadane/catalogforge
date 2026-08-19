@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useEffect, useMemo } from "react";
 import Link from "next/link";
@@ -17,6 +17,7 @@ import {
   Zap,
   ChevronRight,
   Layers,
+  BarChart3,
 } from "lucide-react";
 import { useDashboard } from "@/hooks/useDashboard";
 import { cn } from "@/lib/utils";
@@ -407,16 +408,16 @@ export default function DashboardPage() {
               </Link>
 
               <Link
-                href="/review"
+                href="/analytics"
                 className="bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[#E2E8F0] hover:border-[#2563EB] p-3.5 rounded-xl flex items-center justify-between group transition-all"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-[#E0F2FE] border border-[#38BDF8]/40 text-[#2563EB] flex items-center justify-center">
-                    <CheckSquare className="w-4 h-4" />
+                    <BarChart3 className="w-4 h-4" />
                   </div>
                   <div className="text-left">
-                    <p className="text-xs font-extrabold text-[#000000]">Review Flagged Items</p>
-                    <p className="text-[10px] text-[#0284C7] font-bold">{summary?.needsReview ?? 0} records pending</p>
+                    <p className="text-xs font-extrabold text-[#000000]">Real-Time Analytics</p>
+                    <p className="text-[10px] text-[#0284C7] font-bold">Accuracy &amp; live metrics</p>
                   </div>
                 </div>
                 <ChevronRight className="w-4 h-4 text-[#2563EB] group-hover:translate-x-0.5 transition-transform" />

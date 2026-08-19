@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React from "react";
 import Link from "next/link";
@@ -15,6 +15,7 @@ import {
   Activity,
   ArrowRight,
   Info,
+  Package,
 } from "lucide-react";
 import { useJobStatus } from "@/hooks/useJobStatus";
 import { PipelineStageStepper } from "@/components/jobs/PipelineStageStepper";
@@ -203,16 +204,14 @@ export default function JobDetailPage() {
               Refresh
             </button>
 
-            {showReviewLink && (
-              <Link
-                href="/review"
-                className="flex items-center gap-2 px-4 py-2 bg-[#B45309] hover:bg-amber-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors"
-              >
-                <CheckSquare className="w-4 h-4" />
-                Open Review Studio
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            )}
+            <Link
+              href="/products"
+              className="flex items-center gap-2 px-4 py-2 bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors"
+            >
+              <Package className="w-4 h-4" />
+              View Ingested Products
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
         </div>
       </div>
@@ -339,26 +338,24 @@ export default function JobDetailPage() {
             <RowStatsPanel rowStats={jobStatus.rowStats} />
           </div>
 
-          {/* Review Studio CTA if rows need attention */}
-          {showReviewLink && (
-            <div className="p-5 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-between gap-4">
-              <div>
-                <h3 className="font-bold text-amber-900 text-sm">
-                  Human Review Required
-                </h3>
-                <p className="text-xs text-amber-800 mt-0.5">
-                  One or more rows have been routed to the Review Studio for manual validation.
-                </p>
-              </div>
-              <Link
-                href="/review"
-                className="flex items-center gap-2 px-4 py-2.5 bg-[#B45309] hover:bg-amber-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors shrink-0"
-              >
-                <CheckSquare className="w-4 h-4" />
-                Open Review Studio
-              </Link>
+          {/* Catalog Products CTA */}
+          <div className="p-5 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-between gap-4">
+            <div>
+              <h3 className="font-bold text-blue-900 text-sm">
+                Dataset Products Ready
+              </h3>
+              <p className="text-xs text-blue-800 mt-0.5">
+                Processed records are mapped, enriched, and available in the central catalog.
+              </p>
             </div>
-          )}
+            <Link
+              href="/products"
+              className="flex items-center gap-2 px-4 py-2.5 bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors shrink-0"
+            >
+              <Package className="w-4 h-4" />
+              Explore Products
+            </Link>
+          </div>
         </>
       )}
     </div>

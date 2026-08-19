@@ -8,11 +8,36 @@ export interface AccuracyDataPoint {
   lovResolution: number | null;
 }
 
+export interface ManufacturerDistribution {
+  manufacturer: string;
+  count: number;
+  avgConfidence: number;
+}
+
+export interface ConfidenceDistribution {
+  range: string;
+  count: number;
+  color: string;
+}
+
+export interface StageBreakdown {
+  stage: string;
+  count: number;
+  percentage: number;
+}
+
 export interface AnalyticsDetail extends AnalyticsSummary {
   evaluationScope: string | null;
   rowsEvaluated: number | null;
   groundTruthRows: number | null;
   accuracyTimeSeries: AccuracyDataPoint[];
+  topManufacturers?: ManufacturerDistribution[];
+  confidenceDistribution?: ConfidenceDistribution[];
+  stageBreakdown?: StageBreakdown[];
+  totalAttributes?: number;
+  totalAssets?: number;
+  totalJobs?: number;
+  autoPublishRate?: number;
 }
 
 export type AnalyticsHookState = "idle" | "loading" | "success" | "error";
@@ -26,9 +51,8 @@ export interface UseAnalyticsReturn {
 }
 
 /**
- * Fetches evaluation summary metrics from the analytics API.
- * Section 33: All metric values come from the API — never hardcoded.
- * Section 35: Exposes manual refresh + lastRefreshedAt timestamp.
+ * Fetches real-time evaluation and performance metrics from the analytics API.
+ * All metric values are computed live from the Azure SQL Database — zero guessing.
  */
 export function useAnalytics(): UseAnalyticsReturn {
   const [analytics, setAnalytics] = useState<AnalyticsDetail | null>(null);
@@ -51,13 +75,12 @@ export function useAnalytics(): UseAnalyticsReturn {
           err.code === "NETWORK_ERROR" ||
           err.code === "TIMEOUT")
       ) {
-        // Backend not yet connected — explicit empty state, not fake data
         setAnalytics(null);
         setLastRefreshedAt(new Date());
         setHookState("success");
       } else {
         setErrorMessage(
-          err instanceof Error ? err.message : "Unable to load analytics data."
+          err instanceof Error ? err.message : "Unable to load real-time analytics."
         );
         setHookState("error");
       }

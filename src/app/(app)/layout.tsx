@@ -52,7 +52,6 @@ const NAV_SECTIONS: NavSection[] = [
   {
     title: "INTELLIGENCE",
     items: [
-      { label: "Review Studio", href: "/review", icon: CheckSquare },
       { label: "Analytics", href: "/analytics", icon: BarChart3 },
       { label: "Audit Logs", href: "/audit", icon: FileText },
     ],

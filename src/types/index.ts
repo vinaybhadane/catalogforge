@@ -164,7 +164,13 @@ export interface AnalyticsSummary {
   characterComplianceRate: number | null;
   manufacturerMatchRate: number | null;
   reviewQueueSla: number | null;
-  lastUpdatedAt: string | null;
+  lastUpdatedAt?: string | null;
+  totalProducts?: number | null;
+  publishedProducts?: number | null;
+  pendingReview?: number | null;
+  rejectedProducts?: number | null;
+  autoPublishRate?: number | null;
+  averageConfidence?: number | null;
 }
 
 // Section 52: Pagination Response Container

@@ -10,7 +10,6 @@ export default function robots(): MetadataRoute.Robots {
         "/upload",
         "/jobs",
         "/products",
-        "/review",
         "/analytics",
         "/audit",
         "/settings",
