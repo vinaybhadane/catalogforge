@@ -219,7 +219,7 @@ export default function ProfilePage() {
 
       {/* ── Security & Password Management Card (Brevo OTP Integration) ─── */}
       <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-sm space-y-5">
-        <div className="flex items-center justify-between gap-4 border-b border-[#F1F5F9] pb-4">
+        <div className={`flex items-center justify-between gap-4 ${isResettingPassword ? "border-b border-[#F1F5F9] pb-4" : ""}`}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 text-[#2563EB] flex items-center justify-center shrink-0">
               <Lock className="w-5 h-5" />
@@ -361,20 +361,6 @@ export default function ProfilePage() {
               </button>
             </div>
           </form>
-        )}
-
-        {/* Security Features Overview */}
-        {!isResettingPassword && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-            <div className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <ShieldCheck className="w-4 h-4 text-[#2563EB]" />
-              <span className="text-slate-700 font-medium">Brevo 2FA OTP Protection Active</span>
-            </div>
-            <div className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <Mail className="w-4 h-4 text-emerald-600" />
-              <span className="text-slate-700 font-medium">Email Verification Grounded</span>
-            </div>
-          </div>
         )}
       </div>
 
