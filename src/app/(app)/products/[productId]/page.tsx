@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
@@ -8,19 +8,17 @@ import {
   Package,
   RefreshCw,
   AlertCircle,
-  Loader2,
   FileText,
   ExternalLink,
   ImageIcon,
 } from "lucide-react";
 import { apiClient, ApiClientError } from "@/lib/api/client";
 import { Product, ProductAttribute, ProductAsset } from "@/types";
-import { DynamicFieldRenderer, FieldDefinition } from "@/components/products/DynamicFieldRenderer";
 import { cn } from "@/lib/utils";
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// Tabs â€” Section 22
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────
+// Tabs — Section 22
+// ─────────────────────────────────────────────────────────────
 
 const TABS = [
   "Overview",
@@ -32,9 +30,9 @@ const TABS = [
 ] as const;
 type TabId = typeof TABS[number];
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────
 // Overview Tab
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────
 
 function OverviewTab({ product }: { product: Product }) {
   const fields: { label: string; value: string | null }[] = [
@@ -50,18 +48,24 @@ function OverviewTab({ product }: { product: Product }) {
     published: "bg-emerald-50 text-emerald-700 border-emerald-200",
     needs_review: "bg-amber-50 text-amber-700 border-amber-200",
     failed: "bg-red-50 text-red-700 border-red-200",
+    validated: "bg-amber-50 text-amber-700 border-amber-200",
+    enriched: "bg-purple-50 text-purple-700 border-purple-200",
+    ingested: "bg-slate-50 text-slate-700 border-slate-200",
+    classified: "bg-indigo-50 text-indigo-700 border-indigo-200",
   };
+
+  const confidenceVal = product.confidence ?? product.rowConfidence ?? null;
 
   return (
     <div className="space-y-6">
       {/* Status + Confidence banner */}
       <div className="flex items-center gap-4 flex-wrap">
-        <span className={cn("px-3 py-1 rounded-lg border text-xs font-bold uppercase", statusColors[product.status] ?? "bg-slate-50 text-slate-700 border-slate-200")}>
-          {product.status.replace(/_/g, " ")}
+        <span className={cn("px-3 py-1 rounded-lg border text-xs font-bold uppercase", (product.status && statusColors[product.status]) ?? "bg-slate-50 text-slate-700 border-slate-200")}>
+          {product.status ? product.status.replace(/_/g, " ") : "UNKNOWN"}
         </span>
-        {product.confidence !== null ? (
-          <span className={cn("text-sm font-mono font-bold", product.confidence >= 0.85 ? "text-[#047857]" : product.confidence >= 0.6 ? "text-[#B45309]" : "text-[#B91C1C]")}>
-            Confidence: {Math.round(product.confidence * 100)}%
+        {confidenceVal !== null ? (
+          <span className={cn("text-sm font-mono font-bold", confidenceVal >= 0.85 ? "text-[#047857]" : confidenceVal >= 0.6 ? "text-[#B45309]" : "text-[#B91C1C]")}>
+            Confidence: {Math.round(confidenceVal * 100)}%
           </span>
         ) : (
           <span className="text-sm text-slate-400 italic">Confidence not available</span>
@@ -81,15 +85,21 @@ function OverviewTab({ product }: { product: Product }) {
   );
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// Descriptions Tab â€” Section 22
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────
+// Descriptions Tab — Section 22
+// ─────────────────────────────────────────────────────────────
 
 function DescriptionsTab({ product }: { product: Product }) {
-  const descriptions: { label: string; value: string | null }[] = [
-    { label: "Short Description", value: product.descriptions.shortDescription },
-    { label: "Long Description", value: product.descriptions.longDescription },
-  ];
+  const descriptions: { label: string; value: string | null | undefined }[] = [
+    { label: "Short Description", value: product.descriptions?.shortDescription },
+    { label: "Long Description", value: product.descriptions?.longDescription },
+    { label: "Marketing Description", value: product.descriptions?.marketingDescription },
+    { label: "Invoice Description", value: product.descriptions?.invoiceDescription },
+    { label: "Retail Description", value: product.descriptions?.retailDescription },
+  ].filter((d) => d.value !== undefined);
+
+  const bulletPoints = product.descriptions?.bulletPoints ?? [];
+  const features = product.features ?? [];
 
   return (
     <div className="space-y-4">
@@ -104,23 +114,23 @@ function DescriptionsTab({ product }: { product: Product }) {
         </div>
       ))}
 
-      {product.descriptions.bulletPoints.length > 0 && (
+      {bulletPoints.length > 0 && (
         <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
           <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Bullet Points</p>
           <ul className="list-disc pl-5 space-y-1">
-            {product.descriptions.bulletPoints.map((bp, idx) => (
+            {bulletPoints.map((bp, idx) => (
               <li key={idx} className="text-sm text-slate-900">{bp}</li>
             ))}
           </ul>
         </div>
       )}
 
-      {product.features.length > 0 && (
+      {features.length > 0 && (
         <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
           <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Features</p>
           <ul className="list-disc pl-5 space-y-1">
-            {product.features.map((f) => (
-              <li key={f.featureId} className="text-sm text-slate-900">{f.featureText}</li>
+            {features.map((f, idx) => (
+              <li key={f.id ?? f.featureId ?? idx} className="text-sm text-slate-900">{f.featureText}</li>
             ))}
           </ul>
         </div>
@@ -129,12 +139,13 @@ function DescriptionsTab({ product }: { product: Product }) {
   );
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// Attributes Tab â€” Section 46
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────
+// Attributes Tab — Section 46
+// ─────────────────────────────────────────────────────────────
 
-function AttributesTab({ attributes }: { attributes: ProductAttribute[] }) {
-  if (attributes.length === 0) {
+function AttributesTab({ attributes }: { attributes?: ProductAttribute[] }) {
+  const safeAttributes = attributes ?? [];
+  if (safeAttributes.length === 0) {
     return <p className="text-sm text-slate-400 italic py-8 text-center">No attributes available.</p>;
   }
 
@@ -149,59 +160,74 @@ function AttributesTab({ attributes }: { attributes: ProductAttribute[] }) {
           </tr>
         </thead>
         <tbody className="divide-y divide-[#F1F5F9]">
-          {attributes.map((attr) => (
-            <tr key={attr.sequence} className="hover:bg-slate-50">
-              <td className="px-4 py-2.5 text-xs text-slate-400 font-mono">{attr.sequence}</td>
-              <td className="px-4 py-2.5 text-xs font-semibold text-slate-700">{attr.attributeLabel}</td>
-              <td className="px-4 py-2.5 text-xs text-slate-900">{attr.attributeValue ?? <span className="text-slate-400 italic">â€”</span>}</td>
-              <td className="px-4 py-2.5 text-xs text-slate-600">{attr.attributeUom ?? "â€”"}</td>
-              <td className="px-4 py-2.5">
-                {attr.confidence !== null ? (
-                  <span className={cn("text-[11px] font-mono font-bold", attr.confidence >= 0.85 ? "text-[#047857]" : attr.confidence >= 0.6 ? "text-[#B45309]" : "text-[#B91C1C]")}>{Math.round(attr.confidence * 100)}%</span>
-                ) : (<span className="text-[11px] text-slate-400 italic">â€”</span>)}
-              </td>
-              <td className="px-4 py-2.5">
-                {attr.validationFlags.length > 0 ? (
-                  <div className="flex flex-wrap gap-1">
-                    {attr.validationFlags.map((f) => (
-                      <span key={f} className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border bg-amber-50 border-amber-200 text-amber-800">{f}</span>
-                    ))}
-                  </div>
-                ) : (<span className="text-[11px] text-slate-400">â€”</span>)}
-              </td>
-            </tr>
-          ))}
+          {safeAttributes.map((attr, idx) => {
+            const conf = attr.confidence ?? attr.confidenceScore ?? attr.lovMatchConfidence ?? null;
+            const flags = Array.isArray(attr.validationFlags) ? attr.validationFlags : [];
+            return (
+              <tr key={attr.id ?? attr.sequence ?? idx} className="hover:bg-slate-50">
+                <td className="px-4 py-2.5 text-xs text-slate-400 font-mono">{attr.sequence ?? idx + 1}</td>
+                <td className="px-4 py-2.5 text-xs font-semibold text-slate-700">{attr.attributeLabel}</td>
+                <td className="px-4 py-2.5 text-xs text-slate-900">{attr.attributeValue ?? <span className="text-slate-400 italic">—</span>}</td>
+                <td className="px-4 py-2.5 text-xs text-slate-600">{attr.attributeUom ?? "—"}</td>
+                <td className="px-4 py-2.5">
+                  {conf !== null ? (
+                    <span className={cn("text-[11px] font-mono font-bold", conf >= 0.85 ? "text-[#047857]" : conf >= 0.6 ? "text-[#B45309]" : "text-[#B91C1C]")}>{Math.round(conf * 100)}%</span>
+                  ) : (<span className="text-[11px] text-slate-400 italic">—</span>)}
+                </td>
+                <td className="px-4 py-2.5">
+                  {flags.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {flags.map((f, fIdx) => (
+                        <span key={fIdx} className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border bg-amber-50 border-amber-200 text-amber-800">{f}</span>
+                      ))}
+                    </div>
+                  ) : (<span className="text-[11px] text-slate-400">—</span>)}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
   );
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────
 // Dimensions Tab
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────
 
 function DimensionsTab({ product }: { product: Product }) {
   const dims = product.dimensions;
   if (!dims) return <p className="text-sm text-slate-400 italic py-8 text-center">Dimensions not provided.</p>;
 
   const rows = [
-    { label: "Height", value: dims.height },
-    { label: "Width", value: dims.width },
-    { label: "Depth", value: dims.depth },
-    { label: "Weight", value: dims.weight },
-  ];
+    { label: "Length", value: dims.length, uom: dims.lengthUom },
+    { label: "Width", value: dims.width, uom: dims.widthUom },
+    { label: "Height", value: dims.height, uom: dims.heightUom },
+    { label: "Depth", value: dims.depth, uom: undefined },
+    { label: "Weight", value: dims.weight, uom: dims.weightUom },
+  ].filter((r) => r.value !== undefined);
+
+  const uom = dims.unitOfMeasure || dims.lengthUom || dims.widthUom || dims.heightUom;
 
   return (
     <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 space-y-3">
-      {dims.unitOfMeasure && (
-        <p className="text-xs text-slate-500">Unit: <span className="font-semibold text-slate-700">{dims.unitOfMeasure}</span></p>
+      {uom && (
+        <p className="text-xs text-slate-500">Unit: <span className="font-semibold text-slate-700">{uom}</span></p>
       )}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {rows.map((r) => (
           <div key={r.label} className="bg-slate-50 rounded-lg p-3 border border-slate-200">
             <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{r.label}</p>
-            <p className="text-lg font-bold text-slate-900 font-mono mt-0.5">{r.value !== null ? r.value : <span className="text-slate-400 italic text-sm font-normal">â€”</span>}</p>
+            <p className="text-lg font-bold text-slate-900 font-mono mt-0.5">
+              {r.value !== null && r.value !== undefined ? (
+                <>
+                  {r.value} {r.uom ? <span className="text-xs font-normal text-slate-500">{r.uom}</span> : null}
+                </>
+              ) : (
+                <span className="text-slate-400 italic text-sm font-normal">—</span>
+              )}
+            </p>
           </div>
         ))}
       </div>
@@ -209,51 +235,59 @@ function DimensionsTab({ product }: { product: Product }) {
   );
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// Assets Tab â€” Section 104
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────
+// Assets Tab — Section 104
+// ─────────────────────────────────────────────────────────────
 
-function AssetsTab({ assets }: { assets: ProductAsset[] }) {
-  if (assets.length === 0) return <p className="text-sm text-slate-400 italic py-8 text-center">No assets available.</p>;
+function AssetsTab({ assets }: { assets?: ProductAsset[] }) {
+  const safeAssets = assets ?? [];
+  if (safeAssets.length === 0) return <p className="text-sm text-slate-400 italic py-8 text-center">No assets available.</p>;
 
   const typeIcon = (type: string) => {
-    if (type === "image") return <ImageIcon className="w-4 h-4 text-blue-500" />;
+    if (type === "image" || type === "actualImage") return <ImageIcon className="w-4 h-4 text-blue-500" />;
     return <FileText className="w-4 h-4 text-slate-500" />;
   };
 
   return (
     <div className="space-y-2">
-      {assets.map((asset) => (
-        <div key={asset.assetId} className="bg-white border border-[#E2E8F0] rounded-xl p-4 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            {typeIcon(asset.assetType)}
-            <div>
-              <p className="text-xs font-semibold text-slate-700">{asset.title ?? asset.assetType}</p>
-              <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">{asset.assetType.replace(/_/g, " ")}</span>
+      {safeAssets.map((asset, idx) => {
+        const url = asset.assetUrl || asset.blobUrl || asset.sourceUrl;
+        const title = asset.title || asset.fileName || asset.assetType || `Asset #${idx + 1}`;
+        const assetType = asset.assetType || "asset";
+        return (
+          <div key={asset.id ?? asset.assetId ?? idx} className="bg-white border border-[#E2E8F0] rounded-xl p-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              {typeIcon(assetType)}
+              <div>
+                <p className="text-xs font-semibold text-slate-700">{title}</p>
+                <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">{String(assetType).replace(/_/g, " ")}</span>
+              </div>
             </div>
+            {url ? (
+              <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-[#1D4ED8] hover:underline flex items-center gap-1 shrink-0">
+                <ExternalLink className="w-3.5 h-3.5" /> Open
+              </a>
+            ) : null}
           </div>
-          <a href={asset.assetUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-[#1D4ED8] hover:underline flex items-center gap-1 shrink-0">
-            <ExternalLink className="w-3.5 h-3.5" /> Open
-          </a>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────
 // Validation Tab
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────
 
 function ValidationTab({ product }: { product: Product }) {
-  const flaggedAttrs = product.attributes.filter((a) => a.validationFlags.length > 0);
+  const flaggedAttrs = (product.attributes ?? []).filter((a) => (a.validationFlags?.length ?? 0) > 0);
 
   return (
     <div className="space-y-4">
       <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
         <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Overall Status</p>
         <span className={cn("px-3 py-1 rounded-lg border text-xs font-bold uppercase", product.status === "published" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : product.status === "needs_review" ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-slate-50 text-slate-700 border-slate-200")}>
-          {product.status.replace(/_/g, " ")}
+          {product.status ? product.status.replace(/_/g, " ") : "UNKNOWN"}
         </span>
       </div>
 
@@ -261,12 +295,12 @@ function ValidationTab({ product }: { product: Product }) {
         <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
           <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-3">Flagged Attributes ({flaggedAttrs.length})</p>
           <div className="space-y-2">
-            {flaggedAttrs.map((attr) => (
-              <div key={attr.sequence} className="flex items-center justify-between p-2 bg-amber-50 border border-amber-200 rounded-lg">
+            {flaggedAttrs.map((attr, idx) => (
+              <div key={attr.id ?? attr.sequence ?? idx} className="flex items-center justify-between p-2 bg-amber-50 border border-amber-200 rounded-lg">
                 <span className="text-xs font-semibold text-slate-700">{attr.attributeLabel}</span>
                 <div className="flex gap-1">
-                  {attr.validationFlags.map((f) => (
-                    <span key={f} className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border bg-amber-100 border-amber-300 text-amber-800">{f}</span>
+                  {(attr.validationFlags ?? []).map((f, fIdx) => (
+                    <span key={fIdx} className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border bg-amber-100 border-amber-300 text-amber-800">{f}</span>
                   ))}
                 </div>
               </div>
@@ -280,9 +314,9 @@ function ValidationTab({ product }: { product: Product }) {
   );
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────
 // Skeleton
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────
 
 function DetailSkeleton() {
   return (
@@ -295,9 +329,9 @@ function DetailSkeleton() {
   );
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// Main Page â€” Section 22
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────
+// Main Page — Section 22
+// ─────────────────────────────────────────────────────────────
 
 export default function ProductDetailPage() {
   const params = useParams<{ productId: string }>();
@@ -312,9 +346,28 @@ export default function ProductDetailPage() {
     setFetchState("loading");
     setErrorMessage(null);
     try {
-      const data = await apiClient.get<Product>(`/products/${encodeURIComponent(productId)}`);
-      setProduct(data);
-      setFetchState("success");
+      const data = await apiClient.get<Product | { product: Product }>(`/products/${encodeURIComponent(productId)}`);
+      const rawProduct = (data && "product" in data && data.product) ? data.product : (data as Product);
+      
+      if (rawProduct) {
+        const normalizedProduct: Product = {
+          ...rawProduct,
+          attributes: Array.isArray(rawProduct.attributes) ? rawProduct.attributes : [],
+          assets: Array.isArray(rawProduct.assets) ? rawProduct.assets : [],
+          features: Array.isArray(rawProduct.features) ? rawProduct.features : [],
+          descriptions: rawProduct.descriptions ?? {
+            shortDescription: null,
+            longDescription: null,
+            bulletPoints: [],
+          },
+          confidence: rawProduct.confidence ?? rawProduct.rowConfidence ?? null,
+        };
+        setProduct(normalizedProduct);
+        setFetchState("success");
+      } else {
+        setProduct(null);
+        setFetchState("success");
+      }
     } catch (err) {
       if (err instanceof ApiClientError && (err.statusCode === 404 || err.code === "NETWORK_ERROR" || err.code === "TIMEOUT")) {
         setProduct(null);
@@ -330,7 +383,7 @@ export default function ProductDetailPage() {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
-      {/* Breadcrumb â€” Section 87 */}
+      {/* Breadcrumb — Section 87 */}
       <div className="flex items-center gap-2">
         <Link href="/products" className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-[#1D4ED8] transition-colors">
           <ArrowLeft className="w-3.5 h-3.5" /> Products
@@ -367,29 +420,33 @@ export default function ProductDetailPage() {
 
       {fetchState === "success" && product && (
         <>
-          {/* Tabs â€” Section 22 */}
+          {/* Tabs — Section 22 */}
           <div className="border-b border-[#E2E8F0] flex gap-0 overflow-x-auto">
-            {TABS.map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => setActiveTab(tab)}
-                className={cn(
-                  "px-4 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-colors",
-                  activeTab === tab
-                    ? "border-[#1D4ED8] text-[#1D4ED8]"
-                    : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
-                )}
-              >
-                {tab}
-                {tab === "Attributes" && product.attributes.length > 0 && (
-                  <span className="ml-1.5 text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full">{product.attributes.length}</span>
-                )}
-                {tab === "Assets" && product.assets.length > 0 && (
-                  <span className="ml-1.5 text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full">{product.assets.length}</span>
-                )}
-              </button>
-            ))}
+            {TABS.map((tab) => {
+              const attrCount = product.attributes?.length ?? 0;
+              const assetCount = product.assets?.length ?? 0;
+              return (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setActiveTab(tab)}
+                  className={cn(
+                    "px-4 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-colors",
+                    activeTab === tab
+                      ? "border-[#1D4ED8] text-[#1D4ED8]"
+                      : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+                  )}
+                >
+                  {tab}
+                  {tab === "Attributes" && attrCount > 0 && (
+                    <span className="ml-1.5 text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full">{attrCount}</span>
+                  )}
+                  {tab === "Assets" && assetCount > 0 && (
+                    <span className="ml-1.5 text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full">{assetCount}</span>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
           {/* Tab Content */}

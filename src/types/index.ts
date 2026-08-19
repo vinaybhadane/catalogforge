@@ -13,42 +13,59 @@ export interface EvidenceReference {
 
 // Section 46: Attribute Model
 export interface ProductAttribute {
+  id?: number | string;
   sequence: number;
   attributeLabel: string;
   attributeValue: string | null;
   attributeUom: string | null;
-  confidence: number | null;
+  confidence?: number | null;
+  confidenceScore?: number | null;
+  lovMatchConfidence?: number | null;
   validationFlags: string[];
-  source: EvidenceReference | null;
+  source?: EvidenceReference | null;
 }
 
 export interface ProductDescriptions {
   shortDescription: string | null;
   longDescription: string | null;
   bulletPoints: string[];
+  mobileDescription?: string | null;
+  invoiceDescription?: string | null;
+  retailDescription?: string | null;
+  marketingDescription?: string | null;
 }
 
 export interface ProductFeature {
-  featureId: string;
+  id?: number | string;
+  featureId?: string;
   featureText: string;
   sequence: number;
 }
 
 export interface ProductDimensions {
+  length?: number | null;
+  lengthUom?: string | null;
   height: number | null;
+  heightUom?: string | null;
   width: number | null;
-  depth: number | null;
+  widthUom?: string | null;
+  depth?: number | null;
   weight: number | null;
-  unitOfMeasure: string | null;
+  weightUom?: string | null;
+  unitOfMeasure?: string | null;
 }
 
 export type ProductAssetType = "image" | "manual" | "sds" | "drawing" | "catalog" | "spec_sheet";
 
 export interface ProductAsset {
-  assetId: string;
-  assetType: ProductAssetType;
-  assetUrl: string;
-  title: string | null;
+  id?: number | string;
+  assetId?: string;
+  assetType: ProductAssetType | string;
+  assetUrl?: string;
+  blobUrl?: string | null;
+  sourceUrl?: string | null;
+  fileName?: string | null;
+  title?: string | null;
 }
 
 export type ProductStatus =
@@ -63,6 +80,7 @@ export type ProductStatus =
 // Section 45: Product Domain Model
 export interface Product {
   productId: string;
+  rawInputId?: string | number | null;
   partNumber: string;
   manufacturerName: string | null;
   brandName: string | null;
@@ -76,10 +94,16 @@ export interface Product {
   dimensions: ProductDimensions | null;
   assets: ProductAsset[];
 
-  confidence: number | null;
+  confidence?: number | null;
+  rowConfidence?: number | null;
   status: ProductStatus;
+  version?: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ProductDetailResponse {
+  product: Product;
 }
 
 // Section 49: LOV Match Model

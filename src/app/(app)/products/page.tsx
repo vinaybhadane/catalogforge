@@ -28,8 +28,8 @@ function formatDate(iso: string): string {
   }
 }
 
-function ConfidenceCell({ value }: { value: number | null }) {
-  if (value === null) return <span className="text-[11px] text-[#000000]/50 italic">â€”</span>;
+function ConfidenceCell({ value }: { value?: number | null }) {
+  if (value === null || value === undefined) return <span className="text-[11px] text-[#000000]/50 italic">—</span>;
   const pct = Math.round(value * 100);
   return (
     <span
