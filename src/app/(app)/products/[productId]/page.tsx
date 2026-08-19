@@ -157,7 +157,7 @@ function SourcingEvidenceTab({
             suppressHydrationWarning
           >
             <Sparkles className={cn("w-4 h-4", isSearching && "animate-spin")} />
-            <span>{isSearching ? "Searching Brave API…" : "Live Brave Search"}</span>
+            <span>{isSearching ? "Searching Gemini API…" : "Live Gemini Flash Search"}</span>
           </button>
         </div>
 
@@ -652,7 +652,7 @@ export default function ProductDetailPage() {
             suppressHydrationWarning
           >
             <Sparkles className={cn("w-3.5 h-3.5", isSearching && "animate-spin")} />
-            <span>{isSearching ? "Searching Brave API…" : "Brave Search Sourcing"}</span>
+            <span>{isSearching ? "Searching Gemini API…" : "Gemini Flash Sourcing"}</span>
           </button>
 
           <button

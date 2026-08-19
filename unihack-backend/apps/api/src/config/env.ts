@@ -45,8 +45,9 @@ const envSchema = z.object({
     .default('http://localhost:3000,http://127.0.0.1:3000')
     .transform((origins) => origins.split(',').map((o) => o.trim()).filter(Boolean)),
 
-  // Brave Search API
-  BRAVE_SEARCH_API_KEY: z.string().optional(),
+  // Google Gemini API Configuration (Gemini 2.5 Flash / Flash-Lite with Search Grounding)
+  GEMINI_API_KEY: z.string().optional(),
+  GEMINI_MODEL: z.string().default('gemini-2.5-flash'),
 
   // Dev Overrides
   ENABLE_MOCK_AUTH_IN_DEV: z.preprocess((val) => val === 'true' || val === true, z.boolean()).default(false),

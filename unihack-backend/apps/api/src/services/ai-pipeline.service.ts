@@ -7,7 +7,7 @@
 import sql from 'mssql';
 import { DEFAULT_MANUFACTURERS } from '../constants/master-data.constants';
 import { getSqlPool } from '../plugins/db.plugin';
-import { braveSearchService, ExtractedProductIntelligence } from './brave-search.service';
+import { geminiSearchService, ExtractedProductIntelligence } from './gemini-search.service';
 import { placeholderDetector } from './placeholder-detector.service';
 import { sourceGovernor } from './source-governor.service';
 import { uomNormalizer } from './uom-normalizer.service';
@@ -207,13 +207,13 @@ export class AiPipelineService {
   }
 
   /**
-   * Enriches a product using live Brave Search API with strict manufacturer primary sourcing
+   * Enriches a product using live Google Gemini Search with strict manufacturer primary sourcing
    */
   async enrichProductWithLiveSearch(
     partNumber: string,
     manufacturer?: string,
   ): Promise<ExtractedProductIntelligence> {
-    return braveSearchService.searchProduct(partNumber, manufacturer);
+    return geminiSearchService.searchProduct(partNumber, manufacturer);
   }
 
   /**

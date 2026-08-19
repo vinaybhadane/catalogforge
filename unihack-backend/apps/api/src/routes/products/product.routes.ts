@@ -12,7 +12,7 @@ import {
   GetProductByIdRouteSchema,
   ListProductsRouteSchema,
 } from '../../schemas/product.schemas';
-import { braveSearchService } from '../../services/brave-search.service';
+import { geminiSearchService } from '../../services/gemini-search.service';
 
 export const productRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   // GET /api/v1/products - List products with filters and pagination
@@ -40,13 +40,13 @@ export const productRoutes: FastifyPluginAsync = async (fastify: FastifyInstance
     },
   );
 
-  // POST /api/v1/products/search-live - Live Brave Web Search with Sourcing Governance
+  // POST /api/v1/products/search-live - Live Google Gemini Web Search with Sourcing Governance
   fastify.post<{ Body: { partNumber: string; manufacturer?: string } }>(
     '/search-live',
     {
       preHandler: [authenticate],
       schema: {
-        description: 'Perform live Brave Search intelligence extraction with strict source governance',
+        description: 'Perform live Google Gemini intelligence extraction with strict source governance',
         tags: ['Products', 'Enrichment'],
         summary: 'Live Web Intelligence Search',
         body: {
@@ -65,7 +65,7 @@ export const productRoutes: FastifyPluginAsync = async (fastify: FastifyInstance
         throw new ValidationError('partNumber parameter is required.');
       }
 
-      const intelligence = await braveSearchService.searchProduct(partNumber, manufacturer);
+      const intelligence = await geminiSearchService.searchProduct(partNumber, manufacturer);
       return reply.status(200).send(intelligence);
     },
   );
@@ -89,13 +89,13 @@ export const productRoutes: FastifyPluginAsync = async (fastify: FastifyInstance
     },
   );
 
-  // POST /api/v1/products/:id/enrich-live - Trigger live Brave Search enrichment for a product
+  // POST /api/v1/products/:id/enrich-live - Trigger live Gemini Search enrichment for a product
   fastify.post<{ Params: { id: string } }>(
     '/:id/enrich-live',
     {
       preHandler: [authenticate],
       schema: {
-        description: 'Live enrich product with Brave Search, official manufacturer spec sheets, PDFs, and warranty documents',
+        description: 'Live enrich product with Google Gemini, official manufacturer spec sheets, PDFs, and warranty documents',
         tags: ['Products', 'Enrichment'],
         summary: 'Live Enrich Product',
       },
@@ -108,7 +108,7 @@ export const productRoutes: FastifyPluginAsync = async (fastify: FastifyInstance
         throw new NotFoundError(`Product with ID '${id}' was not found.`);
       }
 
-      const intelligence = await braveSearchService.searchProduct(
+      const intelligence = await geminiSearchService.searchProduct(
         product.partNumber,
         product.manufacturerName || undefined,
       );
