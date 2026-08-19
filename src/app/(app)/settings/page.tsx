@@ -7,26 +7,18 @@ import {
   Sliders,
   Bell,
   Shield,
-  Database,
-  Check,
   Save,
-  Key,
   Users,
   Plus,
   Trash2,
-  Copy,
   CheckCircle2,
   Mail,
   Send,
-  Sparkles,
   ShieldCheck,
-  XCircle,
-  Laptop,
-  CheckSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type SettingsTab = "general" | "notifications" | "access" | "api";
+type SettingsTab = "general" | "notifications" | "access";
 
 interface TeamMember {
   id: string;
@@ -35,33 +27,25 @@ interface TeamMember {
   role: "Administrator" | "Catalog Manager" | "Auditor";
 }
 
-interface ApiKeyItem {
-  id: string;
-  name: string;
-  keyPrefix: string;
-  createdAt: string;
-}
-
 function SettingsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const tabParam = searchParams.get("tab") as SettingsTab | null;
 
   const [activeTab, setActiveTab] = useState<SettingsTab>(
-    tabParam === "notifications" || tabParam === "access" || tabParam === "api"
+    tabParam === "notifications" || tabParam === "access"
       ? tabParam
       : "general"
   );
 
   // Sync tab with URL search param if it changes
   useEffect(() => {
-    if (tabParam && ["general", "notifications", "access", "api"].includes(tabParam)) {
+    if (tabParam && ["general", "notifications", "access"].includes(tabParam)) {
       setActiveTab(tabParam);
     }
   }, [tabParam]);
 
-  // General Settings State
-  const [threshold, setThreshold] = useState<number>(85);
+  // General Governance Settings State
   const [strictOemOnly, setStrictOemOnly] = useState<boolean>(true);
   const [blockEcommerce, setBlockEcommerce] = useState<boolean>(true);
 
@@ -83,12 +67,6 @@ function SettingsContent() {
   const [newMemberName, setNewMemberName] = useState("");
   const [newMemberRole, setNewMemberRole] = useState<"Administrator" | "Catalog Manager" | "Auditor">("Catalog Manager");
 
-  const [apiKeys, setApiKeys] = useState<ApiKeyItem[]>([
-    { id: "k1", name: "Production Ingestion Pipeline", keyPrefix: "cf_live_9f82...", createdAt: "2026-08-15" },
-    { id: "k2", name: "ERP Automated Sync Agent", keyPrefix: "cf_live_3b11...", createdAt: "2026-08-18" },
-  ]);
-  const [copiedKeyId, setCopiedKeyId] = useState<string | null>(null);
-
   // Feedback State
   const [isSaved, setIsSaved] = useState<boolean>(false);
 
@@ -98,7 +76,6 @@ function SettingsContent() {
       const saved = localStorage.getItem("catalogforge_user_settings");
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.threshold !== undefined) setThreshold(parsed.threshold);
         if (parsed.strictOemOnly !== undefined) setStrictOemOnly(parsed.strictOemOnly);
         if (parsed.blockEcommerce !== undefined) setBlockEcommerce(parsed.blockEcommerce);
         if (parsed.notifyJobSuccess !== undefined) setNotifyJobSuccess(parsed.notifyJobSuccess);
@@ -115,7 +92,6 @@ function SettingsContent() {
   const handleSaveSettings = () => {
     try {
       const settingsPayload = {
-        threshold,
         strictOemOnly,
         blockEcommerce,
         notifyJobSuccess,
@@ -158,27 +134,6 @@ function SettingsContent() {
     setTeamMembers(teamMembers.filter((m) => m.id !== id));
   };
 
-  const handleGenerateApiKey = () => {
-    const randomHex = Math.random().toString(36).substring(2, 8);
-    const newKey: ApiKeyItem = {
-      id: Date.now().toString(),
-      name: `Headless Ingest Token #${apiKeys.length + 1}`,
-      keyPrefix: `cf_live_${randomHex}...`,
-      createdAt: new Date().toISOString().split("T")[0] || "Today",
-    };
-    setApiKeys([...apiKeys, newKey]);
-  };
-
-  const handleRevokeApiKey = (id: string) => {
-    setApiKeys(apiKeys.filter((k) => k.id !== id));
-  };
-
-  const handleCopyKey = (id: string, prefix: string) => {
-    navigator.clipboard?.writeText(prefix);
-    setCopiedKeyId(id);
-    setTimeout(() => setCopiedKeyId(null), 2000);
-  };
-
   const handleTabChange = (tab: SettingsTab) => {
     setActiveTab(tab);
     router.push(`/settings?tab=${tab}`);
@@ -188,7 +143,6 @@ function SettingsContent() {
     { id: "general" as SettingsTab, label: "Governance Policy", icon: Sliders },
     { id: "notifications" as SettingsTab, label: "Notifications & Alerts", icon: Bell },
     { id: "access" as SettingsTab, label: "Access & Permissions", icon: Shield },
-    { id: "api" as SettingsTab, label: "API & Integrations", icon: Database },
   ];
 
   return (
@@ -204,7 +158,7 @@ function SettingsContent() {
               Workspace Settings
             </h1>
             <p className="text-sm text-[#64748B] mt-0.5">
-              Manage AI governance rules, notification alerts, team access, and API configurations.
+              Manage AI sourcing governance rules, notification alerts, and team workspace access.
             </p>
           </div>
         </div>
@@ -253,66 +207,29 @@ function SettingsContent() {
         })}
       </div>
 
-      {/* ── TAB 1: GENERAL / AI GOVERNANCE ───────────────────────────── */}
+      {/* ── TAB 1: GOVERNANCE POLICY ─────────────────────────────────── */}
       {activeTab === "general" && (
         <div className="space-y-5">
-          {/* Confidence Threshold Policy */}
-          <div className="bg-white border border-[#E2E8F0] rounded-2xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-[#F1F5F9] flex items-center gap-3">
+          <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 space-y-4">
+            <div className="flex items-center gap-3 border-b border-[#F1F5F9] pb-4">
               <div className="w-8 h-8 rounded-lg bg-[#EFF6FF] flex items-center justify-center">
-                <Sliders className="w-4 h-4 text-[#2563EB]" />
+                <ShieldCheck className="w-4 h-4 text-[#2563EB]" />
               </div>
               <div>
-                <h2 className="text-sm font-bold text-[#000000]">AI Confidence Auto-Publish Threshold</h2>
+                <h2 className="text-sm font-bold text-[#000000]">Strict Source Governance Hierarchy</h2>
                 <p className="text-xs text-[#64748B]">
-                  Records scoring at or above this threshold are automatically published to the catalog.
+                  Enforce authoritative manufacturer sourcing and eliminate unauthorized third-party marketplaces.
                 </p>
               </div>
             </div>
 
-            <div className="p-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <label htmlFor="confidence-threshold" className="text-xs font-bold text-[#000000]">
-                  Auto-Publish Score Threshold
-                </label>
-                <span className="text-sm font-mono font-black px-3 py-1 bg-[#EFF6FF] text-[#2563EB] border border-[#BFDBFE] rounded-lg">
-                  {threshold}%
-                </span>
-              </div>
-
-              <input
-                id="confidence-threshold"
-                type="range"
-                min="50"
-                max="95"
-                step="1"
-                value={threshold}
-                onChange={(e) => setThreshold(Number(e.target.value))}
-                className="w-full accent-[#2563EB] cursor-pointer"
-              />
-
-              <div className="flex justify-between text-[10px] font-bold text-slate-400">
-                <span>50% (Permissive)</span>
-                <span>85% (Recommended Standard)</span>
-                <span>95% (Strict Enterprise)</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Sourcing Governance Switches */}
-          <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 space-y-4">
-            <h3 className="text-sm font-bold text-[#000000] flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              Strict Source Governance Hierarchy
-            </h3>
-
             <div className="divide-y divide-[#F1F5F9]">
               {/* OEM Mandatory */}
-              <div className="py-3.5 flex items-center justify-between gap-4">
-                <div className="space-y-0.5">
-                  <p className="text-xs font-bold text-[#000000]">Tier 1 Official OEM Sourcing for Media &amp; PDFs</p>
-                  <p className="text-xs text-[#64748B]">
-                    Enforces that spec sheet PDFs, CAD drawings, and images come exclusively from verified manufacturer domains.
+              <div className="py-4 flex items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-[#000000]">Tier 1 Official OEM Sourcing for Media &amp; Spec Sheets</p>
+                  <p className="text-xs text-[#64748B] leading-relaxed">
+                    Enforces that spec sheet PDFs, CAD drawings, warranty documents, and product photos come exclusively from verified manufacturer website domains.
                   </p>
                 </div>
                 <button
@@ -334,11 +251,11 @@ function SettingsContent() {
               </div>
 
               {/* Block E-Commerce */}
-              <div className="py-3.5 flex items-center justify-between gap-4">
-                <div className="space-y-0.5">
+              <div className="py-4 flex items-center justify-between gap-4">
+                <div className="space-y-1">
                   <p className="text-xs font-bold text-[#000000]">Consumer E-Commerce Marketplace Blacklist</p>
-                  <p className="text-xs text-[#64748B]">
-                    100% rejects and discards consumer marketplace data (Amazon, eBay, Walmart, AliExpress).
+                  <p className="text-xs text-[#64748B] leading-relaxed">
+                    100% rejects and discards consumer marketplace data (Amazon, eBay, Walmart, AliExpress, Temu, Flipkart) to prevent unverified seller data from entering the enterprise catalog.
                   </p>
                 </div>
                 <button
@@ -594,122 +511,6 @@ function SettingsContent() {
                 <span>Add Member</span>
               </button>
             </form>
-          </div>
-
-          {/* API Key Management */}
-          <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-bold text-[#000000] flex items-center gap-2">
-                  <Key className="w-4 h-4 text-[#2563EB]" />
-                  API Keys &amp; Ingestion Tokens
-                </h3>
-                <p className="text-xs text-[#64748B] mt-0.5">
-                  Tokens for headless automated CSV uploads and ERP catalog synchronization.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={handleGenerateApiKey}
-                className="px-3 py-1.5 bg-[#EFF6FF] hover:bg-[#DBEAFE] text-[#2563EB] text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors border border-[#BFDBFE]"
-                suppressHydrationWarning
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Generate Key</span>
-              </button>
-            </div>
-
-            <div className="divide-y divide-[#F1F5F9]">
-              {apiKeys.map((key) => (
-                <div key={key.id} className="py-3 flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-bold text-[#000000]">{key.name}</p>
-                    <p className="text-[11px] font-mono text-slate-500 mt-0.5">
-                      {key.keyPrefix} &bull; Created {key.createdAt}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleCopyKey(key.id, key.keyPrefix)}
-                      className="px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-lg flex items-center gap-1 border border-[#E2E8F0]"
-                    >
-                      {copiedKeyId === key.id ? (
-                        <>
-                          <Check className="w-3 h-3 text-emerald-600" />
-                          <span className="text-emerald-700">Copied</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3 h-3 text-slate-500" />
-                          <span>Copy</span>
-                        </>
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleRevokeApiKey(key.id)}
-                      className="text-slate-400 hover:text-rose-600 p-1 transition-colors"
-                      title="Revoke Token"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── TAB 4: API & INTEGRATIONS ───────────────────────────────── */}
-      {activeTab === "api" && (
-        <div className="space-y-5">
-          <div className="bg-white border border-[#E2E8F0] rounded-2xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-[#F1F5F9] flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-[#EFF6FF] flex items-center justify-center">
-                <Database className="w-4 h-4 text-[#2563EB]" />
-              </div>
-              <div>
-                <h2 className="text-sm font-bold text-[#000000]">Connected Backend Services &amp; APIs</h2>
-                <p className="text-xs text-[#64748B]">Real-time system health and endpoint endpoints.</p>
-              </div>
-            </div>
-
-            <div className="divide-y divide-[#F1F5F9]">
-              <div className="flex items-center justify-between px-6 py-3.5">
-                <span className="text-xs font-bold text-[#000000]">Fastify REST API Server</span>
-                <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700">
-                  <Check className="w-3.5 h-3.5" /> http://localhost:8000 (Active)
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between px-6 py-3.5">
-                <span className="text-xs font-bold text-[#000000]">Azure SQL Database Pool</span>
-                <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700">
-                  <Check className="w-3.5 h-3.5" /> Pool Connected (4,288 Records)
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between px-6 py-3.5">
-                <span className="text-xs font-bold text-[#000000]">Google Gemini 3.5 AI Model</span>
-                <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700">
-                  <Check className="w-3.5 h-3.5" /> gemini-3.5-flash-lite (Active)
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between px-6 py-3.5">
-                <span className="text-xs font-bold text-[#000000]">Swagger OpenAPI Docs</span>
-                <a
-                  href="http://localhost:8000/api/docs"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs font-bold text-[#2563EB] hover:underline"
-                >
-                  http://localhost:8000/api/docs
-                </a>
-              </div>
-            </div>
           </div>
         </div>
       )}
