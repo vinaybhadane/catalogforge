@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
@@ -166,6 +166,7 @@ export default function ProductsPage() {
               onChange={(e) => handleSearchChange(e.target.value)}
               placeholder="Search by part number, manufacturer, brand, classpath..."
               className="w-full text-xs neu-input pl-9 pr-4 py-2.5 text-[#000000] placeholder:text-[#000000]/50 focus:outline-none"
+              suppressHydrationWarning
             />
           </div>
           <div className="flex items-center gap-2">
@@ -180,6 +181,7 @@ export default function ProductsPage() {
                 setPage(1);
               }}
               className="text-xs neu-input px-3 py-2 text-[#000000] bg-[#DCE1E5] font-bold cursor-pointer"
+              suppressHydrationWarning
             >
               <option value="all">All Stages</option>
               <option value="ingested">Ingested</option>

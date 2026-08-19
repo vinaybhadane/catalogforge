@@ -92,6 +92,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="md:hidden p-2 text-gray-300 hover:text-white rounded-lg hover:bg-white/10 transition-colors"
             aria-label="Toggle navigation"
+            suppressHydrationWarning
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -113,7 +114,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           {/* Notifications */}
-          <button className="p-2 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors relative" aria-label="Notifications">
+          <button
+            type="button"
+            className="p-2 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors relative"
+            aria-label="Notifications"
+            suppressHydrationWarning
+          >
             <Bell className="w-4.5 h-4.5 w-[18px] h-[18px]" />
           </button>
 
@@ -225,6 +231,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 collapsed && "justify-center"
               )}
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              suppressHydrationWarning
             >
               {collapsed ? (
                 <ChevronRight className="w-4 h-4 text-gray-500" />
@@ -240,7 +247,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         {/* ── Mobile Drawer ─────────────────────────────────────────── */}
         {mobileMenuOpen && (
-          <div className="md:hidden fixed inset-0 z-50 flex">
+          <div className="md:hidden fixed inset-0 z-50 flex" suppressHydrationWarning>
             {/* Backdrop */}
             <div
               className="fixed inset-0 bg-black/60 backdrop-blur-sm"
@@ -260,6 +267,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   type="button"
                   onClick={() => setMobileMenuOpen(false)}
                   className="p-1.5 text-gray-400 hover:text-white hover:bg-[#1F2937] rounded-lg transition-colors"
+                  suppressHydrationWarning
                 >
                   <X className="w-4 h-4" />
                 </button>
