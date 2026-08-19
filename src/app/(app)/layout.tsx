@@ -12,6 +12,7 @@ import {
   FileText,
   Settings,
   User,
+  Users,
   ChevronLeft,
   ChevronRight,
   Menu,
@@ -57,6 +58,7 @@ const NAV_SECTIONS: NavSection[] = [
   {
     title: "CONFIGURATION",
     items: [
+      { label: "Team Management", href: "/settings?tab=access", icon: Users },
       { label: "Workspace Settings", href: "/settings", icon: Settings },
       { label: "User Profile", href: "/profile", icon: User },
     ],

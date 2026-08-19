@@ -16,6 +16,7 @@ import {
   Send,
   ShieldCheck,
   UserCheck,
+  Edit3,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { cn } from "@/lib/utils";
@@ -170,6 +171,17 @@ function SettingsContent() {
     setTimeout(() => setIsSaved(false), 3000);
   };
 
+  const handleRoleChange = (memberId: string, newRole: "Administrator" | "Catalog Manager" | "Auditor") => {
+    const updatedList = teamMembers.map((m) => (m.id === memberId ? { ...m, role: newRole } : m));
+    setTeamMembers(updatedList);
+    localStorage.setItem(
+      "catalogforge_team_members",
+      JSON.stringify(updatedList.filter((m) => !m.isCurrentSession))
+    );
+    setIsSaved(true);
+    setTimeout(() => setIsSaved(false), 3000);
+  };
+
   const handleRemoveMember = (id: string) => {
     const updatedList = teamMembers.filter((m) => m.id !== id);
     setTeamMembers(updatedList);
@@ -177,6 +189,8 @@ function SettingsContent() {
       "catalogforge_team_members",
       JSON.stringify(updatedList.filter((m) => !m.isCurrentSession))
     );
+    setIsSaved(true);
+    setTimeout(() => setIsSaved(false), 3000);
   };
 
   const handleTabChange = (tab: SettingsTab) => {
@@ -187,7 +201,7 @@ function SettingsContent() {
   const TABS = [
     { id: "general" as SettingsTab, label: "Governance Policy", icon: Sliders },
     { id: "notifications" as SettingsTab, label: "Notifications & Alerts", icon: Bell },
-    { id: "access" as SettingsTab, label: "Access & Permissions", icon: Shield },
+    { id: "access" as SettingsTab, label: "Team Management", icon: Shield },
   ];
 
   return (
@@ -200,10 +214,10 @@ function SettingsContent() {
           </div>
           <div>
             <h1 className="text-xl font-bold text-[#000000] tracking-tight">
-              Workspace Settings
+              Workspace Settings &amp; Team Management
             </h1>
             <p className="text-sm text-[#64748B] mt-0.5">
-              Manage AI sourcing governance rules, notification alerts, and team workspace access.
+              Manage AI sourcing governance rules, notification alerts, and team workspace roles.
             </p>
           </div>
         </div>
@@ -223,7 +237,7 @@ function SettingsContent() {
       {isSaved && (
         <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-xl flex items-center gap-2 text-xs font-bold transition-all">
           <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-          <span>Settings successfully saved and applied to workspace!</span>
+          <span>Settings &amp; team permissions successfully saved!</span>
         </div>
       )}
 
@@ -450,29 +464,32 @@ function SettingsContent() {
         </div>
       )}
 
-      {/* ── TAB 3: ACCESS & PERMISSIONS ─────────────────────────────── */}
+      {/* ── TAB 3: ACCESS & PERMISSIONS (TEAM MANAGEMENT) ────────────── */}
       {activeTab === "access" && (
         <div className="space-y-5">
-          {/* Team Members */}
           <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-3">
               <div>
                 <h3 className="text-sm font-bold text-[#000000] flex items-center gap-2">
                   <Users className="w-4 h-4 text-[#2563EB]" />
-                  Team Members &amp; Authenticated Users
+                  Administrator Team &amp; Access Control
                 </h3>
                 <p className="text-xs text-[#64748B] mt-0.5">
-                  Real team members authenticated via Firebase Auth for CatalogForge workspace.
+                  As an Administrator, you can edit team member roles, assign permissions, or revoke workspace access.
                 </p>
               </div>
+              <span className="text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-blue-50 text-blue-800 border border-blue-200 flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+                Admin Privileges Active
+              </span>
             </div>
 
             {/* Members Table */}
             <div className="border border-[#E2E8F0] rounded-xl overflow-hidden divide-y divide-[#E2E8F0]">
               {teamMembers.map((member) => (
-                <div key={member.id} className="p-3.5 flex items-center justify-between gap-3 bg-[#FAFAFA]">
+                <div key={member.id} className="p-4 flex items-center justify-between flex-wrap gap-3 bg-[#FAFAFA]">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-[#2563EB] text-white flex items-center justify-center text-xs font-bold">
+                    <div className="w-9 h-9 rounded-xl bg-[#2563EB] text-white flex items-center justify-center text-xs font-black shrink-0">
                       {member.name.charAt(0).toUpperCase()}
                     </div>
                     <div>
@@ -480,26 +497,42 @@ function SettingsContent() {
                         <p className="text-xs font-bold text-[#000000]">{member.name}</p>
                         {member.isCurrentSession && (
                           <span className="text-[9px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-1">
-                            <UserCheck className="w-3 h-3" /> (Current Firebase Session)
+                            <UserCheck className="w-3 h-3" /> (Current Session)
                           </span>
                         )}
                       </div>
                       <p className="text-[11px] font-mono text-slate-600 mt-0.5">{member.email}</p>
                     </div>
                   </div>
+
                   <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-md bg-[#EFF6FF] text-[#2563EB] border border-[#BFDBFE]">
-                      {member.role}
-                    </span>
-                    {!member.isCurrentSession && (
+                    {/* Role Dropdown Selector */}
+                    <div className="flex items-center gap-1.5">
+                      <select
+                        value={member.role}
+                        onChange={(e) => handleRoleChange(member.id, e.target.value as any)}
+                        disabled={member.isCurrentSession}
+                        className="text-xs font-bold text-[#2563EB] bg-[#EFF6FF] border border-[#BFDBFE] rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#2563EB] cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
+                        suppressHydrationWarning
+                      >
+                        <option value="Administrator">Administrator</option>
+                        <option value="Catalog Manager">Catalog Manager</option>
+                        <option value="Auditor">Auditor (Read Only)</option>
+                      </select>
+                    </div>
+
+                    {/* Remove Member Button */}
+                    {!member.isCurrentSession ? (
                       <button
                         type="button"
                         onClick={() => handleRemoveMember(member.id)}
-                        className="text-slate-400 hover:text-rose-600 p-1 transition-colors"
-                        title="Remove member"
+                        className="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition-colors"
+                        title="Remove Team Access"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
+                    ) : (
+                      <span className="text-[10px] font-bold text-slate-400 px-2 py-1">Owner</span>
                     )}
                   </div>
                 </div>
@@ -507,43 +540,46 @@ function SettingsContent() {
             </div>
 
             {/* Add Member Form */}
-            <form onSubmit={handleAddMember} className="pt-2 grid grid-cols-1 sm:grid-cols-4 gap-2.5">
-              <input
-                type="text"
-                value={newMemberName}
-                onChange={(e) => setNewMemberName(e.target.value)}
-                placeholder="Full Name"
-                className="px-3 py-2 text-xs border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#2563EB] bg-[#FAFAFA]"
-                suppressHydrationWarning
-              />
-              <input
-                type="email"
-                value={newMemberEmail}
-                onChange={(e) => setNewMemberEmail(e.target.value)}
-                placeholder="email@company.com"
-                className="px-3 py-2 text-xs border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#2563EB] bg-[#FAFAFA]"
-                suppressHydrationWarning
-              />
-              <select
-                value={newMemberRole}
-                onChange={(e) => setNewMemberRole(e.target.value as any)}
-                className="px-3 py-2 text-xs border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#2563EB] bg-[#FAFAFA]"
-                suppressHydrationWarning
-              >
-                <option value="Administrator">Administrator</option>
-                <option value="Catalog Manager">Catalog Manager</option>
-                <option value="Auditor">Auditor</option>
-              </select>
-              <button
-                type="submit"
-                disabled={!newMemberName.trim() || !newMemberEmail.trim()}
-                className="px-4 py-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
-                suppressHydrationWarning
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add Member</span>
-              </button>
-            </form>
+            <div className="pt-2">
+              <h4 className="text-xs font-bold text-[#000000] mb-2">Invite New Team Member</h4>
+              <form onSubmit={handleAddMember} className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
+                <input
+                  type="text"
+                  value={newMemberName}
+                  onChange={(e) => setNewMemberName(e.target.value)}
+                  placeholder="Full Name"
+                  className="px-3 py-2 text-xs border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#2563EB] bg-[#FAFAFA]"
+                  suppressHydrationWarning
+                />
+                <input
+                  type="email"
+                  value={newMemberEmail}
+                  onChange={(e) => setNewMemberEmail(e.target.value)}
+                  placeholder="email@company.com"
+                  className="px-3 py-2 text-xs border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#2563EB] bg-[#FAFAFA]"
+                  suppressHydrationWarning
+                />
+                <select
+                  value={newMemberRole}
+                  onChange={(e) => setNewMemberRole(e.target.value as any)}
+                  className="px-3 py-2 text-xs border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#2563EB] bg-[#FAFAFA]"
+                  suppressHydrationWarning
+                >
+                  <option value="Administrator">Administrator</option>
+                  <option value="Catalog Manager">Catalog Manager</option>
+                  <option value="Auditor">Auditor (Read Only)</option>
+                </select>
+                <button
+                  type="submit"
+                  disabled={!newMemberName.trim() || !newMemberEmail.trim()}
+                  className="px-4 py-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
+                  suppressHydrationWarning
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Member</span>
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       )}
