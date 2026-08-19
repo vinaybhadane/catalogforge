@@ -266,17 +266,17 @@ export default function DashboardPage() {
     <div className="space-y-6 pb-16 text-[#000000] max-w-7xl mx-auto">
       
       {/* ── 1. Page Header & Governance SLA Badge ────────────────────── */}
-      <div className="bg-white border border-[#E2E8F0] rounded-3xl p-6 lg:p-7 flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="bg-white border border-[#E2E8F0] rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-7 flex flex-col md:flex-row md:items-center justify-between gap-5 sm:gap-6">
         <div className="space-y-1.5 max-w-3xl">
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <span className="bg-[#EFF6FF] border border-[#BFDBFE] text-[#2563EB] px-3 py-1 text-[11px] font-black uppercase tracking-wider rounded-full flex items-center gap-1.5">
-              <Cpu className="w-3.5 h-3.5" /> Deterministic AI Pipeline Active
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="bg-[#EFF6FF] border border-[#BFDBFE] text-[#2563EB] px-2.5 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-[11px] font-black uppercase tracking-wider rounded-full flex items-center gap-1.5">
+              <Cpu className="w-3.5 h-3.5" /> Pipeline Active
             </span>
-            <span className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-3 py-1 text-[11px] font-bold uppercase tracking-wider rounded-full flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Tier-1 OEM Sourcing Grounded
+            <span className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-2.5 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider rounded-full flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> OEM Sourcing Grounded
             </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-[#000000] tracking-tight">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-[#000000] tracking-tight">
             AI Product Enrichment &amp; Governance Operations Hub
           </h1>
           <p className="text-xs sm:text-sm text-[#475569] font-medium leading-relaxed">
@@ -285,23 +285,23 @@ export default function DashboardPage() {
         </div>
 
         {/* Global Action Bar */}
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           <button
             type="button"
             onClick={refresh}
             disabled={isLoading}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-[#0F172A] bg-white hover:bg-slate-50 border border-[#CBD5E1] transition-all disabled:opacity-50 shadow-sm"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-xl text-xs font-bold text-[#0F172A] bg-white hover:bg-slate-50 border border-[#CBD5E1] transition-all disabled:opacity-50 shadow-sm"
           >
             <RefreshCw className={cn("w-4 h-4 text-[#2563EB]", isLoading && "animate-spin")} />
-            <span>Telemetry Refresh</span>
+            <span>Refresh</span>
           </button>
 
           <Link
             href="/upload"
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-[#2563EB] hover:bg-[#1D4ED8] text-white border border-[#1D4ED8] transition-all shadow-sm"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs font-bold bg-[#2563EB] hover:bg-[#1D4ED8] text-white border border-[#1D4ED8] transition-all shadow-sm"
           >
             <UploadCloud className="w-4 h-4" />
-            <span>Ingest Datasets</span>
+            <span>Ingest Data</span>
           </Link>
         </div>
       </div>
