@@ -6,6 +6,7 @@
 
 import * as xlsx from 'xlsx';
 import { Product } from '@unihack/contracts';
+import { sanitizeText, resolveBrandAndManufacturer, resolveAuthoritativeClasspath } from '../utils/text-sanitizer';
 
 export const DELIVERY_HEADERS: readonly string[] = [
   'MFR URL',
@@ -214,7 +215,7 @@ export const DELIVERY_HEADERS: readonly string[] = [
   'ATTRIBUTE_LABEL 50',
   'ATTRIBUTE_VALUE 50',
   'ATTRIBUTE_UOM 50',
-  // IDENTIFIERS & PRICING
+  // CODES & PRICING
   'UPC',
   'EAN',
   'GTIN',
@@ -297,7 +298,7 @@ export class DeliveryExporterService {
 
     // 1. Evidence URLs
     const evidenceList = (product.attributes || [])
-      .map((a) => a.source?.sourceUrl)
+      .map((a) => (a as any).source?.sourceUrl || (a as any).sourceEvidence?.sourceUrl)
       .filter((u): u is string => Boolean(u));
 
     const assetUrls = (product.assets || [])
@@ -305,70 +306,85 @@ export class DeliveryExporterService {
       .filter((u): u is string => Boolean(u));
 
     const allUrls = Array.from(new Set([...evidenceList, ...assetUrls]));
-    if (allUrls.length > 0) row['MFR URL'] = allUrls[0] || '';
+    if (allUrls.length > 0) row['MFR URL'] = sanitizeText(allUrls[0]);
     for (let i = 1; i <= 5; i++) {
-      if (allUrls[i]) row[`Ref URL ${i}`] = allUrls[i] || '';
+      if (allUrls[i]) row[`Ref URL ${i}`] = sanitizeText(allUrls[i]);
     }
 
-    // 2. Identifiers
-    row['PART_NUMBER'] = product.partNumber || '';
-    row['Dept'] = rawInput?.dept || '';
-    row['Class'] = rawInput?.class || '';
-    row['Fine'] = rawInput?.fine || '';
-    row['SKU - MY_PART_NUMBER'] = rawInput?.sku_my_part_number || product.partNumber.toUpperCase();
-    row['Mfg_Part_Num'] = product.manufacturerPartNumber || rawInput?.mfg_part_num || product.partNumber;
-    row['Part_Desc'] = rawInput?.part_desc || product.descriptions?.shortDescription || '';
-    row['E1_Brand'] = rawInput?.e1_brand || product.brandName || '';
-    row['Unilog_Brand'] = rawInput?.unilog_brand || product.brandName || '';
-    row['DIB_Brand'] = rawInput?.dib_brand || product.brandName || '';
-    row['Part_Manuf'] = rawInput?.part_manuf || product.manufacturerName || '';
-    row['MANUFACTURER_NAME'] = product.manufacturerName || '';
-    row['BRAND_NAME'] = product.brandName || '';
-    row['TRADE_NAME'] = product.brandName || '';
-    row['MANUFACTURER_PART_NUMBER'] = product.manufacturerPartNumber || product.partNumber;
+    // 2. Resolve Manufacturer & Brand with Graceful Fallback
+    const resolved = resolveBrandAndManufacturer(
+      rawInput?.e1_brand || rawInput?.unilog_brand || product.brandName,
+      rawInput?.part_manuf || product.manufacturerName,
+      product.partNumber,
+      product.descriptions?.shortDescription || product.descriptions?.longDescription || '',
+    );
+
+    row['PART_NUMBER'] = sanitizeText(product.partNumber);
+    row['Dept'] = sanitizeText(rawInput?.dept);
+    row['Class'] = sanitizeText(rawInput?.class);
+    row['Fine'] = sanitizeText(rawInput?.fine);
+    row['SKU - MY_PART_NUMBER'] = sanitizeText(rawInput?.sku_my_part_number || product.partNumber.toUpperCase());
+    row['Mfg_Part_Num'] = sanitizeText(product.manufacturerPartNumber || rawInput?.mfg_part_num || product.partNumber);
+    row['Part_Desc'] = sanitizeText(rawInput?.part_desc || product.descriptions?.shortDescription || '');
+    row['E1_Brand'] = sanitizeText(rawInput?.e1_brand || resolved.brandName);
+    row['Unilog_Brand'] = sanitizeText(rawInput?.unilog_brand || resolved.brandName);
+    row['DIB_Brand'] = sanitizeText(rawInput?.dib_brand || resolved.brandName);
+    row['Part_Manuf'] = sanitizeText(rawInput?.part_manuf || resolved.manufacturerName);
+    row['MANUFACTURER_NAME'] = sanitizeText(resolved.manufacturerName);
+    row['BRAND_NAME'] = sanitizeText(resolved.brandName);
+    row['TRADE_NAME'] = sanitizeText(resolved.brandName);
+    row['MANUFACTURER_PART_NUMBER'] = sanitizeText(product.manufacturerPartNumber || product.partNumber);
     row['ALTERNATE_PART_NUMBER'] = '';
 
-    // 3. Classpath
-    row['Classpath'] = product.classpath || '';
+    // 3. Classpath Resolution
+    const resolvedClasspath = resolveAuthoritativeClasspath(
+      resolved.manufacturerName,
+      product.partNumber,
+      product.descriptions?.shortDescription || product.descriptions?.longDescription || '',
+      product.classpath,
+    );
+    row['Classpath'] = sanitizeText(resolvedClasspath);
 
-    // 4. Descriptions
-    const desc = product.descriptions || {};
-    row['SHORT_DESC'] = desc.shortDescription || '';
-    row['LONG_DESC1'] = desc.longDescription || '';
-    row['MOBILE_DESC'] =
+    // 4. Descriptions (Sanitized)
+    const desc = product.descriptions || ({} as any);
+    row['SHORT_DESC'] = sanitizeText(desc.shortDescription);
+    row['LONG_DESC1'] = sanitizeText(desc.longDescription);
+    row['MOBILE_DESC'] = sanitizeText(
       desc.mobileDescription ||
-      `${product.manufacturerName || ''} ${product.brandName || ''}, ${product.partNumber}`.trim();
-    row['INVOICE_DESC'] = desc.invoiceDescription || product.partNumber.toUpperCase();
-    row['RETAIL_DESC'] =
+      `${resolved.manufacturerName} ${resolved.brandName}, ${product.partNumber}`,
+    );
+    row['INVOICE_DESC'] = sanitizeText(desc.invoiceDescription || product.partNumber.toUpperCase());
+    row['RETAIL_DESC'] = sanitizeText(
       desc.retailDescription ||
-      `${product.brandName || product.manufacturerName || ''} ${product.partNumber}`.trim();
-    row['MARKETING_DESCRIPTION'] =
+      `${resolved.brandName} ${product.partNumber}`,
+    );
+    row['MARKETING_DESCRIPTION'] = sanitizeText(
       desc.marketingDescription ||
-      'Engineered for heavy-duty industrial and professional use. Delivers maximum durability and precision under demanding conditions.';
+      'Engineered for heavy-duty industrial and professional use. Delivers maximum durability and precision under demanding conditions.',
+    );
 
     // 5. Features (ITEM_FEATURES_1 to ITEM_FEATURES_20)
     const featuresList: string[] = [];
     if (Array.isArray(product.features) && product.features.length > 0) {
-      featuresList.push(...product.features.map((f) => f.featureText));
+      featuresList.push(...product.features.map((f) => sanitizeText(f.featureText)));
     } else if (Array.isArray(desc.bulletPoints) && desc.bulletPoints.length > 0) {
-      featuresList.push(...desc.bulletPoints);
+      featuresList.push(...desc.bulletPoints.map((b: string) => sanitizeText(b)));
     }
 
-    // Default bullet points if empty
     if (featuresList.length === 0) {
-      if (product.manufacturerName) featuresList.push(`Precision manufactured to ${product.manufacturerName} performance standards`);
+      if (resolved.manufacturerName) featuresList.push(`Precision manufactured to ${resolved.manufacturerName} performance standards`);
       featuresList.push('Durable construction for demanding industrial environments');
       featuresList.push('Compliant with international safety and quality certifications');
     }
 
     for (let i = 1; i <= 20; i++) {
       const featVal = featuresList[i - 1];
-      if (featVal) row[`ITEM_FEATURES_${i}`] = featVal;
+      if (featVal) row[`ITEM_FEATURES_${i}`] = sanitizeText(featVal);
     }
 
     // 6. Meta Fields & Product Name
-    const categoryParts = (product.classpath || '').split('>').map((s) => s.trim());
-    row['Product Name'] = categoryParts[categoryParts.length - 1] || 'Industrial Component';
+    const categoryParts = resolvedClasspath.split('>').map((s) => s.trim());
+    row['Product Name'] = sanitizeText(categoryParts[categoryParts.length - 1] || 'Industrial Component');
     row['With'] = '';
     row['Standard/Approvals'] = '';
     row['Prop 65'] = '';
@@ -380,17 +396,17 @@ export class DeliveryExporterService {
     for (let i = 1; i <= 50; i++) {
       const attr = attributes[i - 1];
       if (attr) {
-        row[`ATTRIBUTE_LABEL ${i}`] = attr.attributeLabel || '';
-        row[`ATTRIBUTE_VALUE ${i}`] = attr.attributeValue || '';
-        row[`ATTRIBUTE_UOM ${i}`] = attr.attributeUom || 'N/A';
+        row[`ATTRIBUTE_LABEL ${i}`] = sanitizeText(attr.attributeLabel);
+        row[`ATTRIBUTE_VALUE ${i}`] = sanitizeText(attr.attributeValue);
+        row[`ATTRIBUTE_UOM ${i}`] = sanitizeText(attr.attributeUom);
       }
     }
 
     // 8. Codes & Pricing
-    row['UPC'] = product.upc || '';
-    row['EAN'] = product.ean || '';
-    row['GTIN'] = product.gtin || '';
-    row['UNSPSC'] = product.unspsc || '40151500';
+    row['UPC'] = sanitizeText(product.upc);
+    row['EAN'] = sanitizeText(product.ean);
+    row['GTIN'] = sanitizeText(product.gtin);
+    row['UNSPSC'] = sanitizeText(product.unspsc || '40151500');
     row['Warranty'] = '1 Year Manufacturer Warranty';
     row['List Price'] = '';
     row['Selling Qty'] = '1';
@@ -401,27 +417,27 @@ export class DeliveryExporterService {
     const dims = product.dimensions;
     if (dims) {
       row['LENGTH'] = dims.length !== null && dims.length !== undefined ? String(dims.length) : '';
-      row['LENGTH_UOM'] = dims.lengthUom || '';
+      row['LENGTH_UOM'] = sanitizeText(dims.lengthUom);
       row['HEIGHT'] = dims.height !== null && dims.height !== undefined ? String(dims.height) : '';
-      row['HEIGHT_UOM'] = dims.heightUom || '';
+      row['HEIGHT_UOM'] = sanitizeText(dims.heightUom);
       row['WIDTH'] = dims.width !== null && dims.width !== undefined ? String(dims.width) : '';
-      row['WIDTH_UOM'] = dims.widthUom || '';
+      row['WIDTH_UOM'] = sanitizeText(dims.widthUom);
       row['WEIGHT'] = dims.weight !== null && dims.weight !== undefined ? String(dims.weight) : '';
-      row['WEIGHT_UOM'] = dims.weightUom || '';
+      row['WEIGHT_UOM'] = sanitizeText(dims.weightUom);
       row['VOLUME'] = '';
       row['VOLUME_UOM'] = '';
     }
 
     // 10. Assets & Documents
     const cleanPart = product.partNumber.replace(/[^a-zA-Z0-9_-]/g, '_');
-    const mfgPrefix = (product.manufacturerName || 'Product').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const mfgPrefix = (resolved.manufacturerName || 'Product').replace(/[^a-zA-Z0-9_-]/g, '_');
 
     row['Product Image'] = `${mfgPrefix}_${cleanPart}.jpg`;
     row['Specification Sheet'] = `${mfgPrefix}_${cleanPart}_Specification_Sheet.pdf`;
 
     if (Array.isArray(product.assets)) {
       product.assets.forEach((ast) => {
-        const fName = ast.fileName || ast.blobUrl || ast.sourceUrl || '';
+        const fName = sanitizeText(ast.fileName || ast.blobUrl || ast.sourceUrl || '');
         if (ast.assetType === 'image') {
           if (!row['Product Image']) row['Product Image'] = fName;
           else if (!row['Alternate Image 1']) row['Alternate Image 1'] = fName;
@@ -444,7 +460,7 @@ export class DeliveryExporterService {
     }
 
     // 11. Country & Status Flags
-    row['Country Of Origin'] = product.countryOfOrigin || '';
+    row['Country Of Origin'] = sanitizeText(product.countryOfOrigin);
     row['Discontinued'] = product.discontinued ? 'Yes' : 'No';
     row['Actual Image (Yes/No)'] = product.actualImage ? 'Yes' : 'Yes';
 

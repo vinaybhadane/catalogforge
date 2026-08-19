@@ -96,6 +96,12 @@ export interface Product {
 
   confidence?: number | null;
   rowConfidence?: number | null;
+  upc?: string | null;
+  ean?: string | null;
+  gtin?: string | null;
+  countryOfOrigin?: string | null;
+  discontinued?: boolean;
+  actualImage?: boolean;
   status: ProductStatus;
   version?: number;
   createdAt: string;
