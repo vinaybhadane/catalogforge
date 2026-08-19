@@ -61,6 +61,33 @@ export const ingestionRoutes: FastifyPluginAsync = async (fastify: FastifyInstan
   );
 
   /**
+   * GET /api/v1/ingestion/uploads
+   * Informational endpoint for browser navigation
+   */
+  fastify.get(
+    '/uploads',
+    {
+      schema: {
+        description: 'Upload endpoint information. To upload datasets, submit a POST request with multipart/form-data.',
+        tags: ['Ingestion'],
+        summary: 'Upload Endpoint Info',
+      },
+    },
+    async (_request, reply) => {
+      return reply.status(200).send({
+        service: 'CatalogForge Ingestion Upload API',
+        methodRequired: 'POST',
+        acceptedFormats: ['.csv', '.xlsx', '.pdf'],
+        instructions: 'Submit a POST request with multipart/form-data containing the `file` parameter.',
+        uploadEndpoint: 'POST /api/v1/ingestion/uploads',
+        jobsEndpoint: 'GET /api/v1/ingestion/jobs',
+        webUploadInterface: 'http://localhost:3000/upload',
+        swaggerDocsUrl: 'http://localhost:8000/api/docs',
+      });
+    },
+  );
+
+  /**
    * POST /api/v1/ingestion/url
    * Sourcing ingestion from manufacturer domain URL or technical PDF
    */
