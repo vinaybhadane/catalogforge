@@ -263,8 +263,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error("No active user session found. Please log in again.");
     }
     try {
+      // First attempt with client updatePassword
       await updatePassword(auth.currentUser, newPassword);
-    } catch (error) {
+    } catch (error: any) {
+      // If Firebase requires recent login, use fresh ID token with Firebase Auth REST endpoint
+      if (
+        error?.code === "auth/requires-recent-login" ||
+        (typeof error?.message === "string" && error.message.includes("requires-recent-login"))
+      ) {
+        try {
+          const idToken = await auth.currentUser.getIdToken(true);
+          const apiKey =
+            process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyDjcH_GcXPQLvWzDZmQ8GzRqHxOkL2jNaU";
+          const res = await fetch(
+            `https://identitytoolkit.googleapis.com/v1/accounts:update?key=${apiKey}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                idToken,
+                password: newPassword,
+                returnSecureToken: true,
+              }),
+            }
+          );
+          const data = await res.json();
+          if (!res.ok || data.error) {
+            throw new Error(data.error?.message || "Failed to update password.");
+          }
+          return;
+        } catch (restErr: any) {
+          throw new Error(
+            restErr?.message || "Unable to update password. Please check your connection and try again."
+          );
+        }
+      }
+
       const message = getReadableAuthErrorMessage(error);
       throw new Error(message);
     }
