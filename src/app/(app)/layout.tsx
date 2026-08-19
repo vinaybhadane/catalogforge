@@ -58,7 +58,7 @@ const NAV_SECTIONS: NavSection[] = [
   {
     title: "CONFIGURATION",
     items: [
-      { label: "Team Management", href: "/settings?tab=access", icon: Users },
+      { label: "Team Management", href: "/team_management", icon: Users },
       { label: "Workspace Settings", href: "/settings", icon: Settings },
       { label: "User Profile", href: "/profile", icon: User },
     ],
@@ -89,9 +89,10 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     if (pathname.includes("/products")) return "Product Master Catalog";
     if (pathname.includes("/analytics")) return "Catalog Intelligence & Analytics";
     if (pathname.includes("/audit")) return "Governance Audit Logs";
+    if (pathname.includes("/team_management")) return "Team Management Studio";
     if (pathname.includes("/settings")) {
       const tab = searchParams?.get("tab");
-      if (tab === "access") return "Team Management & Access";
+      if (tab === "access") return "Access & Permissions";
       if (tab === "notifications") return "Notification Alerts";
       return "System & Governance Settings";
     }
@@ -234,7 +235,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                     <span>User Profile</span>
                   </Link>
                   <Link
-                    href="/settings?tab=access"
+                    href="/team_management"
                     onClick={() => setUserDropdownOpen(false)}
                     className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-slate-800 text-slate-200 transition"
                     suppressHydrationWarning

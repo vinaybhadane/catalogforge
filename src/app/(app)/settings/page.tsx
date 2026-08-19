@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, Suspense } from "react";
+import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   Settings,
@@ -16,7 +17,8 @@ import {
   Send,
   ShieldCheck,
   UserCheck,
-  Edit3,
+  ExternalLink,
+  Lock,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { cn } from "@/lib/utils";
@@ -84,7 +86,6 @@ function SettingsContent() {
         storedList = JSON.parse(savedMembersStr);
       }
 
-      // Always ensure the active Firebase Auth user is at the top of the access list
       const primaryUser: TeamMember = {
         id: user?.uid || "firebase-current-user",
         name: currentUserName,
@@ -96,7 +97,6 @@ function SettingsContent() {
       const otherMembers = storedList.filter((m) => m.email.toLowerCase() !== currentUserEmail.toLowerCase());
       setTeamMembers([primaryUser, ...otherMembers]);
 
-      // If notification email was not explicitly set, default to user's real email
       const savedSettings = localStorage.getItem("catalogforge_user_settings");
       if (savedSettings) {
         const parsed = JSON.parse(savedSettings);
@@ -147,7 +147,6 @@ function SettingsContent() {
     e.preventDefault();
     if (!newMemberEmail.trim() || !newMemberName.trim()) return;
 
-    // Prevent duplicate emails
     if (teamMembers.some((m) => m.email.toLowerCase() === newMemberEmail.trim().toLowerCase())) {
       alert("A team member with this email address is already added.");
       return;
@@ -201,7 +200,7 @@ function SettingsContent() {
   const TABS = [
     { id: "general" as SettingsTab, label: "Governance Policy", icon: Sliders },
     { id: "notifications" as SettingsTab, label: "Notifications & Alerts", icon: Bell },
-    { id: "access" as SettingsTab, label: "Team Management", icon: Shield },
+    { id: "access" as SettingsTab, label: "Access & Permissions", icon: Shield },
   ];
 
   return (
@@ -214,10 +213,10 @@ function SettingsContent() {
           </div>
           <div>
             <h1 className="text-xl font-bold text-[#000000] tracking-tight">
-              Workspace Settings &amp; Team Management
+              Workspace Settings
             </h1>
             <p className="text-sm text-[#64748B] mt-0.5">
-              Manage AI sourcing governance rules, notification alerts, and team workspace roles.
+              Manage AI sourcing governance rules, notification alerts, and access permissions.
             </p>
           </div>
         </div>
@@ -237,7 +236,7 @@ function SettingsContent() {
       {isSaved && (
         <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-xl flex items-center gap-2 text-xs font-bold transition-all">
           <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-          <span>Settings &amp; team permissions successfully saved!</span>
+          <span>Settings &amp; access permissions successfully saved!</span>
         </div>
       )}
 
@@ -464,32 +463,88 @@ function SettingsContent() {
         </div>
       )}
 
-      {/* ── TAB 3: ACCESS & PERMISSIONS (TEAM MANAGEMENT) ────────────── */}
+      {/* ── TAB 3: ACCESS & PERMISSIONS ─────────────────────────────── */}
       {activeTab === "access" && (
         <div className="space-y-5">
+          {/* Quick Nav to Dedicated Team Management */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-5 flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#2563EB] text-white flex items-center justify-center shrink-0 shadow-sm">
+                <Users className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-[#000000]">Dedicated Team Management Studio</h3>
+                <p className="text-xs text-[#64748B]">
+                  Manage members, modify roles, revoke access, and invite collaborators in the full-page team manager.
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/team_management"
+              className="px-4 py-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors shadow-sm"
+            >
+              <span>Open Team Management</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          {/* Role Permissions Matrix */}
+          <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 space-y-4">
+            <h3 className="text-sm font-bold text-[#000000] flex items-center gap-2">
+              <Shield className="w-4 h-4 text-[#2563EB]" />
+              Workspace Role Permissions Matrix
+            </h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="p-3.5 rounded-xl border border-blue-200 bg-blue-50/50 space-y-2">
+                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-blue-100 text-blue-800">
+                  Administrator
+                </span>
+                <p className="text-xs text-slate-600">
+                  Full system control: dataset uploads, AI sourcing, schema overrides, team management, and workspace settings.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/50 space-y-2">
+                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                  Catalog Manager
+                </span>
+                <p className="text-xs text-slate-600">
+                  Can upload CSV/XLSX datasets, review pending items, trigger AI lookups, and publish approved product records.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-xl border border-purple-200 bg-purple-50/50 space-y-2">
+                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-purple-100 text-purple-800">
+                  Auditor (Read-Only)
+                </span>
+                <p className="text-xs text-slate-600">
+                  Read-only visibility into catalog products, ingestion job histories, analytics dashboards, and audit logs.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Team Members List */}
           <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 space-y-4">
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div>
                 <h3 className="text-sm font-bold text-[#000000] flex items-center gap-2">
                   <Users className="w-4 h-4 text-[#2563EB]" />
-                  Administrator Team &amp; Access Control
+                  Active Workspace Team Members
                 </h3>
                 <p className="text-xs text-[#64748B] mt-0.5">
-                  As an Administrator, you can edit team member roles, assign permissions, or revoke workspace access.
+                  Authenticated users with active access permissions.
                 </p>
               </div>
-              <span className="text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-blue-50 text-blue-800 border border-blue-200 flex items-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
-                Admin Privileges Active
-              </span>
             </div>
 
             {/* Members Table */}
             <div className="border border-[#E2E8F0] rounded-xl overflow-hidden divide-y divide-[#E2E8F0]">
               {teamMembers.map((member) => (
-                <div key={member.id} className="p-4 flex items-center justify-between flex-wrap gap-3 bg-[#FAFAFA]">
+                <div key={member.id} className="p-3.5 flex items-center justify-between flex-wrap gap-3 bg-[#FAFAFA]">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-[#2563EB] text-white flex items-center justify-center text-xs font-black shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-[#2563EB] text-white flex items-center justify-center text-xs font-bold">
                       {member.name.charAt(0).toUpperCase()}
                     </div>
                     <div>
@@ -504,81 +559,13 @@ function SettingsContent() {
                       <p className="text-[11px] font-mono text-slate-600 mt-0.5">{member.email}</p>
                     </div>
                   </div>
-
                   <div className="flex items-center gap-3">
-                    {/* Role Dropdown Selector */}
-                    <div className="flex items-center gap-1.5">
-                      <select
-                        value={member.role}
-                        onChange={(e) => handleRoleChange(member.id, e.target.value as any)}
-                        disabled={member.isCurrentSession}
-                        className="text-xs font-bold text-[#2563EB] bg-[#EFF6FF] border border-[#BFDBFE] rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#2563EB] cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
-                        suppressHydrationWarning
-                      >
-                        <option value="Administrator">Administrator</option>
-                        <option value="Catalog Manager">Catalog Manager</option>
-                        <option value="Auditor">Auditor (Read Only)</option>
-                      </select>
-                    </div>
-
-                    {/* Remove Member Button */}
-                    {!member.isCurrentSession ? (
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveMember(member.id)}
-                        className="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition-colors"
-                        title="Remove Team Access"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    ) : (
-                      <span className="text-[10px] font-bold text-slate-400 px-2 py-1">Owner</span>
-                    )}
+                    <span className="text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-md bg-[#EFF6FF] text-[#2563EB] border border-[#BFDBFE]">
+                      {member.role}
+                    </span>
                   </div>
                 </div>
               ))}
-            </div>
-
-            {/* Add Member Form */}
-            <div className="pt-2">
-              <h4 className="text-xs font-bold text-[#000000] mb-2">Invite New Team Member</h4>
-              <form onSubmit={handleAddMember} className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
-                <input
-                  type="text"
-                  value={newMemberName}
-                  onChange={(e) => setNewMemberName(e.target.value)}
-                  placeholder="Full Name"
-                  className="px-3 py-2 text-xs border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#2563EB] bg-[#FAFAFA]"
-                  suppressHydrationWarning
-                />
-                <input
-                  type="email"
-                  value={newMemberEmail}
-                  onChange={(e) => setNewMemberEmail(e.target.value)}
-                  placeholder="email@company.com"
-                  className="px-3 py-2 text-xs border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#2563EB] bg-[#FAFAFA]"
-                  suppressHydrationWarning
-                />
-                <select
-                  value={newMemberRole}
-                  onChange={(e) => setNewMemberRole(e.target.value as any)}
-                  className="px-3 py-2 text-xs border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#2563EB] bg-[#FAFAFA]"
-                  suppressHydrationWarning
-                >
-                  <option value="Administrator">Administrator</option>
-                  <option value="Catalog Manager">Catalog Manager</option>
-                  <option value="Auditor">Auditor (Read Only)</option>
-                </select>
-                <button
-                  type="submit"
-                  disabled={!newMemberName.trim() || !newMemberEmail.trim()}
-                  className="px-4 py-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
-                  suppressHydrationWarning
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add Member</span>
-                </button>
-              </form>
             </div>
           </div>
         </div>
