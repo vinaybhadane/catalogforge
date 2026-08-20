@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useCallback } from "react";
 import { useDropzone, Accept } from "react-dropzone";
@@ -9,6 +9,7 @@ import {
   X,
   File,
   CheckCircle2,
+  Sparkles,
 } from "lucide-react";
 import { UploadMode } from "@/hooks/useUpload";
 import { cn } from "@/lib/utils";
@@ -20,6 +21,8 @@ interface UploadDropzoneProps {
   onUploadSubmit: () => void;
   isUploading: boolean;
   disabled?: boolean;
+  submitButtonText?: string;
+  submitIcon?: React.ElementType;
 }
 
 function formatBytes(bytes: number, decimals = 2): string {
@@ -38,13 +41,18 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
   onUploadSubmit,
   isUploading,
   disabled = false,
+  submitButtonText = "Start AI Extraction & 252-Column Processing",
+  submitIcon: SubmitIcon = Sparkles,
 }) => {
   const getAcceptConfig = (): Accept => {
-    if (mode === "pdf") return { "application/pdf": [".pdf"] };
+    if (mode === "pdf") {
+      return { "application/pdf": [".pdf"] };
+    }
     return {
       "text/csv": [".csv"],
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
       "application/vnd.ms-excel": [".xls"],
+      "application/pdf": [".pdf"],
     };
   };
 
@@ -96,19 +104,17 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
             )} />
           </div>
           <p className="text-[15px] font-bold text-[#000000] mb-1">
-            {isDragActive ? "Drop your file here" : "Drag & drop your file here"}
+            {isDragActive ? "Drop your file here" : "Drag & drop your file or PDF here"}
           </p>
           <p className="text-sm text-[#64748B] mb-5">
-            {mode === "pdf"
-              ? "Supports manufacturer datasheets (.pdf up to 50MB)"
-              : "Supports supplier spreadsheets (.csv, .xlsx up to 50MB)"}
+            Supports manufacturer technical PDFs (.pdf) and supplier spreadsheets (.csv, .xlsx, .xls) up to 50MB
           </p>
           <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-[#E2E8F0] bg-white text-sm font-semibold text-[#000000] shadow-sm hover:border-[#3386E7] hover:text-[#3386E7] transition-colors">
             <File className="w-4 h-4" />
-            Browse files
+            Browse files &amp; PDFs
           </span>
           <p className="text-xs text-[#94A3B8] mt-4 font-medium">
-            {mode === "pdf" ? "PDF" : "CSV · XLSX · XLS"} — max 50 MB
+            PDF · CSV · XLSX · XLS — max 50 MB
           </p>
         </div>
       ) : (
@@ -123,7 +129,7 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
             </div>
             <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
               <CheckCircle2 className="w-3.5 h-3.5" />
-              Ready
+              Ready for AI Processing
             </div>
             <button
               type="button"
@@ -135,7 +141,7 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
               <X className="w-4 h-4" />
             </button>
           </div>
-          <div className="flex items-center justify-between px-5 py-3 bg-[#FAFAFA]">
+          <div className="flex items-center justify-between px-5 py-3 bg-[#FAFAFA] flex-wrap gap-3">
             <button
               type="button"
               onClick={() => onFileSelect(null)}
@@ -148,10 +154,10 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
               type="button"
               onClick={onUploadSubmit}
               disabled={isUploading}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#3386E7] hover:bg-[#2563EB] text-white text-sm font-semibold disabled:opacity-50 transition-colors shadow-sm"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm font-semibold disabled:opacity-50 transition-colors shadow-sm"
             >
-              <UploadCloud className="w-4 h-4" />
-              <span>Start Ingestion &amp; Pre-flight Scan</span>
+              <SubmitIcon className="w-4 h-4" />
+              <span>{submitButtonText}</span>
             </button>
           </div>
         </div>

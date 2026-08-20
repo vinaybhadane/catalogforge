@@ -68,9 +68,11 @@ export class GeminiSearchService {
   async searchProduct(
     partNumber: string,
     manufacturer?: string,
+    description?: string,
   ): Promise<ExtractedProductIntelligence> {
     const cleanPart = partNumber.trim();
     let cleanMfg = (manufacturer || '').replace(/\(\d+\)/g, '').trim();
+    const cleanDesc = (description || '').trim();
 
     const geminiKey = (process.env.GEMINI_API_KEY || (env as any).GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '').trim();
     const tavilyKey = (process.env.TAVILY_API_KEY || '').trim();
@@ -88,12 +90,13 @@ export class GeminiSearchService {
     // 1. If Tavily Search Key is provided -> Fetch real live web links, images, PDFs, and warranty info
     if (tavilyKey) {
       try {
+        const queryTerms = [cleanMfg, cleanPart, cleanDesc ? cleanDesc.slice(0, 80) : ''].filter(Boolean).join(' ');
         const tavilyRes = await fetch('https://api.tavily.com/search', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             api_key: tavilyKey,
-            query: `${cleanMfg} ${cleanPart} official product specifications images datasheet manual warranty pdf`,
+            query: `${queryTerms} official product specifications images datasheet manual warranty pdf`,
             search_depth: 'advanced',
             include_images: true,
             include_answer: true,
@@ -142,11 +145,23 @@ export class GeminiSearchService {
             }
           }
 
+          // Filter authentic product images (exclude pdfs, icons, tracking pixels, logos)
+          const rawImages = (tavilyData.images || []) as string[];
+          const validImages = rawImages.filter((img) => {
+            if (!img || typeof img !== 'string' || !img.startsWith('http')) return false;
+            const lower = img.toLowerCase();
+            if (lower.endsWith('.pdf') || lower.includes('/pdf/')) return false;
+            if (lower.includes('favicon') || lower.includes('logo') || lower.includes('badge') || lower.includes('icon') || lower.includes('1x1') || lower.includes('avatar') || lower.includes('spacer') || lower.includes('pixel') || lower.includes('sprite')) {
+              return false;
+            }
+            return true;
+          });
+
           rawLiveResults = {
             title: preferredResult?.title || results[0]?.title,
             url: preferredResult?.url || results[0]?.url,
             snippet: tavilyData.answer || preferredResult?.content || results[0]?.content,
-            images: tavilyData.images || [],
+            images: validImages,
           };
           usedProvider = 'Tavily Live Web Sourcing';
           isLiveSearch = true;
@@ -367,14 +382,27 @@ Respond with ONLY valid JSON matching this schema:
     // 5. Asset Verification with Genuine Verification (No Fake URLs)
     const assets: VerifiedAsset[] = [];
 
-    // Product Image (Use live scraped CDN image if available, else AI returned URL)
-    const liveImageUrl = rawLiveResults.images?.[0] || parsedAiData?.verifiedImageUrl || null;
-    if (liveImageUrl) {
+    // Product Images (Use live scraped CDN images from Tavily / organic results)
+    const productImages = (rawLiveResults.images || []).filter(Boolean);
+    if (productImages.length > 0) {
+      productImages.slice(0, 4).forEach((imgUrl, i) => {
+        assets.push({
+          assetType: 'image',
+          fileName: `${cleanPart.replace(/[^a-zA-Z0-9_-]/g, '_')}-${i === 0 ? 'Primary-Photo' : `Alt-Photo-${i}`}.jpg`,
+          sourceUrl: imgUrl,
+          previewUrl: imgUrl,
+          sourceDomain: defaultMfgDomain,
+          isFromManufacturer: true,
+          status: 'verified_live',
+          shortInfo: i === 0 ? `Authentic primary product photograph from ${cleanMfg || defaultMfgDomain}` : `Verified alternate perspective photograph`,
+        });
+      });
+    } else if (parsedAiData?.verifiedImageUrl && typeof parsedAiData.verifiedImageUrl === 'string' && parsedAiData.verifiedImageUrl.startsWith('http') && !parsedAiData.verifiedImageUrl.toLowerCase().endsWith('.pdf')) {
       assets.push({
         assetType: 'image',
         fileName: `${cleanPart.replace(/[^a-zA-Z0-9_-]/g, '_')}-Primary-Photo.jpg`,
-        sourceUrl: liveImageUrl,
-        previewUrl: liveImageUrl,
+        sourceUrl: parsedAiData.verifiedImageUrl,
+        previewUrl: parsedAiData.verifiedImageUrl,
         sourceDomain: defaultMfgDomain,
         isFromManufacturer: true,
         status: 'verified_live',

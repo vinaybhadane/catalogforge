@@ -582,5 +582,310 @@ export const ingestionRoutes: FastifyPluginAsync = async (fastify: FastifyInstan
         .send(buffer);
     },
   );
+
+  /**
+   * POST /api/v1/ingestion/process-batch-file
+   * Enriches multiple products from an uploaded spreadsheet (CSV/XLSX) or PDF with live AI intelligence and 252-column schema
+   */
+  fastify.post(
+    '/process-batch-file',
+    {
+      preHandler: [authenticate],
+      schema: {
+        description: 'Upload a batch manufacturer catalog (CSV/XLSX/PDF) to extract live AI product intelligence, images, warranties, and 252-column delivery schemas (quota-guarded to 7 items)',
+        tags: ['Ingestion', 'AI Batch'],
+        summary: 'Process Batch Catalog File with Live AI Enrichment',
+      },
+    },
+    async (request, reply) => {
+      const data = await request.file();
+      if (!data) {
+        throw new ValidationError('No file was uploaded in the multipart request.');
+      }
+
+      const buffer = await data.toBuffer();
+      const fileName = data.filename;
+
+      const { batchFileEnricherService } = await import('../../services/batch-file-enricher.service');
+      const { emailService } = await import('../../services/email.service');
+
+      const result = await batchFileEnricherService.processBatchFile(buffer, fileName, 7);
+
+      // Resolve recipient email: from query param, authenticated user claims, or configured Brevo default
+      const user = (request as any).user;
+      const queryEmail = (request.query as any)?.email;
+      const queryName = (request.query as any)?.name;
+      const targetEmail = (queryEmail || user?.email || process.env.BREVO_SENDER_EMAIL || 'vinaybhadane06@gmail.com').trim();
+      const userName = queryName || user?.displayName || user?.name || (targetEmail ? targetEmail.split('@')[0] : 'User');
+
+      // Asynchronously trigger completion notification email with interactive direct link
+      if (targetEmail) {
+        try {
+          const summary = (result.products || []).map((p) => ({
+            partNumber: p.partNumber,
+            mfg: p.manufacturerName,
+            brand: p.brandName,
+            title: p.officialTitle || p.shortDesc,
+            imageCount: (p.images || []).length,
+            docCount: (p.documents || []).length,
+            filledColumns: p.nonEmptyColumnsCount || 0,
+          }));
+
+          const emailRes = await emailService.sendBatchExtractionCompleteEmail(
+            targetEmail,
+            result.batchId,
+            fileName,
+            result.totalRowsInFile,
+            result.processedCount,
+            summary,
+            userName,
+          );
+
+          result.emailNotificationSent = emailRes.success;
+          result.emailRecipient = targetEmail;
+          batchFileEnricherService.saveBatchResult(result);
+        } catch (emailErr) {
+          console.warn('[BatchIngestion] Email notification dispatch note:', emailErr);
+        }
+      }
+
+      return reply.status(200).send(result);
+    },
+  );
+
+  /**
+   * GET /api/v1/ingestion/batch-result/:batchId
+   * Retrieves stored enriched batch dataset across page refreshes or from direct email links
+   */
+  fastify.get<{
+    Params: { batchId: string };
+  }>(
+    '/batch-result/:batchId',
+    {
+      schema: {
+        description: 'Get persistent batch enrichment dataset by batch ID',
+        tags: ['Ingestion'],
+        summary: 'Get Stored Batch Result',
+      },
+    },
+    async (request, reply) => {
+      const { batchId } = request.params;
+      const { batchFileEnricherService } = await import('../../services/batch-file-enricher.service');
+      const batch = batchFileEnricherService.getBatchResult(batchId);
+
+      if (!batch) {
+        throw new NotFoundError('Batch Dataset Result', batchId);
+      }
+
+      return reply.status(200).send(batch);
+    },
+  );
+
+  /**
+   * POST /api/v1/ingestion/send-batch-email
+   * Manually dispatch completion email with shareable link to any custom email
+   */
+  fastify.post<{
+    Body: { batchId: string; email: string; recipientName?: string };
+  }>(
+    '/send-batch-email',
+    {
+      schema: {
+        description: 'Send dataset extraction completion notification email to specified address',
+        tags: ['Ingestion', 'Email'],
+        summary: 'Send Batch Extraction Email',
+      },
+    },
+    async (request, reply) => {
+      const { batchId, email, recipientName } = request.body;
+      if (!batchId || !email) {
+        throw new ValidationError('`batchId` and `email` are required.');
+      }
+
+      const { batchFileEnricherService } = await import('../../services/batch-file-enricher.service');
+      const { emailService } = await import('../../services/email.service');
+
+      const batch = batchFileEnricherService.getBatchResult(batchId);
+      if (!batch) {
+        throw new NotFoundError('Batch Dataset Result', batchId);
+      }
+
+      const summary = (batch.products || []).map((p) => ({
+        partNumber: p.partNumber,
+        mfg: p.manufacturerName,
+        brand: p.brandName,
+        title: p.officialTitle || p.shortDesc,
+        imageCount: (p.images || []).length,
+        docCount: (p.documents || []).length,
+        filledColumns: p.nonEmptyColumnsCount || 0,
+      }));
+
+      const emailRes = await emailService.sendBatchExtractionCompleteEmail(
+        email.trim(),
+        batch.batchId,
+        batch.fileName,
+        batch.totalRowsInFile,
+        batch.processedCount,
+        summary,
+        recipientName || email.split('@')[0],
+      );
+
+      return reply.status(200).send({
+        success: emailRes.success,
+        recipient: email,
+        error: emailRes.error,
+        message: emailRes.success ? `Notification email sent to ${email}` : `Failed to send email: ${emailRes.error}`,
+      });
+    },
+  );
+
+  /**
+   * POST /api/v1/ingestion/batch-export-excel
+   * Exports an array of 252-column delivery rows into an Excel (.xlsx) workbook
+   */
+  fastify.post<{
+    Body: { deliveryRows: Array<Record<string, string>>; fileName?: string };
+  }>(
+    '/batch-export-excel',
+    {
+      schema: {
+        description: 'Export batch delivery rows into 252-column delivery Excel spreadsheet (.xlsx)',
+        tags: ['Ingestion', 'Export'],
+        summary: 'Export Batch Delivery Rows to Excel',
+      },
+    },
+    async (request, reply) => {
+      const { deliveryRows, fileName } = request.body;
+      if (!deliveryRows || !Array.isArray(deliveryRows) || deliveryRows.length === 0) {
+        throw new ValidationError('`deliveryRows` array is required.');
+      }
+
+      const { deliveryExporterService } = await import('../../services/delivery-exporter.service');
+      const buffer = deliveryExporterService.exportRowsToExcel(deliveryRows);
+
+      const outName = fileName ? fileName.replace(/\.[^/.]+$/, '') : 'Batch_Delivery';
+
+      return reply
+        .header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        .header('Content-Disposition', `attachment; filename="Unihack_${outName}_Delivery_252Cols.xlsx"`)
+        .send(buffer);
+    },
+  );
+
+  /**
+   * POST /api/v1/ingestion/batch-export-csv
+   * Exports an array of 252-column delivery rows into a CSV (.csv) file
+   */
+  fastify.post<{
+    Body: { deliveryRows: Array<Record<string, string>>; fileName?: string };
+  }>(
+    '/batch-export-csv',
+    {
+      schema: {
+        description: 'Export batch delivery rows into 252-column delivery CSV spreadsheet (.csv)',
+        tags: ['Ingestion', 'Export'],
+        summary: 'Export Batch Delivery Rows to CSV',
+      },
+    },
+    async (request, reply) => {
+      const { deliveryRows, fileName } = request.body;
+      if (!deliveryRows || !Array.isArray(deliveryRows) || deliveryRows.length === 0) {
+        throw new ValidationError('`deliveryRows` array is required.');
+      }
+
+      const { deliveryExporterService } = await import('../../services/delivery-exporter.service');
+      const buffer = deliveryExporterService.exportRowsToCsv(deliveryRows);
+
+      const outName = fileName ? fileName.replace(/\.[^/.]+$/, '') : 'Batch_Delivery';
+
+      return reply
+        .header('Content-Type', 'text/csv; charset=utf-8')
+        .header('Content-Disposition', `attachment; filename="Unihack_${outName}_Delivery_252Cols.csv"`)
+        .send(buffer);
+    },
+  );
+
+  /**
+   * POST /api/v1/ingestion/batch-save-catalog
+   * Persists an array of enriched products directly into Azure SQL catalog
+   */
+  fastify.post<{
+    Body: { products: Array<any> };
+  }>(
+    '/batch-save-catalog',
+    {
+      preHandler: [authenticate],
+      schema: {
+        description: 'Persist batch enriched products into catalog database',
+        tags: ['Ingestion', 'Products'],
+        summary: 'Save Batch Products to Catalog',
+      },
+    },
+    async (request, reply) => {
+      const { products } = request.body;
+      if (!products || !Array.isArray(products) || products.length === 0) {
+        throw new ValidationError('`products` array is required.');
+      }
+
+      const { aiPipelineService } = await import('../../services/ai-pipeline.service');
+
+      const savedIds: number[] = [];
+      for (const p of products) {
+        try {
+          const id = await aiPipelineService.persistProduct({
+            partNumber: p.partNumber,
+            manufacturerName: p.manufacturerName,
+            brandName: p.brandName,
+            manufacturerPartNumber: p.mfgPartNum || p.partNumber,
+            classpath: p.classpath,
+            shortDesc: p.shortDesc,
+            longDesc1: p.longDesc1,
+            mobileDesc: p.mobileDesc,
+            invoiceDesc: p.invoiceDesc,
+            retailDesc: p.retailDesc,
+            marketingDescription: p.marketingDescription,
+            unspsc: p.unspsc || '40151500',
+            upc: p.upc || null,
+            ean: p.ean || null,
+            gtin: p.gtin || null,
+            countryOfOrigin: p.countryOfOrigin || 'United States',
+            discontinued: false,
+            actualImage: (p.images || []).length > 0,
+            rowConfidence: p.confidenceScore || 0.98,
+            status: 'published',
+            features: p.features || [],
+            attributes: p.attributes || [],
+            assets: [
+              ...(p.images || []).map((img: any) => ({
+                assetType: 'image',
+                fileName: `${p.manufacturerName}_${p.partNumber}.jpg`,
+                sourceUrl: img.url,
+                isFromManufacturer: true,
+              })),
+              ...(p.documents || []).map((doc: any) => ({
+                assetType: doc.assetType,
+                fileName: doc.fileName,
+                sourceUrl: doc.sourceUrl,
+                isFromManufacturer: true,
+              })),
+            ],
+          });
+          if (id !== null) {
+            savedIds.push(id);
+          }
+        } catch (err) {
+          console.warn(`[BatchSave] Failed to save product ${p.partNumber}:`, err);
+        }
+      }
+
+      return reply.status(200).send({
+        success: true,
+        message: `Successfully saved ${savedIds.length} products to catalog.`,
+        savedCount: savedIds.length,
+        savedIds,
+      });
+    },
+  );
 };
+
 

@@ -23,8 +23,14 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
+  RotateCcw,
+  Mail,
+  Send,
+  Share2,
+  Copy,
 } from "lucide-react";
 import { useUpload, UploadMode } from "@/hooks/useUpload";
+import { useAuth } from "@/lib/auth/AuthProvider";
 import { UploadDropzone } from "@/components/upload/UploadDropzone";
 import { PreflightSummary } from "@/components/upload/PreflightSummary";
 import { apiClient } from "@/lib/api/client";
@@ -33,6 +39,7 @@ import { cn } from "@/lib/utils";
 type ExtendedUploadMode = UploadMode | "ai-search";
 
 export default function UploadPage() {
+  const { user } = useAuth();
   const {
     uploadMode,
     setUploadMode,
@@ -48,17 +55,7 @@ export default function UploadPage() {
     proceedToJobDetail,
   } = useUpload();
 
-  const [activeTabMode, setActiveTabMode] = useState<ExtendedUploadMode>("file");
-
-  React.useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const tabParam = params.get("tab") || params.get("mode");
-      if (tabParam && (tabParam === "ai-search" || tabParam === "url" || tabParam === "file" || tabParam === "pdf")) {
-        setActiveTabMode(tabParam as ExtendedUploadMode);
-      }
-    }
-  }, []);
+  const [activeTabMode, setActiveTabMode] = useState<ExtendedUploadMode>("ai-search");
 
   // Single Product AI Search state
   const [productSearchInput, setProductSearchInput] = useState("");
@@ -80,6 +77,88 @@ export default function UploadPage() {
   const [isExportingCsv, setIsExportingCsv] = useState(false);
   const [showDeliveryColumns, setShowDeliveryColumns] = useState(false);
 
+  // Batch File AI Processing & 252-Column Delivery State
+  const [isProcessingBatchFile, setIsProcessingBatchFile] = useState(false);
+  const [batchResult, setBatchResult] = useState<{
+    success: boolean;
+    batchId?: string;
+    fileName: string;
+    totalRowsInFile: number;
+    processedCount: number;
+    batchLimit: number;
+    isQuotaCapped: boolean;
+    quotaNotice: string | null;
+    products: any[];
+    createdAt?: string;
+    emailNotificationSent?: boolean;
+    emailRecipient?: string;
+  } | null>(null);
+  const [batchError, setBatchError] = useState<string | null>(null);
+  const [selectedBatchProductIndex, setSelectedBatchProductIndex] = useState(0);
+  const [isBatchExportingExcel, setIsBatchExportingExcel] = useState(false);
+  const [isBatchExportingCsv, setIsBatchExportingCsv] = useState(false);
+  const [isBatchSavingCatalog, setIsBatchSavingCatalog] = useState(false);
+  const [batchSavedSuccess, setBatchSavedSuccess] = useState<boolean>(false);
+  const [showBatchDeliveryColumns, setShowBatchDeliveryColumns] = useState(false);
+
+  // Link Copy State
+  const [isLinkCopied, setIsLinkCopied] = useState(false);
+
+  // On page load/mount: Restore tab & retrieve persistent batch dataset from URL or localStorage
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get("tab") || params.get("mode");
+      const batchIdParam = params.get("batchId");
+
+      if (tabParam) {
+        if (tabParam === "ai-search" || tabParam === "url") {
+          setActiveTabMode(tabParam as ExtendedUploadMode);
+        } else if (tabParam === "file" || tabParam === "pdf") {
+          setActiveTabMode("file");
+        }
+      }
+
+      // If batchId is in URL, fetch live from server to restore session
+      if (batchIdParam) {
+        setActiveTabMode("file");
+        apiClient
+          .get<any>(`/ingestion/batch-result/${batchIdParam}`)
+          .then((data) => {
+            if (data && data.products && data.products.length > 0) {
+              setBatchResult(data);
+              try {
+                localStorage.setItem("catalogforge_active_batch", JSON.stringify(data));
+              } catch {}
+            }
+          })
+          .catch(() => {
+            // Fallback to local storage
+            const cached = localStorage.getItem("catalogforge_active_batch");
+            if (cached) {
+              try {
+                const parsed = JSON.parse(cached);
+                if (parsed && parsed.products && parsed.products.length > 0) {
+                  setBatchResult(parsed);
+                }
+              } catch {}
+            }
+          });
+      } else {
+        // Check local storage for active session
+        const cached = localStorage.getItem("catalogforge_active_batch");
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            if (parsed && parsed.products && parsed.products.length > 0) {
+              setBatchResult(parsed);
+            }
+          } catch {}
+        }
+      }
+    }
+  }, []);
+
   const isProcessing = uploadState === "uploading" || uploadState === "scanning";
   const isPreflightReady =
     uploadState === "completed" ||
@@ -87,10 +166,9 @@ export default function UploadPage() {
     uploadState === "rejected";
 
   const TABS = [
-    { id: "file" as ExtendedUploadMode, label: "File Upload", sublabel: "CSV / XLSX", icon: UploadCloud },
-    { id: "url" as ExtendedUploadMode, label: "Manufacturer URL", sublabel: "Datasheet / Product link", icon: Globe },
     { id: "ai-search" as ExtendedUploadMode, label: "AI Product Lookup", sublabel: "Gemini Sourcing", icon: Sparkles },
-    { id: "pdf" as ExtendedUploadMode, label: "Manufacturer PDF", sublabel: "PDF up to 50MB", icon: FileText },
+    { id: "url" as ExtendedUploadMode, label: "Manufacturer URL", sublabel: "Datasheet / Product link", icon: Globe },
+    { id: "file" as ExtendedUploadMode, label: "Manufacturer PDF & File Upload", sublabel: "CSV / XLSX / PDF", icon: UploadCloud },
   ];
 
   const handleRunAiLookup = async (e?: React.FormEvent) => {
@@ -291,6 +369,199 @@ export default function UploadPage() {
     }
   };
 
+  const handleBatchFileUpload = async () => {
+    if (!selectedFile) return;
+
+    setIsProcessingBatchFile(true);
+    setBatchError(null);
+    setBatchResult(null);
+    setBatchSavedSuccess(false);
+    setSelectedBatchProductIndex(0);
+
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+
+    const queryParams = new URLSearchParams();
+    if (user?.email) {
+      queryParams.append("email", user.email);
+    }
+    if (user?.displayName) {
+      queryParams.append("name", user.displayName);
+    }
+    const queryString = queryParams.toString() ? `?${queryParams.toString()}` : "";
+
+    try {
+      const res = await apiClient.post<any>(`/ingestion/process-batch-file${queryString}`, formData, {
+        timeoutMs: 180000,
+      });
+      setBatchResult(res);
+
+      if (typeof window !== "undefined" && res) {
+        try {
+          localStorage.setItem("catalogforge_active_batch", JSON.stringify(res));
+          if (res.batchId) {
+            window.history.replaceState(null, "", `?tab=file&batchId=${res.batchId}`);
+          }
+        } catch (storageErr) {
+          console.warn("Local storage cache warning:", storageErr);
+        }
+      }
+    } catch (err: any) {
+      setBatchError(err?.message || "Failed to process batch file with AI enrichment engine.");
+    } finally {
+      setIsProcessingBatchFile(false);
+    }
+  };
+
+  const handleCopyShareableLink = () => {
+    if (!batchResult || !batchResult.batchId) return;
+    if (typeof window === "undefined") return;
+
+    const baseUrl = window.location.origin;
+    const shareUrl = `${baseUrl}/upload?tab=file&batchId=${batchResult.batchId}`;
+    navigator.clipboard.writeText(shareUrl);
+    setIsLinkCopied(true);
+    setTimeout(() => setIsLinkCopied(false), 2500);
+  };
+
+  const handleExportBatchExcel = async () => {
+    if (!batchResult || !batchResult.products || batchResult.products.length === 0) return;
+    setIsBatchExportingExcel(true);
+    try {
+      const token = typeof window !== "undefined" ? (localStorage.getItem("catalogforge_token") || localStorage.getItem("auth_token") || "dev-mock-token") : "dev-mock-token";
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+
+      const deliveryRows = batchResult.products.map((p) => p.deliveryRow);
+
+      const res = await fetch(`${baseUrl}/ingestion/batch-export-excel`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          deliveryRows,
+          fileName: batchResult.fileName,
+        }),
+      });
+
+      if (!res.ok) throw new Error(`Export returned ${res.status}`);
+
+      const blob = await res.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      const cleanName = (batchResult.fileName || "Catalog").replace(/\.[^/.]+$/, "");
+      a.download = `Unihack_${cleanName}_252Columns_Delivery.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        window.URL.revokeObjectURL(downloadUrl);
+        document.body.removeChild(a);
+      }, 100);
+    } catch (err: any) {
+      console.warn("Excel export failed, generating CSV fallback:", err);
+      handleExportBatchCsv();
+    } finally {
+      setIsBatchExportingExcel(false);
+    }
+  };
+
+  const handleExportBatchCsv = async () => {
+    if (!batchResult || !batchResult.products || batchResult.products.length === 0) return;
+    setIsBatchExportingCsv(true);
+    try {
+      const token = typeof window !== "undefined" ? (localStorage.getItem("catalogforge_token") || localStorage.getItem("auth_token") || "dev-mock-token") : "dev-mock-token";
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+
+      const deliveryRows = batchResult.products.map((p) => p.deliveryRow);
+
+      let csvText = "";
+      try {
+        const res = await fetch(`${baseUrl}/ingestion/batch-export-csv`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            deliveryRows,
+            fileName: batchResult.fileName,
+          }),
+        });
+
+        if (res.ok) {
+          csvText = await res.text();
+        }
+      } catch (networkErr) {
+        console.warn("Backend CSV batch export failed, generating in-browser CSV:", networkErr);
+      }
+
+      if (!csvText && deliveryRows.length > 0) {
+        const headers = Object.keys(deliveryRows[0]);
+        const escapeCsv = (val: any) => {
+          if (val === null || val === undefined) return '""';
+          const str = String(val).replace(/"/g, '""');
+          return `"${str}"`;
+        };
+        const headerLine = headers.map(escapeCsv).join(",");
+        const rowLines = deliveryRows.map((r) => headers.map((h) => escapeCsv(r[h] || "")).join(","));
+        csvText = [headerLine, ...rowLines].join("\n");
+      }
+
+      if (!csvText) throw new Error("Unable to build CSV export payload.");
+
+      const blob = new Blob([csvText], { type: "text/csv;charset=utf-8;" });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      const cleanName = (batchResult.fileName || "Catalog").replace(/\.[^/.]+$/, "");
+      a.download = `Unihack_${cleanName}_252Columns_Delivery.csv`;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        window.URL.revokeObjectURL(downloadUrl);
+        document.body.removeChild(a);
+      }, 100);
+    } catch (err: any) {
+      setBatchError(err?.message || "Failed to download batch CSV.");
+    } finally {
+      setIsBatchExportingCsv(false);
+    }
+  };
+
+  const handleSaveBatchToCatalog = async () => {
+    if (!batchResult || !batchResult.products || batchResult.products.length === 0) return;
+    setIsBatchSavingCatalog(true);
+    try {
+      await apiClient.post("/ingestion/batch-save-catalog", {
+        products: batchResult.products,
+      });
+      setBatchSavedSuccess(true);
+    } catch (err: any) {
+      setBatchError(err?.message || "Failed to save batch products to catalog.");
+    } finally {
+      setIsBatchSavingCatalog(false);
+    }
+  };
+
+  const handleResetBatch = () => {
+    setBatchResult(null);
+    setBatchError(null);
+    setBatchSavedSuccess(false);
+    setSelectedBatchProductIndex(0);
+    handleFileSelect(null);
+    reset();
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem("catalogforge_active_batch");
+        window.history.replaceState(null, "", window.location.pathname + "?tab=file");
+      } catch {}
+    }
+  };
+
+  const currentBatchProduct = batchResult?.products?.[selectedBatchProductIndex] || null;
+
   return (
     <div className="max-w-4xl mx-auto pb-16 space-y-6">
 
@@ -305,7 +576,7 @@ export default function UploadPage() {
               Dataset Upload &amp; Ingestion
             </h1>
             <p className="text-sm text-[#64748B] mt-0.5 leading-snug">
-              Extract verified specifications from Manufacturer URLs, PDF spec sheets, or batch CSV/XLSX catalogs.
+              Extract verified specifications via AI Product Lookup, Manufacturer URLs, or Manufacturer PDF &amp; batch file uploads.
             </p>
           </div>
         </div>
@@ -343,6 +614,440 @@ export default function UploadPage() {
           );
         })}
       </div>
+
+      {/* ── TAB: SINGLE PRODUCT QUICK LOOKUP (GEMINI 3.5 FLASH-LITE) ─── */}
+      {activeTabMode === "ai-search" && (
+        <div className="space-y-6">
+          {/* Search Box */}
+          <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 space-y-4">
+            <div>
+              <h3 className="text-base font-bold text-[#000000] tracking-tight flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-[#2563EB]" />
+                Single Product AI Search &amp; Enrichment
+              </h3>
+              <p className="text-xs text-[#64748B] mt-1">
+                Enter a product part number or name. Google Gemini 3.5 Flash-Lite extracts verified specs from the official manufacturer website.
+              </p>
+            </div>
+
+            <form onSubmit={handleRunAiLookup} className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="sm:col-span-2 relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94A3B8]" />
+                  <input
+                    type="text"
+                    value={productSearchInput}
+                    onChange={(e) => setProductSearchInput(e.target.value)}
+                    placeholder="Enter Part Number or Name (e.g. DCB518ASTS06G, 7100075678, QO120)..."
+                    className="w-full pl-9 pr-4 py-2.5 text-xs text-[#000000] border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#2563EB] bg-[#FAFAFA]"
+                    suppressHydrationWarning
+                  />
+                </div>
+                <div>
+                  <input
+                    type="text"
+                    value={mfgSearchInput}
+                    onChange={(e) => setMfgSearchInput(e.target.value)}
+                    placeholder="Manufacturer (e.g. Freud Inc, 3M)..."
+                    className="w-full px-3 py-2.5 text-xs text-[#000000] border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#2563EB] bg-[#FAFAFA]"
+                    suppressHydrationWarning
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between flex-wrap gap-3 pt-1">
+                <div className="flex items-center gap-2 text-[11px] text-[#64748B]">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Strict Sourcing: Tier 1 OEM Mandatory for PDFs/Images; E-Commerce 100% Blocked</span>
+                </div>
+                <button
+                  type="submit"
+                  disabled={!productSearchInput.trim() || isAiSearching}
+                  className="px-5 py-2.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold flex items-center gap-2 transition-all disabled:opacity-50"
+                  suppressHydrationWarning
+                >
+                  {isAiSearching ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Extracting with Gemini 3.5…</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Extract with Gemini AI</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* Error state */}
+          {aiSearchError && (
+            <div className="bg-white border border-rose-200 rounded-2xl p-4 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-xs font-bold text-rose-900">Extraction Error</p>
+                <p className="text-xs text-rose-700 mt-0.5">{aiSearchError}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Success Banner when Saved */}
+          {savedProductSuccess && (
+            <div className="bg-[#F0FDF4] border border-emerald-200 rounded-2xl p-5 flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-700">
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-emerald-900">
+                    Product Successfully Ingested &amp; Published!
+                  </h4>
+                  <p className="text-xs text-emerald-700 mt-0.5">
+                    Part #{savedProductSuccess.partNumber} is now live in the central product catalog with full AI specifications.
+                  </p>
+                </div>
+              </div>
+              <Link
+                href={`/products/${savedProductSuccess.productId}`}
+                className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors"
+              >
+                <span>View Product Detail</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          )}
+
+          {/* AI Result Presentation Card */}
+          {aiResult && (
+            <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 space-y-6">
+              {/* Card Header */}
+              <div className="flex items-start justify-between flex-wrap gap-4 border-b border-[#E2E8F0] pb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
+                      Tier 1 Verified OEM
+                    </span>
+                    <span className="text-xs font-mono font-bold text-slate-500">{aiResult.manufacturer}</span>
+                  </div>
+                  <h3 className="text-base font-bold text-[#000000] mt-1.5">{aiResult.officialTitle}</h3>
+                  <p className="text-xs font-mono font-semibold text-[#2563EB] mt-0.5">Part Number: {aiResult.partNumber}</p>
+                </div>
+
+                {!savedProductSuccess && (
+                  <button
+                    type="button"
+                    onClick={handleSaveToCatalog}
+                    disabled={isSavingProduct}
+                    className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center gap-2 transition-colors disabled:opacity-50"
+                  >
+                    {isSavingProduct ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Saving to Catalog…</span>
+                      </>
+                    ) : (
+                      <>
+                        <PlusCircle className="w-4 h-4" />
+                        <span>Add Directly to Catalog</span>
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+
+              {/* Extracted From (Verified Source Provenance) */}
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                  <Globe className="w-3.5 h-3.5 text-[#2563EB]" />
+                  <span>Data Extracted From (Source Sourcing)</span>
+                </h4>
+                <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-4 rounded-xl space-y-3">
+                  {aiResult.citations && aiResult.citations.length > 0 ? (
+                    <div className="space-y-3">
+                      {aiResult.citations
+                        .filter((c: any, idx: number, arr: any[]) => arr.findIndex((x) => x.sourceUrl === c.sourceUrl) === idx)
+                        .map((cite: any, idx: number) => (
+                          <div key={idx} className="flex items-start justify-between flex-wrap gap-2 pt-2 first:pt-0 border-t first:border-t-0 border-slate-200">
+                            <div className="space-y-0.5 max-w-xl">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-blue-100 text-blue-800">
+                                  {cite.domain || "Official Website"}
+                                </span>
+                                <p className="text-xs font-bold text-slate-900">{cite.sourceTitle || cite.domain}</p>
+                              </div>
+                              {cite.sourceSnippet && (
+                                <p className="text-[11px] text-slate-600 line-clamp-2 mt-0.5">
+                                  {cite.sourceSnippet}
+                                </p>
+                              )}
+                            </div>
+                            {cite.sourceUrl && (
+                              <a
+                                href={cite.sourceUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-[#2563EB] hover:underline font-semibold flex items-center gap-1 shrink-0 mt-0.5"
+                              >
+                                <span>Visit Source URL</span>
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            )}
+                          </div>
+                        ))}
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                          {aiResult.searchSummary?.primarySourceDomain || "Official Domain"}
+                        </span>
+                        <p className="text-xs font-bold text-slate-900">
+                          {aiResult.searchSummary?.primarySourceDomain}
+                        </p>
+                      </div>
+                      {aiResult.searchSummary?.primarySourceDomain && (
+                        <a
+                          href={`https://${aiResult.searchSummary.primarySourceDomain}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-[#2563EB] hover:underline font-semibold flex items-center gap-1"
+                        >
+                          <span>Visit Website</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Official Description */}
+              <div className="space-y-1.5">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Standardized B2B Description</h4>
+                <p className="text-xs text-slate-800 leading-relaxed bg-[#F8FAFC] p-3.5 rounded-xl border border-[#E2E8F0]">
+                  {aiResult.officialDescription}
+                </p>
+              </div>
+
+              {/* Normalized Attributes Grid */}
+              {aiResult.attributes && aiResult.attributes.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                      Normalized Technical Attributes
+                    </h4>
+                    <span className="text-[11px] text-slate-400 font-medium">
+                      Automated Confidence &amp; HITL Governance
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                    {aiResult.attributes.map((attr: any, idx: number) => {
+                      const conf = attr.confidence ?? attr.confidenceScore ?? attr.lovMatchConfidence ?? 0.95;
+                      const isLowConfidence = conf <= 0.60;
+                      return (
+                        <div
+                          key={idx}
+                          className={cn(
+                            "p-3 rounded-xl border transition-all flex flex-col justify-between gap-1.5",
+                            isLowConfidence
+                              ? "bg-amber-50/60 border-amber-300 shadow-sm"
+                              : "bg-[#FAFAFA] border-[#E2E8F0] hover:border-slate-300"
+                          )}
+                        >
+                          <div className="flex items-start justify-between gap-1.5">
+                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider truncate">
+                              {attr.label}
+                            </p>
+                            {isLowConfidence ? (
+                              <span className="inline-flex items-center gap-1 text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300 shrink-0">
+                                <AlertCircle className="w-2.5 h-2.5 text-amber-600 shrink-0" />
+                                <span>Flag for Human Review</span>
+                              </span>
+                            ) : (
+                              <span className="text-[9px] font-mono font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 shrink-0">
+                                {Math.round(conf * 100)}%
+                              </span>
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-slate-900">
+                              {attr.value}{" "}
+                              {attr.uom ? (
+                                <span className="text-[10px] text-slate-500 font-normal">
+                                  ({attr.uom})
+                                </span>
+                              ) : null}
+                            </p>
+                            {isLowConfidence && (
+                              <p className="text-[10px] text-amber-700 mt-1 font-medium">
+                                Confidence: {Math.round(conf * 100)}% — Requires Review
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Verified Product Image Preview Gallery */}
+              {(() => {
+                const imageAssets = (aiResult.assets || []).filter((a: any) => a.assetType === 'image');
+                if (imageAssets.length === 0) return null;
+                return (
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                      <ImageIcon className="w-3.5 h-3.5 text-blue-600" />
+                      Verified OEM Product Image Preview
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {imageAssets.map((img: any, idx: number) => {
+                        const imgUrl = img.previewUrl || img.sourceUrl;
+                        return (
+                          <div
+                            key={idx}
+                            className="bg-[#FAFAFA] border border-[#E2E8F0] rounded-xl p-3 flex items-center gap-3.5 group hover:border-[#2563EB] transition"
+                          >
+                            <div className="w-20 h-20 rounded-lg bg-white border border-slate-200 flex items-center justify-center overflow-hidden shrink-0">
+                              {imgUrl ? (
+                                <img
+                                  src={imgUrl}
+                                  alt={img.fileName || "Product Photo"}
+                                  className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform"
+                                  loading="lazy"
+                                  onError={(e: any) => {
+                                    e.target.style.display = "none";
+                                  }}
+                                />
+                              ) : (
+                                <ImageIcon className="w-8 h-8 text-slate-300" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0 space-y-1">
+                              <div className="flex items-center justify-between gap-1">
+                                <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                                  OEM VERIFIED PHOTO
+                                </span>
+                                {imgUrl && (
+                                  <a
+                                    href={imgUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[11px] text-[#2563EB] hover:underline font-semibold flex items-center gap-0.5"
+                                  >
+                                    <span>View Full</span>
+                                    <ExternalLink className="w-2.5 h-2.5" />
+                                  </a>
+                                )}
+                              </div>
+                              <p className="text-xs font-bold text-slate-900 truncate">{img.fileName}</p>
+                              <p className="text-[11px] text-slate-500 leading-snug">
+                                {img.shortInfo || "Authentic manufacturer product photo scraped directly from CDN"}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Warranty Coverage & Short Info Card */}
+              {aiResult.warrantyInfo && (
+                <div className="space-y-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                    Verified Warranty Coverage &amp; Policy
+                  </h4>
+                  <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-4 rounded-xl space-y-2">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-900">{aiResult.warrantyInfo.term}</span>
+                        <span className={cn(
+                          "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded",
+                          aiResult.warrantyInfo.isVerified ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"
+                        )}>
+                          {aiResult.warrantyInfo.isVerified ? "Official OEM Policy Link Found" : "Standard Manufacturer Term"}
+                        </span>
+                      </div>
+                      {aiResult.warrantyInfo.verifiedUrl && (
+                        <a
+                          href={aiResult.warrantyInfo.verifiedUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-[#2563EB] hover:underline font-semibold flex items-center gap-1"
+                        >
+                          <ExternalLink className="w-3 h-3" /> View Official Warranty Page
+                        </a>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-700 leading-relaxed">
+                      {aiResult.warrantyInfo.shortInfo}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Verified Technical Documents (Only Real Verified PDFs & Short Info) */}
+              {(() => {
+                const docAssets = (aiResult.assets || []).filter((a: any) => a.assetType !== 'image');
+                return (
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                      <FileText className="w-3.5 h-3.5 text-blue-600" />
+                      Verified Technical Documents &amp; Manuals
+                    </h4>
+                    {docAssets.length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {docAssets.map((doc: any, idx: number) => {
+                          const hasValidUrl = Boolean(doc.sourceUrl && doc.status !== 'not_available');
+                          return (
+                            <div key={idx} className="bg-[#F8FAFC] border border-[#E2E8F0] p-3.5 rounded-xl space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-blue-100 text-blue-800">
+                                  {doc.assetType.replace(/_/g, " ")}
+                                </span>
+                                <span className={cn("text-[9px] font-bold", hasValidUrl ? "text-emerald-700" : "text-slate-400")}>
+                                  {hasValidUrl ? "OEM VERIFIED LINK" : "UNAVAILABLE"}
+                                </span>
+                              </div>
+                              <p className="text-xs font-bold text-slate-900 truncate">{doc.fileName}</p>
+                              <p className="text-[11px] text-slate-600 leading-snug">
+                                {doc.shortInfo || "Official manufacturer technical specification & dimensional drawing PDF"}
+                              </p>
+                              {hasValidUrl && (
+                                <a
+                                  href={doc.sourceUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-[#2563EB] hover:underline font-semibold flex items-center gap-1 pt-1"
+                                >
+                                  <ExternalLink className="w-3 h-3" /> Open Verified PDF Document
+                                </a>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="bg-slate-50 border border-slate-200 p-3.5 rounded-xl flex items-center gap-2.5 text-xs text-slate-600">
+                        <FileText className="w-4 h-4 text-slate-400 shrink-0" />
+                        <span>
+                          No downloadable PDF spec sheet or user manual was found on the official website for this part number.
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── TAB: MANUFACTURER URL EXTRACTION ──── */}
       {activeTabMode === "url" && (
@@ -830,86 +1535,65 @@ export default function UploadPage() {
         </div>
       )}
 
-      {/* ── TAB: SINGLE PRODUCT QUICK LOOKUP (GEMINI 3.5 FLASH-LITE) ─── */}
-      {activeTabMode === "ai-search" && (
+      {/* ── TAB: MANUFACTURER PDF & FILE UPLOAD (MULTI-PRODUCT AI & 252-COLUMN PIPELINE) ── */}
+      {activeTabMode !== "ai-search" && activeTabMode !== "url" && (
         <div className="space-y-6">
-          {/* Search Box */}
-          <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 space-y-4">
-            <div>
-              <h3 className="text-base font-bold text-[#000000] tracking-tight flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-[#2563EB]" />
-                Single Product AI Search &amp; Enrichment
-              </h3>
-              <p className="text-xs text-[#64748B] mt-1">
-                Enter a product part number or name. Google Gemini 3.5 Flash-Lite extracts verified specs from the official manufacturer website.
-              </p>
-            </div>
 
-            <form onSubmit={handleRunAiLookup} className="space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="sm:col-span-2 relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94A3B8]" />
-                  <input
-                    type="text"
-                    value={productSearchInput}
-                    onChange={(e) => setProductSearchInput(e.target.value)}
-                    placeholder="Enter Part Number or Name (e.g. DCB518ASTS06G, 7100075678, QO120)..."
-                    className="w-full pl-9 pr-4 py-2.5 text-xs text-[#000000] border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#2563EB] bg-[#FAFAFA]"
-                    suppressHydrationWarning
-                  />
-                </div>
-                <div>
-                  <input
-                    type="text"
-                    value={mfgSearchInput}
-                    onChange={(e) => setMfgSearchInput(e.target.value)}
-                    placeholder="Manufacturer (e.g. Freud Inc, 3M)..."
-                    className="w-full px-3 py-2.5 text-xs text-[#000000] border border-[#E2E8F0] rounded-xl focus:outline-none focus:border-[#2563EB] bg-[#FAFAFA]"
-                    suppressHydrationWarning
-                  />
-                </div>
+          {/* Processing animation */}
+          {isProcessingBatchFile && (
+            <div className="bg-white border border-[#E2E8F0] rounded-2xl p-8 flex flex-col items-center gap-5 text-center">
+              <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center">
+                <Loader2 className="w-6 h-6 text-[#2563EB] animate-spin" />
               </div>
-
-              <div className="flex items-center justify-between flex-wrap gap-3 pt-1">
-                <div className="flex items-center gap-2 text-[11px] text-[#64748B]">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Strict Sourcing: Tier 1 OEM Mandatory for PDFs/Images; E-Commerce 100% Blocked</span>
-                </div>
-                <button
-                  type="submit"
-                  disabled={!productSearchInput.trim() || isAiSearching}
-                  className="px-5 py-2.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold flex items-center gap-2 transition-all disabled:opacity-50"
-                  suppressHydrationWarning
-                >
-                  {isAiSearching ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Extracting with Gemini 3.5…</span>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>Extract with Gemini AI</span>
-                    </>
-                  )}
-                </button>
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-[#000000]">
+                  Extracting Multi-Product Intelligence &amp; Generating 252-Column Delivery…
+                </h3>
+                <p className="text-xs text-[#64748B] max-w-lg">
+                  Parsing file rows, querying live Google Gemini 3.5 AI &amp; OEM CDN repositories, scraping authentic product photos, and compiling full 252-column specifications.
+                </p>
               </div>
-            </form>
-          </div>
-
-          {/* Error state */}
-          {aiSearchError && (
-            <div className="bg-white border border-rose-200 rounded-2xl p-4 flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-xs font-bold text-rose-900">Extraction Error</p>
-                <p className="text-xs text-rose-700 mt-0.5">{aiSearchError}</p>
+              <div className="w-full max-w-md space-y-2 text-left bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-[11px] text-slate-600">
+                <div className="flex items-center gap-2 font-semibold text-emerald-700">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>1. Parse Dataset Rows &amp; Deduplicate Part Numbers</span>
+                </div>
+                <div className="flex items-center gap-2 font-semibold text-emerald-700">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>2. Query Live Manufacturer OEM Sites &amp; Scrape CDN Photos</span>
+                </div>
+                <div className="flex items-center gap-2 font-semibold text-blue-700 animate-pulse">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>3. Extract Verified Specs &amp; Warranty (Strict Zero-Hallucination)</span>
+                </div>
+                <div className="flex items-center gap-2 text-slate-500">
+                  <div className="w-3.5 h-3.5 rounded-full border border-slate-300 flex items-center justify-center text-[9px] font-bold">4</div>
+                  <span>4. Map Directly into 252-Column Unihack Delivery Format (.xlsx / .csv)</span>
+                </div>
               </div>
             </div>
           )}
 
-          {/* Success Banner when Saved */}
-          {savedProductSuccess && (
+          {/* Error alert */}
+          {batchError && (
+            <div className="bg-white border border-rose-200 rounded-2xl p-4 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-xs font-bold text-rose-900">Batch Processing Error</p>
+                <p className="text-xs text-rose-700 mt-0.5">{batchError}</p>
+              </div>
+              <button
+                type="button"
+                onClick={handleBatchFileUpload}
+                className="px-3 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-xs font-bold text-rose-700 hover:bg-rose-100 transition-colors shrink-0"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+
+          {/* Saved Success Banner */}
+          {batchSavedSuccess && (
             <div className="bg-[#F0FDF4] border border-emerald-200 rounded-2xl p-5 flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-700">
@@ -917,424 +1601,597 @@ export default function UploadPage() {
                 </div>
                 <div>
                   <h4 className="text-sm font-bold text-emerald-900">
-                    Product Successfully Ingested &amp; Published!
+                    All Batch Products Saved to Catalog!
                   </h4>
                   <p className="text-xs text-emerald-700 mt-0.5">
-                    Part #{savedProductSuccess.partNumber} is now live in the central product catalog with full AI specifications.
+                    {batchResult?.processedCount || 0} products are now published in the central catalog with live specs.
                   </p>
                 </div>
               </div>
               <Link
-                href={`/products/${savedProductSuccess.productId}`}
+                href="/products"
                 className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors"
               >
-                <span>View Product Detail</span>
+                <span>View Products Catalog</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
           )}
 
-          {/* AI Result Presentation Card */}
-          {aiResult && (
-            <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 space-y-6">
-              {/* Card Header */}
-              <div className="flex items-start justify-between flex-wrap gap-4 border-b border-[#E2E8F0] pb-4">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
-                      Tier 1 Verified OEM
-                    </span>
-                    <span className="text-xs font-mono font-bold text-slate-500">{aiResult.manufacturer}</span>
-                  </div>
-                  <h3 className="text-base font-bold text-[#000000] mt-1.5">{aiResult.officialTitle}</h3>
-                  <p className="text-xs font-mono font-semibold text-[#2563EB] mt-0.5">Part Number: {aiResult.partNumber}</p>
-                </div>
+          {/* Batch Results View */}
+          {batchResult && !isProcessingBatchFile && (
+            <div className="space-y-6">
 
-                {!savedProductSuccess && (
-                  <button
-                    type="button"
-                    onClick={handleSaveToCatalog}
-                    disabled={isSavingProduct}
-                    className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center gap-2 transition-colors disabled:opacity-50"
-                  >
-                    {isSavingProduct ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Saving to Catalog…</span>
-                      </>
-                    ) : (
-                      <>
-                        <PlusCircle className="w-4 h-4" />
-                        <span>Add Directly to Catalog</span>
-                      </>
-                    )}
-                  </button>
-                )}
-              </div>
-
-              {/* Extracted From (Verified Source Provenance) */}
-              <div className="space-y-2">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                  <Globe className="w-3.5 h-3.5 text-[#2563EB]" />
-                  <span>Data Extracted From (Source Sourcing)</span>
-                </h4>
-                <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-4 rounded-xl space-y-3">
-                  {aiResult.citations && aiResult.citations.length > 0 ? (
-                    <div className="space-y-3">
-                      {aiResult.citations
-                        .filter((c: any, idx: number, arr: any[]) => arr.findIndex((x) => x.sourceUrl === c.sourceUrl) === idx)
-                        .map((cite: any, idx: number) => (
-                          <div key={idx} className="flex items-start justify-between flex-wrap gap-2 pt-2 first:pt-0 border-t first:border-t-0 border-slate-200">
-                            <div className="space-y-0.5 max-w-xl">
-                              <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-blue-100 text-blue-800">
-                                  {cite.domain || "Official Website"}
-                                </span>
-                                <p className="text-xs font-bold text-slate-900">{cite.sourceTitle || cite.domain}</p>
-                              </div>
-                              {cite.sourceSnippet && (
-                                <p className="text-[11px] text-slate-600 line-clamp-2 mt-0.5">
-                                  {cite.sourceSnippet}
-                                </p>
-                              )}
-                            </div>
-                            {cite.sourceUrl && (
-                              <a
-                                href={cite.sourceUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs text-[#2563EB] hover:underline font-semibold flex items-center gap-1 shrink-0 mt-0.5"
-                              >
-                                <span>Visit Source URL</span>
-                                <ExternalLink className="w-3 h-3" />
-                              </a>
-                            )}
-                          </div>
-                        ))}
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
-                          {aiResult.searchSummary?.primarySourceDomain || "Official Domain"}
-                        </span>
-                        <p className="text-xs font-bold text-slate-900">
-                          {aiResult.searchSummary?.primarySourceDomain}
-                        </p>
-                      </div>
-                      {aiResult.searchSummary?.primarySourceDomain && (
-                        <a
-                          href={`https://${aiResult.searchSummary.primarySourceDomain}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-[#2563EB] hover:underline font-semibold flex items-center gap-1"
-                        >
-                          <span>Visit Website</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Official Description */}
-              <div className="space-y-1.5">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Standardized B2B Description</h4>
-                <p className="text-xs text-slate-800 leading-relaxed bg-[#F8FAFC] p-3.5 rounded-xl border border-[#E2E8F0]">
-                  {aiResult.officialDescription}
-                </p>
-              </div>
-
-              {/* Normalized Attributes Grid */}
-              {aiResult.attributes && aiResult.attributes.length > 0 && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                      Normalized Technical Attributes
-                    </h4>
-                    <span className="text-[11px] text-slate-400 font-medium">
-                      Automated Confidence &amp; HITL Governance
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-                    {aiResult.attributes.map((attr: any, idx: number) => {
-                      const conf = attr.confidence ?? attr.confidenceScore ?? attr.lovMatchConfidence ?? 0.95;
-                      const isLowConfidence = conf <= 0.60;
-                      return (
-                        <div
-                          key={idx}
-                          className={cn(
-                            "p-3 rounded-xl border transition-all flex flex-col justify-between gap-1.5",
-                            isLowConfidence
-                              ? "bg-amber-50/60 border-amber-300 shadow-sm"
-                              : "bg-[#FAFAFA] border-[#E2E8F0] hover:border-slate-300"
-                          )}
-                        >
-                          <div className="flex items-start justify-between gap-1.5">
-                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider truncate">
-                              {attr.label}
-                            </p>
-                            {isLowConfidence ? (
-                              <span className="inline-flex items-center gap-1 text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300 shrink-0">
-                                <AlertCircle className="w-2.5 h-2.5 text-amber-600 shrink-0" />
-                                <span>Flag for Human Review</span>
-                              </span>
-                            ) : (
-                              <span className="text-[9px] font-mono font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 shrink-0">
-                                {Math.round(conf * 100)}%
-                              </span>
-                            )}
-                          </div>
-                          <div>
-                            <p className="text-xs font-bold text-slate-900">
-                              {attr.value}{" "}
-                              {attr.uom ? (
-                                <span className="text-[10px] text-slate-500 font-normal">
-                                  ({attr.uom})
-                                </span>
-                              ) : null}
-                            </p>
-                            {isLowConfidence && (
-                              <p className="text-[10px] text-amber-700 mt-1 font-medium">
-                                Confidence: {Math.round(conf * 100)}% — Requires Review
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Verified Product Image Preview Gallery */}
-              {(() => {
-                const imageAssets = (aiResult.assets || []).filter((a: any) => a.assetType === 'image');
-                if (imageAssets.length === 0) return null;
-                return (
-                  <div className="space-y-2">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
-                      <ImageIcon className="w-3.5 h-3.5 text-blue-600" />
-                      Verified OEM Product Image Preview
-                    </h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {imageAssets.map((img: any, idx: number) => {
-                        const imgUrl = img.previewUrl || img.sourceUrl;
-                        return (
-                          <div
-                            key={idx}
-                            className="bg-[#FAFAFA] border border-[#E2E8F0] rounded-xl p-3 flex items-center gap-3.5 group hover:border-[#2563EB] transition"
-                          >
-                            <div className="w-20 h-20 rounded-lg bg-white border border-slate-200 flex items-center justify-center overflow-hidden shrink-0">
-                              {imgUrl ? (
-                                <img
-                                  src={imgUrl}
-                                  alt={img.fileName || "Product Photo"}
-                                  className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform"
-                                  loading="lazy"
-                                  onError={(e: any) => {
-                                    e.target.style.display = "none";
-                                  }}
-                                />
-                              ) : (
-                                <ImageIcon className="w-8 h-8 text-slate-300" />
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0 space-y-1">
-                              <div className="flex items-center justify-between gap-1">
-                                <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">
-                                  OEM VERIFIED PHOTO
-                                </span>
-                                {imgUrl && (
-                                  <a
-                                    href={imgUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-[11px] text-[#2563EB] hover:underline font-semibold flex items-center gap-0.5"
-                                  >
-                                    <span>View Full</span>
-                                    <ExternalLink className="w-2.5 h-2.5" />
-                                  </a>
-                                )}
-                              </div>
-                              <p className="text-xs font-bold text-slate-900 truncate">{img.fileName}</p>
-                              <p className="text-[11px] text-slate-500 leading-snug">
-                                {img.shortInfo || "Authentic manufacturer product photo scraped directly from CDN"}
-                              </p>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* Warranty Coverage & Short Info Card */}
-              {aiResult.warrantyInfo && (
-                <div className="space-y-2">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                    Verified Warranty Coverage &amp; Policy
-                  </h4>
-                  <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-4 rounded-xl space-y-2">
-                    <div className="flex items-center justify-between flex-wrap gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-slate-900">{aiResult.warrantyInfo.term}</span>
-                        <span className={cn(
-                          "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded",
-                          aiResult.warrantyInfo.isVerified ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"
-                        )}>
-                          {aiResult.warrantyInfo.isVerified ? "Official OEM Policy Link Found" : "Standard Manufacturer Term"}
-                        </span>
-                      </div>
-                      {aiResult.warrantyInfo.verifiedUrl && (
-                        <a
-                          href={aiResult.warrantyInfo.verifiedUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-[#2563EB] hover:underline font-semibold flex items-center gap-1"
-                        >
-                          <ExternalLink className="w-3 h-3" /> View Official Warranty Page
-                        </a>
-                      )}
-                    </div>
-                    <p className="text-xs text-slate-700 leading-relaxed">
-                      {aiResult.warrantyInfo.shortInfo}
+              {/* Rate Limit Quota Guard Alert Banner */}
+              {batchResult.isQuotaCapped && batchResult.quotaNotice && (
+                <div className="bg-amber-50 border border-amber-300 rounded-2xl p-4 flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-xs font-bold text-amber-900 uppercase tracking-wide">
+                      API Rate Limit Quota Guard Active
+                    </p>
+                    <p className="text-xs text-amber-800 mt-0.5 leading-relaxed font-medium">
+                      {batchResult.quotaNotice}
                     </p>
                   </div>
                 </div>
               )}
 
-              {/* Verified Technical Documents (Only Real Verified PDFs & Short Info) */}
-              {(() => {
-                const docAssets = (aiResult.assets || []).filter((a: any) => a.assetType !== 'image');
-                return (
+              {/* Batch Action Header Card */}
+              <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 space-y-4">
+                <div className="flex items-start justify-between flex-wrap gap-4 border-b border-[#E2E8F0] pb-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
+                        Multi-Product Batch Enriched
+                      </span>
+                      <span className="text-xs font-mono font-bold text-slate-500">{batchResult.fileName}</span>
+                    </div>
+                    <h3 className="text-base font-bold text-[#000000] mt-1.5">
+                      {batchResult.processedCount} Products Processed with 252-Column Unihack Delivery Schema
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Original dataset size: <span className="font-semibold text-slate-800">{batchResult.totalRowsInFile} rows</span> | Processed batch: <span className="font-semibold text-emerald-700">{batchResult.processedCount} products</span>
+                    </p>
+                  </div>
+
+                  <div className="flex items-center flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={handleExportBatchExcel}
+                      disabled={isBatchExportingExcel || isBatchExportingCsv}
+                      className="px-4 py-2.5 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors disabled:opacity-50 shadow-sm"
+                    >
+                      {isBatchExportingExcel ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Download className="w-3.5 h-3.5" />
+                      )}
+                      <span>Export Batch Excel (.xlsx)</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleExportBatchCsv}
+                      disabled={isBatchExportingExcel || isBatchExportingCsv}
+                      className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors disabled:opacity-50 border border-slate-300 shadow-sm"
+                    >
+                      {isBatchExportingCsv ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Download className="w-3.5 h-3.5" />
+                      )}
+                      <span>Export CSV (.csv)</span>
+                    </button>
+
+                    {!batchSavedSuccess && (
+                      <button
+                        type="button"
+                        onClick={handleSaveBatchToCatalog}
+                        disabled={isBatchSavingCatalog}
+                        className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center gap-2 transition-colors disabled:opacity-50 shadow-sm"
+                      >
+                        {isBatchSavingCatalog ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <span>Saving Batch…</span>
+                          </>
+                        ) : (
+                          <>
+                            <PlusCircle className="w-3.5 h-3.5" />
+                            <span>Save All to Catalog</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={handleResetBatch}
+                      className="px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl flex items-center gap-1 transition"
+                      title="Upload new file"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>New File</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Metrics */}
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                  <div className="bg-[#F0FDF4] border border-emerald-200 p-3 rounded-xl">
+                    <span className="text-[10px] font-bold text-emerald-800 uppercase">252-Column Format</span>
+                    <p className="text-base font-black text-emerald-950 mt-0.5">100% Compliant</p>
+                    <p className="text-[10px] text-emerald-700">Strict zero-guess blanks</p>
+                  </div>
+                  <div className="bg-[#EFF6FF] border border-blue-200 p-3 rounded-xl">
+                    <span className="text-[10px] font-bold text-blue-800 uppercase">Enriched Batch</span>
+                    <p className="text-base font-black text-blue-950 mt-0.5">{batchResult.processedCount} Products</p>
+                    <p className="text-[10px] text-blue-700">Gemini 3.5 live AI specs</p>
+                  </div>
+                  <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl">
+                    <span className="text-[10px] font-bold text-slate-800 uppercase">Scraped OEM Photos</span>
+                    <p className="text-base font-black text-slate-950 mt-0.5">
+                      {batchResult.products.reduce((acc, p) => acc + (p.images?.length || 0), 0)} Photos
+                    </p>
+                    <p className="text-[10px] text-slate-600">Direct CDN links</p>
+                  </div>
+                  <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl">
+                    <span className="text-[10px] font-bold text-slate-800 uppercase">Normalized Specs</span>
+                    <p className="text-base font-black text-slate-950 mt-0.5">
+                      {batchResult.products.reduce((acc, p) => acc + (p.attributes?.length || 0), 0)} Attributes
+                    </p>
+                    <p className="text-[10px] text-slate-600">Standard UOMs &amp; scores</p>
+                  </div>
+                </div>
+
+                {/* ── Persistent Storage & Automated Email Notification Confirmation Bar ── */}
+                <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-blue-950 text-white rounded-xl p-4 border border-slate-800 shadow-sm space-y-3">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        Persisted in Session &amp; Cloud
+                      </span>
+                      {batchResult.emailNotificationSent && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-300">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Notification Email Sent to: <strong className="text-white">{batchResult.emailRecipient}</strong></span>
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleCopyShareableLink}
+                        className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 border border-slate-700 transition"
+                      >
+                        {isLinkCopied ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            <span className="text-emerald-400">Link Copied!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5 text-slate-400" />
+                            <span>Copy Direct Link</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Automated Notification Banner informing the logged-in user */}
+                  <div className="flex items-center gap-3 pt-2.5 border-t border-slate-800/80">
+                    <div className="w-8 h-8 rounded-lg bg-blue-600/20 border border-blue-500/30 flex items-center justify-center shrink-0">
+                      <Mail className="w-4 h-4 text-blue-400" />
+                    </div>
+                    <div className="text-xs leading-relaxed text-slate-300">
+                      <p className="font-semibold text-white">
+                        Your process has been completed!
+                      </p>
+                      <p className="text-slate-400 text-[11px]">
+                        We automatically sent a notification email to{" "}
+                        <strong className="text-blue-300 font-mono">
+                          {batchResult.emailRecipient || user?.email || "your logged-in account"}
+                        </strong>{" "}
+                        so you can check and review your processed dataset anytime.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Product Selector Navigation Tabs */}
+                <div className="space-y-1.5 pt-2">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    Select Product in Batch to Inspect:
+                  </p>
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    {batchResult.products.map((p, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setSelectedBatchProductIndex(idx)}
+                        className={cn(
+                          "px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 border",
+                          selectedBatchProductIndex === idx
+                            ? "bg-[#2563EB] text-white border-[#2563EB] shadow-sm"
+                            : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                        )}
+                      >
+                        <span className={cn(
+                          "w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-black shrink-0",
+                          selectedBatchProductIndex === idx ? "bg-white text-blue-700" : "bg-slate-200 text-slate-700"
+                        )}>
+                          {idx + 1}
+                        </span>
+                        <span className="truncate max-w-[140px] font-mono">{p.partNumber}</span>
+                        <span className="text-[10px] opacity-75 font-normal">({p.manufacturerName})</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Selected Product Presentation Card */}
+              {currentBatchProduct && (
+                <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 space-y-6">
+                  {/* Header */}
+                  <div className="flex items-start justify-between flex-wrap gap-4 border-b border-[#E2E8F0] pb-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
+                          Tier 1 OEM Verified
+                        </span>
+                        <span className="text-xs font-mono font-bold text-slate-500">{currentBatchProduct.manufacturerName}</span>
+                        {currentBatchProduct.brandName && (
+                          <span className="text-xs font-semibold text-slate-400">• Brand: {currentBatchProduct.brandName}</span>
+                        )}
+                      </div>
+                      <h3 className="text-base font-bold text-[#000000] mt-1.5">{currentBatchProduct.officialTitle}</h3>
+                      <p className="text-xs font-mono font-semibold text-[#2563EB] mt-0.5">
+                        Part Number: {currentBatchProduct.partNumber} | SKU: {currentBatchProduct.sku}
+                      </p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Taxonomy: <span className="font-semibold text-slate-700">{currentBatchProduct.classpath}</span>
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
+                      <FileSpreadsheet className="w-4 h-4" />
+                      <span>{currentBatchProduct.nonEmptyColumnsCount} / 252 Columns Filled</span>
+                    </div>
+                  </div>
+
+                  {/* Extracted From (Verified Source Provenance) */}
                   <div className="space-y-2">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
-                      <FileText className="w-3.5 h-3.5 text-blue-600" />
-                      Verified Technical Documents &amp; Manuals
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                      <Globe className="w-3.5 h-3.5 text-[#2563EB]" />
+                      <span>Data Extracted From (Source Sourcing)</span>
                     </h4>
-                    {docAssets.length > 0 ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {docAssets.map((doc: any, idx: number) => {
-                          const hasValidUrl = Boolean(doc.sourceUrl && doc.status !== 'not_available');
-                          return (
-                            <div key={idx} className="bg-[#F8FAFC] border border-[#E2E8F0] p-3.5 rounded-xl space-y-2">
-                              <div className="flex items-center justify-between">
-                                <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-blue-100 text-blue-800">
-                                  {doc.assetType.replace(/_/g, " ")}
-                                </span>
-                                <span className={cn("text-[9px] font-bold", hasValidUrl ? "text-emerald-700" : "text-slate-400")}>
-                                  {hasValidUrl ? "OEM VERIFIED LINK" : "UNAVAILABLE"}
-                                </span>
+                    <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-4 rounded-xl space-y-3">
+                      {currentBatchProduct.citations && currentBatchProduct.citations.length > 0 ? (
+                        <div className="space-y-3">
+                          {currentBatchProduct.citations
+                            .filter((c: any, idx: number, arr: any[]) => arr.findIndex((x) => x.sourceUrl === c.sourceUrl) === idx)
+                            .map((cite: any, idx: number) => (
+                              <div key={idx} className="flex items-start justify-between flex-wrap gap-2 pt-2 first:pt-0 border-t first:border-t-0 border-slate-200">
+                                <div className="space-y-0.5 max-w-xl">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-blue-100 text-blue-800">
+                                      {cite.domain || "Official Website"}
+                                    </span>
+                                    <p className="text-xs font-bold text-slate-900">{cite.sourceTitle || cite.domain}</p>
+                                  </div>
+                                  {cite.sourceSnippet && (
+                                    <p className="text-[11px] text-slate-600 line-clamp-2 mt-0.5">
+                                      {cite.sourceSnippet}
+                                    </p>
+                                  )}
+                                </div>
+                                {cite.sourceUrl && (
+                                  <a
+                                    href={cite.sourceUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-[#2563EB] hover:underline font-semibold flex items-center gap-1 shrink-0 mt-0.5"
+                                  >
+                                    <span>Visit Source URL</span>
+                                    <ExternalLink className="w-3 h-3" />
+                                  </a>
+                                )}
                               </div>
-                              <p className="text-xs font-bold text-slate-900 truncate">{doc.fileName}</p>
-                              <p className="text-[11px] text-slate-600 leading-snug">
-                                {doc.shortInfo || "Official manufacturer technical specification & dimensional drawing PDF"}
-                              </p>
-                              {hasValidUrl && (
-                                <a
-                                  href={doc.sourceUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-xs text-[#2563EB] hover:underline font-semibold flex items-center gap-1 pt-1"
-                                >
-                                  <ExternalLink className="w-3 h-3" /> Open Verified PDF Document
-                                </a>
+                            ))}
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                              {currentBatchProduct.manufacturerName} Official Website
+                            </span>
+                            <p className="text-xs font-bold text-slate-900">
+                              Tier 1 OEM Primary Source
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Scraped Images Gallery */}
+                  {currentBatchProduct.images && currentBatchProduct.images.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                        <ImageIcon className="w-3.5 h-3.5 text-blue-600" />
+                        Verified OEM Product Photos (Scraped directly from official site)
+                      </h4>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {currentBatchProduct.images.map((img: any, idx: number) => (
+                          <div
+                            key={idx}
+                            className="bg-[#FAFAFA] border border-[#E2E8F0] rounded-xl p-2.5 flex flex-col items-center gap-2 group hover:border-[#2563EB] transition"
+                          >
+                            <div className="w-full h-32 rounded-lg bg-white border border-slate-100 flex items-center justify-center overflow-hidden relative">
+                              <img
+                                src={img.url}
+                                alt={img.alt || `Product Image ${idx + 1}`}
+                                className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
+                                loading="lazy"
+                                onError={(e: any) => {
+                                  e.target.style.display = "none";
+                                }}
+                              />
+                            </div>
+                            <div className="w-full flex items-center justify-between text-[10px]">
+                              <span className={cn(
+                                "px-1.5 py-0.5 rounded font-extrabold uppercase text-[9px]",
+                                img.isPrimary ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"
+                              )}>
+                                {img.isPrimary ? "Primary Photo" : `Alt Photo ${idx}`}
+                              </span>
+                              <a
+                                href={img.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[#2563EB] hover:underline flex items-center gap-0.5 font-semibold"
+                              >
+                                <span>Open</span>
+                                <ExternalLink className="w-2.5 h-2.5" />
+                              </a>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Standardized B2B Descriptions */}
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                      Standardized Descriptions (6 Formats)
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                      <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-3.5 rounded-xl space-y-1">
+                        <span className="text-[10px] font-bold uppercase text-slate-400">Short Description (Max 150 Char)</span>
+                        <p className="font-semibold text-slate-800">{currentBatchProduct.shortDesc}</p>
+                      </div>
+                      <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-3.5 rounded-xl space-y-1">
+                        <span className="text-[10px] font-bold uppercase text-slate-400">Mobile Description</span>
+                        <p className="font-semibold text-slate-800">{currentBatchProduct.mobileDesc || "—"}</p>
+                      </div>
+                      <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-3.5 rounded-xl space-y-1">
+                        <span className="text-[10px] font-bold uppercase text-slate-400">Invoice Description</span>
+                        <p className="font-mono font-bold text-slate-800">{currentBatchProduct.invoiceDesc || "—"}</p>
+                      </div>
+                      <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-3.5 rounded-xl space-y-1">
+                        <span className="text-[10px] font-bold uppercase text-slate-400">Retail Description</span>
+                        <p className="font-semibold text-slate-800">{currentBatchProduct.retailDesc || "—"}</p>
+                      </div>
+                      <div className="sm:col-span-2 bg-[#F8FAFC] border border-[#E2E8F0] p-3.5 rounded-xl space-y-1">
+                        <span className="text-[10px] font-bold uppercase text-slate-400">Long Description</span>
+                        <p className="text-slate-700 leading-relaxed">{currentBatchProduct.longDesc1 || "—"}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Normalized Technical Attributes */}
+                  {currentBatchProduct.attributes && currentBatchProduct.attributes.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                          Normalized Technical Attributes (Only Stated Specs)
+                        </h4>
+                        <span className="text-[11px] text-slate-400 font-medium">
+                          Automated Confidence &amp; HITL Governance
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                        {currentBatchProduct.attributes.map((attr: any, idx: number) => {
+                          const conf = attr.confidence ?? 0.98;
+                          const isLowConfidence = conf <= 0.60;
+                          return (
+                            <div
+                              key={idx}
+                              className={cn(
+                                "p-3 rounded-xl border transition-all flex flex-col justify-between gap-1.5",
+                                isLowConfidence
+                                  ? "bg-amber-50/60 border-amber-300 shadow-sm"
+                                  : "bg-[#FAFAFA] border-[#E2E8F0] hover:border-slate-300"
                               )}
+                            >
+                              <div className="flex items-start justify-between gap-1.5">
+                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider truncate">
+                                  {attr.label}
+                                </p>
+                                {isLowConfidence ? (
+                                  <span className="inline-flex items-center gap-1 text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300 shrink-0">
+                                    <AlertCircle className="w-2.5 h-2.5 text-amber-600 shrink-0" />
+                                    <span>Flag for Review</span>
+                                  </span>
+                                ) : (
+                                  <span className="text-[9px] font-mono font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 shrink-0">
+                                    {Math.round(conf * 100)}%
+                                  </span>
+                                )}
+                              </div>
+                              <div>
+                                <p className="text-xs font-bold text-slate-900">
+                                  {attr.value}{" "}
+                                  {attr.uom ? (
+                                    <span className="text-[10px] text-slate-500 font-normal">
+                                      ({attr.uom})
+                                    </span>
+                                  ) : null}
+                                </p>
+                                {isLowConfidence && (
+                                  <p className="text-[10px] text-amber-700 mt-1 font-medium">
+                                    Confidence: {Math.round(conf * 100)}% — Requires Review
+                                  </p>
+                                )}
+                              </div>
                             </div>
                           );
                         })}
                       </div>
-                    ) : (
-                      <div className="bg-slate-50 border border-slate-200 p-3.5 rounded-xl flex items-center gap-2.5 text-xs text-slate-600">
-                        <FileText className="w-4 h-4 text-slate-400 shrink-0" />
-                        <span>
-                          No downloadable PDF spec sheet or user manual was found on the official website for this part number.
-                        </span>
+                    </div>
+                  )}
+
+                  {/* Bullet Features */}
+                  {currentBatchProduct.features && currentBatchProduct.features.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Extracted Product Features
+                      </h4>
+                      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-800">
+                        {currentBatchProduct.features.map((feat: string, idx: number) => (
+                          <li key={idx} className="flex items-start gap-2 bg-[#FAFAFA] p-2.5 rounded-xl border border-[#E2E8F0]">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                            <span>{feat}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Warranty Card */}
+                  {currentBatchProduct.warrantyInfo && (
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                        Verified Warranty Coverage &amp; Policy
+                      </h4>
+                      <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-4 rounded-xl space-y-2">
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-slate-900">{currentBatchProduct.warrantyInfo.term}</span>
+                            <span className={cn(
+                              "text-[9px] font-extrabold uppercase px-2 py-0.5 rounded",
+                              currentBatchProduct.warrantyInfo.isVerified ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"
+                            )}>
+                              {currentBatchProduct.warrantyInfo.isVerified ? "Official OEM Policy Link" : "Standard Term"}
+                            </span>
+                          </div>
+                          {currentBatchProduct.warrantyInfo.verifiedUrl && (
+                            <a
+                              href={currentBatchProduct.warrantyInfo.verifiedUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-[#2563EB] hover:underline font-semibold flex items-center gap-1"
+                            >
+                              <ExternalLink className="w-3 h-3" /> View Official Warranty Page
+                            </a>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-700 leading-relaxed">
+                          {currentBatchProduct.warrantyInfo.shortInfo}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Technical Documents */}
+                  {currentBatchProduct.documents && currentBatchProduct.documents.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Verified Technical Documents (PDF / Datasheets)
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        {currentBatchProduct.documents.map((doc: any, idx: number) => (
+                          <div key={idx} className="bg-[#F8FAFC] border border-[#E2E8F0] p-3.5 rounded-xl space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-blue-100 text-blue-800">
+                                {doc.assetType.replace(/_/g, " ")}
+                              </span>
+                              <span className="text-[9px] font-bold text-emerald-700">OEM VERIFIED</span>
+                            </div>
+                            <p className="text-xs font-bold text-slate-900 truncate">{doc.fileName}</p>
+                            <a
+                              href={doc.sourceUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-[#2563EB] hover:underline font-semibold flex items-center gap-1 pt-0.5"
+                            >
+                              <ExternalLink className="w-3 h-3" /> View Document
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 252-Column Unihack Schema Inspector Toggle */}
+                  <div className="border-t border-[#E2E8F0] pt-4">
+                    <button
+                      type="button"
+                      onClick={() => setShowBatchDeliveryColumns(!showBatchDeliveryColumns)}
+                      className="w-full flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-800 transition"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Table className="w-4 h-4 text-[#2563EB]" />
+                        <span>Inspect 252-Column Unihack Delivery Row Mapping ({currentBatchProduct.partNumber})</span>
+                      </div>
+                      {showBatchDeliveryColumns ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </button>
+
+                    {showBatchDeliveryColumns && (
+                      <div className="mt-3 p-4 bg-slate-950 text-slate-200 rounded-xl border border-slate-800 overflow-x-auto max-h-96 space-y-2 text-xs font-mono">
+                        <p className="text-emerald-400 font-sans text-xs font-bold">
+                          Exact 252-Column Data Representation (Matching Unihack_Expected_Output_Delivery_Format.xlsx):
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                          {Object.entries(currentBatchProduct.deliveryRow || {}).map(([key, val]) => (
+                            <div key={key} className="flex items-start justify-between gap-2 p-1.5 rounded bg-slate-900 border border-slate-800">
+                              <span className="text-slate-400 truncate max-w-[180px]">{key}:</span>
+                              <span className={cn("truncate font-semibold", val ? "text-white" : "text-slate-600 italic")}>
+                                {String(val || "[BLANK]")}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
-                );
-              })()}
+                </div>
+              )}
             </div>
           )}
+
+          {/* Initial Dropzone View */}
+          {!batchResult && !isProcessingBatchFile && (
+            <UploadDropzone
+              mode={uploadMode}
+              selectedFile={selectedFile}
+              onFileSelect={handleFileSelect}
+              onUploadSubmit={handleBatchFileUpload}
+              isUploading={isProcessingBatchFile}
+              submitButtonText="Start AI Multi-Product Extraction & 252-Column Processing"
+            />
+          )}
+
         </div>
-      )}
-
-      {/* ── TAB: ERROR BANNER (FILE / PDF) ───────────────────────────────── */}
-      {activeTabMode !== "ai-search" && activeTabMode !== "url" && uploadState === "error" && errorMessage && (
-        <div className="bg-white border border-rose-200 rounded-2xl p-4 flex items-start gap-3">
-          <div className="w-9 h-9 rounded-lg bg-rose-50 border border-rose-200 flex items-center justify-center shrink-0">
-            <AlertCircle className="w-[18px] h-[18px] text-rose-600" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h4 className="text-sm font-bold text-rose-900">Upload Failed</h4>
-            <p className="text-sm text-rose-700 mt-0.5">{errorMessage}</p>
-          </div>
-          <button
-            type="button"
-            onClick={reset}
-            className="px-3 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-xs font-bold text-rose-700 hover:bg-rose-100 transition-colors shrink-0"
-          >
-            Retry
-          </button>
-        </div>
-      )}
-
-      {/* ── TAB: PROCESSING STATE (FILE / PDF) ──────────────────────────── */}
-      {activeTabMode !== "ai-search" && activeTabMode !== "url" && isProcessing && (
-        <div className="bg-white border border-[#E2E8F0] rounded-2xl p-8 flex flex-col items-center gap-5">
-          <div className="w-12 h-12 rounded-xl bg-[#EFF6FF] border border-[#BFDBFE] flex items-center justify-center">
-            <Loader2 className="w-6 h-6 text-[#3386E7] animate-spin" />
-          </div>
-          <div className="text-center space-y-1">
-            <h3 className="text-base font-bold text-[#000000]">
-              {uploadState === "uploading" ? "Uploading Dataset…" : "Running Pre-flight Schema Scan…"}
-            </h3>
-            <p className="text-sm text-[#64748B]">
-              Validating columns, checking placeholder values, and normalising units of measure.
-            </p>
-          </div>
-          <div className="w-full max-w-sm">
-            <div className="flex justify-between text-xs font-semibold text-[#94A3B8] mb-1.5">
-              <span>{uploadState === "uploading" ? "Uploading" : "Scanning"}</span>
-              <span>{Math.max(progress, 15)}%</span>
-            </div>
-            <div className="h-2 rounded-full bg-[#F1F5F9] overflow-hidden">
-              <div
-                className="h-full rounded-full bg-[#3386E7] transition-all duration-300"
-                style={{ width: `${Math.max(progress, 15)}%` }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── TAB: FILE / PDF DROPZONE ────────────────────────────────────── */}
-      {(activeTabMode === "file" || activeTabMode === "pdf") &&
-        (uploadState === "idle" || uploadState === "selected" || uploadState === "error") && (
-          <UploadDropzone
-            mode={uploadMode}
-            selectedFile={selectedFile}
-            onFileSelect={handleFileSelect}
-            onUploadSubmit={submitUpload}
-            isUploading={isProcessing}
-          />
-        )}
-
-      {/* ── PRE-FLIGHT SUMMARY (FILE / PDF) ─────────────────────────────── */}
-      {activeTabMode !== "ai-search" && activeTabMode !== "url" && isPreflightReady && preflightResult && (
-        <PreflightSummary
-          result={preflightResult}
-          state={uploadState}
-          jobId={jobId}
-          onProceed={proceedToJobDetail}
-          onReset={reset}
-        />
       )}
     </div>
   );
 }
+

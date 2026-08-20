@@ -472,16 +472,7 @@ export class DeliveryExporterService {
    */
   exportToExcel(contexts: DeliveryExportRowContext[]): Buffer {
     const rows = contexts.map((ctx) => this.buildDeliveryRow(ctx));
-
-    // Convert array of objects with explicit header ordering
-    const worksheet = xlsx.utils.json_to_sheet(rows, {
-      header: [...DELIVERY_HEADERS],
-    });
-
-    const workbook = xlsx.utils.book_new();
-    xlsx.utils.book_append_sheet(workbook, worksheet, 'Product Data');
-
-    return xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    return this.exportRowsToExcel(rows);
   }
 
   /**
@@ -489,7 +480,44 @@ export class DeliveryExporterService {
    */
   exportToCsv(contexts: DeliveryExportRowContext[]): Buffer {
     const rows = contexts.map((ctx) => this.buildDeliveryRow(ctx));
-    const worksheet = xlsx.utils.json_to_sheet(rows, {
+    return this.exportRowsToCsv(rows);
+  }
+
+  /**
+   * Generates a binary Excel buffer formatted exactly with the 252 delivery headers from row records
+   */
+  exportRowsToExcel(rows: Array<Record<string, string>>): Buffer {
+    const orderedRows = rows.map((r) => {
+      const ordered: Record<string, string> = {};
+      for (const h of DELIVERY_HEADERS) {
+        ordered[h] = r[h] || '';
+      }
+      return ordered;
+    });
+
+    const worksheet = xlsx.utils.json_to_sheet(orderedRows, {
+      header: [...DELIVERY_HEADERS],
+    });
+
+    const workbook = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(workbook, worksheet, 'Product Delivery Data');
+
+    return xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+  }
+
+  /**
+   * Generates a CSV string buffer formatted with all 252 delivery headers from row records
+   */
+  exportRowsToCsv(rows: Array<Record<string, string>>): Buffer {
+    const orderedRows = rows.map((r) => {
+      const ordered: Record<string, string> = {};
+      for (const h of DELIVERY_HEADERS) {
+        ordered[h] = r[h] || '';
+      }
+      return ordered;
+    });
+
+    const worksheet = xlsx.utils.json_to_sheet(orderedRows, {
       header: [...DELIVERY_HEADERS],
     });
     const csvContent = xlsx.utils.sheet_to_csv(worksheet);

@@ -42,7 +42,7 @@ export class ApiClient {
   constructor(config: ApiClientConfig = {}) {
     this.baseUrl = config.baseUrl || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
     this.getAccessToken = config.getAccessToken;
-    this.defaultTimeoutMs = config.timeoutMs || 30000;
+    this.defaultTimeoutMs = config.timeoutMs || 60000;
   }
 
   /**
