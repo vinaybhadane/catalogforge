@@ -306,6 +306,41 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* ── Welcome Onboarding Banner for Fresh / New Standalone Workspace ── */}
+      {summary?.isCleanWorkspace && (
+        <div className="bg-gradient-to-r from-blue-900 via-[#1E293B] to-[#0F172A] border border-blue-800/60 rounded-3xl p-6 lg:p-8 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2 max-w-2xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300 text-xs font-extrabold uppercase tracking-wider">
+              <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+              <span>Clean Slate Workspace Initialized</span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">
+              Welcome to Your CatalogForge Workspace
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-medium">
+              Your workspace is ready. Any dataset you ingest, single SKU you lookup with AI, or PDF you parse will be securely stored and isolated in your private catalog.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0 flex-wrap">
+            <Link
+              href="/upload"
+              className="px-5 py-3 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl text-xs font-bold transition shadow-lg inline-flex items-center gap-2"
+            >
+              <UploadCloud className="w-4 h-4" />
+              <span>Ingest First Dataset</span>
+            </Link>
+            <Link
+              href="/upload?tab=ai-search"
+              className="px-5 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition border border-white/20 inline-flex items-center gap-2"
+            >
+              <Search className="w-4 h-4 text-blue-300" />
+              <span>AI Single SKU Lookup</span>
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* ── 2. High-Impact Operational Metric Bar (6 Metrics) ──────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
         {/* Metric 1: Total SKUs */}
@@ -315,7 +350,7 @@ export default function DashboardPage() {
             <Package className="w-4 h-4 text-[#2563EB]" />
           </div>
           <p className="text-2xl font-black font-mono text-[#000000] mt-2">
-            {isLoading ? "—" : summary?.productsProcessed?.toLocaleString() ?? "150"}
+            {isLoading ? "—" : summary?.productsProcessed?.toLocaleString() ?? "0"}
           </p>
           <p className="text-[10px] text-emerald-700 font-bold mt-1">Catalog Master</p>
         </div>
@@ -327,7 +362,7 @@ export default function DashboardPage() {
             <Activity className="w-4 h-4 text-purple-600" />
           </div>
           <p className="text-2xl font-black font-mono text-[#000000] mt-2">
-            {isLoading ? "—" : summary?.activeJobs ?? "4"}
+            {isLoading ? "—" : summary?.activeJobs ?? 0}
           </p>
           <p className="text-[10px] text-purple-700 font-bold mt-1">Batch Executions</p>
         </div>
@@ -339,7 +374,7 @@ export default function DashboardPage() {
             <CheckSquare className="w-4 h-4 text-amber-600" />
           </div>
           <p className="text-2xl font-black font-mono text-[#000000] mt-2">
-            {isLoading ? "—" : summary?.needsReview ?? "8"}
+            {isLoading ? "—" : summary?.needsReview ?? 0}
           </p>
           <p className="text-[10px] text-amber-700 font-bold mt-1">&lt;85% Conf Boundary</p>
         </div>
@@ -351,7 +386,7 @@ export default function DashboardPage() {
             <Sparkles className="w-4 h-4 text-emerald-600" />
           </div>
           <p className="text-2xl font-black font-mono text-emerald-700 mt-2">
-            {isLoading ? "—" : `${Math.round((summary?.averageConfidence ?? 0.962) * 100)}%`}
+            {isLoading ? "—" : summary?.averageConfidence ? `${Math.round(summary.averageConfidence * 100)}%` : "0%"}
           </p>
           <p className="text-[10px] text-emerald-700 font-bold mt-1">AI Extraction SLA</p>
         </div>

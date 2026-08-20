@@ -1,6 +1,8 @@
 import { useState, useCallback } from "react";
 import { apiClient, ApiClientError } from "@/lib/api/client";
 import { ProcessingJob, Product } from "@/types";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { getUserWorkspaceData, computeUserWorkspaceAnalytics } from "@/lib/auth/workspace-guard";
 
 export interface AnalyticsSummaryResponse {
   totalProducts: number;
@@ -25,6 +27,7 @@ export interface DashboardSummary {
   costPerSku: number;
   recentJobs: ProcessingJob[];
   featuredProducts: Product[];
+  isCleanWorkspace?: boolean;
 }
 
 export type DashboardHookState = "idle" | "loading" | "success" | "error";
@@ -37,6 +40,7 @@ export interface UseDashboardReturn {
 }
 
 export function useDashboard(): UseDashboardReturn {
+  const { user, isSharedMember } = useAuth();
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [hookState, setHookState] = useState<DashboardHookState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -44,6 +48,37 @@ export function useDashboard(): UseDashboardReturn {
   const refresh = useCallback(async () => {
     setHookState("loading");
     setErrorMessage(null);
+
+    // If user is a new standalone user (not an admin and not invited by admin)
+    if (user && !isSharedMember) {
+      try {
+        const userWorkspace = getUserWorkspaceData(user.uid || user.email);
+        const userAnalytics = computeUserWorkspaceAnalytics(user.uid || user.email || "");
+
+        const totalProducts = userWorkspace.products.length;
+        const totalJobs = userWorkspace.jobs.length;
+
+        setSummary({
+          productsProcessed: totalProducts,
+          activeJobs: totalJobs,
+          needsReview: userAnalytics.pendingReview ?? 0,
+          published: userAnalytics.publishedProducts ?? 0,
+          averageConfidence: userAnalytics.averageConfidence ?? 0,
+          avgLatencySec: 1.8,
+          costPerSku: 0.002,
+          recentJobs: userWorkspace.jobs.slice(0, 10),
+          featuredProducts: userWorkspace.products.slice(0, 10),
+          isCleanWorkspace: totalProducts === 0 && totalJobs === 0,
+        });
+        setHookState("success");
+      } catch (err) {
+        setErrorMessage("Unable to load private workspace dashboard.");
+        setHookState("error");
+      }
+      return;
+    }
+
+    // Otherwise, for Admins and Invited Team Members, load the shared organization dataset
     try {
       const [analyticsData, jobsData, productsData] = await Promise.allSettled([
         apiClient.get<AnalyticsSummaryResponse>("/analytics/summary"),
@@ -61,7 +96,6 @@ export function useDashboard(): UseDashboardReturn {
       const publishedCount = analytics?.publishedProducts ?? products.filter((p) => p.status === "published").length ?? 0;
       const avgConf = analytics?.averageConfidence ?? 0.962;
 
-      // Telemetry metrics calculation based on token & pipeline execution telemetry
       const avgLatencySec = analytics?.avgLatencySec ?? 2.38;
       const costPerSku = analytics?.costPerSku ?? 0.0034;
 
@@ -75,6 +109,7 @@ export function useDashboard(): UseDashboardReturn {
         costPerSku,
         recentJobs: jobs,
         featuredProducts: products,
+        isCleanWorkspace: false,
       });
       setHookState("success");
     } catch (err) {
@@ -91,7 +126,7 @@ export function useDashboard(): UseDashboardReturn {
         setHookState("error");
       }
     }
-  }, []);
+  }, [user, isSharedMember]);
 
   return { summary, hookState, errorMessage, refresh };
 }

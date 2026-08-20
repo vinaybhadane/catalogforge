@@ -12,9 +12,13 @@ import {
   Filter,
   FileSpreadsheet,
   Loader2,
+  Sparkles,
+  PlusCircle,
 } from "lucide-react";
 import { apiClient, ApiClientError } from "@/lib/api/client";
 import { Product, PaginatedResponse } from "@/types";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { getUserWorkspaceData } from "@/lib/auth/workspace-guard";
 import { cn } from "@/lib/utils";
 import {
   sanitizeText,
@@ -92,6 +96,7 @@ function SkeletonRow() {
 }
 
 export default function ProductsPage() {
+  const { user, isSharedMember } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [fetchState, setFetchState] = useState<"loading" | "success" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -130,6 +135,40 @@ export default function ProductsPage() {
     async (pageToLoad = page, searchToUse = search, statusToUse = statusFilter) => {
       setFetchState("loading");
       setErrorMessage(null);
+
+      // Standalone new user workspace isolation
+      if (user && !isSharedMember) {
+        try {
+          const userWorkspace = getUserWorkspaceData(user.uid || user.email);
+          let filtered = [...userWorkspace.products];
+
+          if (searchToUse.trim()) {
+            const query = searchToUse.trim().toLowerCase();
+            filtered = filtered.filter(
+              (p) =>
+                (p.partNumber && p.partNumber.toLowerCase().includes(query)) ||
+                (p.manufacturerName && p.manufacturerName.toLowerCase().includes(query)) ||
+                (p.brandName && p.brandName.toLowerCase().includes(query)) ||
+                (p.descriptions?.shortDescription && p.descriptions.shortDescription.toLowerCase().includes(query)) ||
+                ((p as any).shortDesc && (p as any).shortDesc.toLowerCase().includes(query))
+            );
+          }
+
+          if (statusToUse !== "all") {
+            filtered = filtered.filter((p) => p.status === statusToUse);
+          }
+
+          setProducts(filtered);
+          setTotalPages(1);
+          setFetchState("success");
+        } catch {
+          setErrorMessage("Unable to load private catalog.");
+          setFetchState("error");
+        }
+        return;
+      }
+
+      // Shared Organization Catalog for Admin & Invited Team Members
       try {
         const params: Record<string, string | number> = {
           page: pageToLoad,
@@ -159,12 +198,12 @@ export default function ProductsPage() {
         setFetchState("error");
       }
     },
-    [page, search, statusFilter]
+    [user, isSharedMember, page, search, statusFilter]
   );
 
   useEffect(() => {
     loadProducts(page, search, statusFilter);
-  }, [page, statusFilter]);
+  }, [page, statusFilter, loadProducts]);
 
   const handleSearchChange = (val: string) => {
     setSearch(val);
@@ -178,205 +217,209 @@ export default function ProductsPage() {
 
   return (
     <div className="space-y-6 pb-10">
-      {/* Header */}
-      <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-sm">
+      {/* Top Header Card */}
+      <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-xl bg-[#2563EB] text-white flex items-center justify-center shadow-sm">
               <Package className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-2xl font-extrabold text-[#000000] tracking-tight">Product Repository</h1>
-              <p className="text-xs text-[#64748B] font-bold mt-0.5">
-                Browse, search, and inspect enriched catalog records in the 252-column delivery format.
+              <h1 className="text-2xl font-bold text-[#000000] tracking-tight">
+                Product Master Catalog
+              </h1>
+              <p className="text-xs text-[#64748B] font-semibold mt-0.5">
+                Authoritative multi-modal product intelligence repository.
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
+
+          <div className="flex items-center gap-2.5 flex-wrap">
             <button
               type="button"
               onClick={() => handleExportDelivery("xlsx")}
-              disabled={isExporting !== null}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex items-center gap-2 px-4 py-2.5 text-xs font-bold transition-all disabled:opacity-50 shadow-sm"
-              title="Download full catalog in 252-column Expected Output Delivery Format (.xlsx)"
+              disabled={isExporting !== null || products.length === 0}
+              className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition shadow-sm"
+              title="Export 252-Column Unihack Delivery Excel Workbook"
             >
               {isExporting === "xlsx" ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
               ) : (
-                <FileSpreadsheet className="w-4 h-4" />
+                <FileSpreadsheet className="w-3.5 h-3.5" />
               )}
-              Export Delivery Format (.xlsx)
+              <span>Export 252-Col Excel</span>
             </button>
+
+            <button
+              type="button"
+              onClick={() => loadProducts(page, search, statusFilter)}
+              className="bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#000000] px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition"
+            >
+              <RefreshCw className={cn("w-3.5 h-3.5 text-[#2563EB]", fetchState === "loading" && "animate-spin")} />
+              <span>Refresh</span>
+            </button>
+
             <Link
               href="/upload"
-              className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl flex items-center gap-2 px-5 py-2.5 text-xs font-bold transition-all shadow-sm"
+              className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-sm"
             >
-              <UploadCloud className="w-4 h-4" /> Ingest Data
+              <UploadCloud className="w-3.5 h-3.5" />
+              <span>Ingest Dataset</span>
             </Link>
           </div>
         </div>
       </div>
 
       {/* Filter / Search Bar */}
-      <div className="bg-white border border-[#E2E8F0] rounded-2xl p-4 shadow-sm">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2 flex-1 min-w-[220px] relative">
-            <Search className="w-4 h-4 text-[#64748B] absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              placeholder="Search by part number, manufacturer, brand, classpath..."
-              className="w-full text-xs border border-slate-200 rounded-xl pl-9 pr-4 py-2.5 text-[#000000] placeholder:text-slate-400 focus:outline-none focus:border-[#2563EB] font-medium"
-              suppressHydrationWarning
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <label htmlFor="product-status" className="text-xs font-bold text-[#000000] whitespace-nowrap flex items-center gap-1">
-              <Filter className="w-3.5 h-3.5 text-[#64748B]" /> Status:
-            </label>
-            <select
-              id="product-status"
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setPage(1);
-              }}
-              className="text-xs border border-slate-200 rounded-xl px-3 py-2 text-[#000000] bg-slate-50 font-bold cursor-pointer focus:outline-none focus:border-[#2563EB]"
-              suppressHydrationWarning
-            >
-              <option value="all">All Stages</option>
-              <option value="ingested">Ingested</option>
-              <option value="classified">Classified</option>
-              <option value="enriched">Enriched</option>
-              <option value="validated">Validated</option>
-              <option value="needs_review">Needs Review</option>
-              <option value="published">Published</option>
-              <option value="failed">Failed</option>
-            </select>
-          </div>
+      <div className="bg-white border border-[#E2E8F0] rounded-2xl p-4 flex items-center justify-between gap-4 flex-wrap">
+        <div className="relative flex-1 min-w-[240px]">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            placeholder="Search by part number, manufacturer, brand, or description..."
+            className="w-full pl-9 pr-4 py-2 bg-[#FAFAFA] border border-[#E2E8F0] rounded-xl text-xs font-medium text-[#000000] focus:outline-none focus:border-[#2563EB]"
+          />
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <Filter className="w-4 h-4 text-slate-400" />
+          <select
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(1);
+            }}
+            className="px-3 py-2 bg-[#FAFAFA] border border-[#E2E8F0] rounded-xl text-xs font-bold text-[#000000] focus:outline-none focus:border-[#2563EB]"
+          >
+            <option value="all">All Statuses</option>
+            <option value="published">Published</option>
+            <option value="needs_review">Needs Review</option>
+            <option value="enriched">Enriched</option>
+            <option value="validated">Validated</option>
+            <option value="ingested">Ingested</option>
+            <option value="failed">Failed</option>
+          </select>
         </div>
       </div>
 
-      {/* Error */}
+      {/* Error Message */}
       {fetchState === "error" && errorMessage && (
-        <div className="bg-white border border-[#E2E8F0] rounded-2xl p-4 border-l-4 border-l-rose-500 flex items-start gap-3 shadow-sm">
-          <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <p className="text-xs font-bold text-rose-900">Unable to load products.</p>
-            <p className="text-xs text-rose-700 mt-0.5">{errorMessage}</p>
-          </div>
+        <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-3 text-xs text-rose-800 font-bold">
+          <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+          <span>{errorMessage}</span>
         </div>
       )}
 
-      {/* Product Master Table */}
-      <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 space-y-4 shadow-sm">
-        <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl overflow-hidden p-1">
-          <div className="overflow-x-auto rounded-lg">
-            <table className="w-full text-xs text-left" aria-label="Enriched products">
-              <thead>
-                <tr className="border-b border-[#E2E8F0] text-[#000000] bg-slate-100/75">
-                  <th scope="col" className="px-4 py-3 font-bold uppercase tracking-wider text-[10px]">Part Number</th>
-                  <th scope="col" className="px-4 py-3 font-bold uppercase tracking-wider text-[10px]">Manufacturer</th>
-                  <th scope="col" className="px-4 py-3 font-bold uppercase tracking-wider text-[10px]">Brand</th>
-                  <th scope="col" className="px-4 py-3 font-bold uppercase tracking-wider text-[10px]">Classpath</th>
-                  <th scope="col" className="px-4 py-3 font-bold uppercase tracking-wider text-[10px]">Confidence</th>
-                  <th scope="col" className="px-4 py-3 font-bold uppercase tracking-wider text-[10px]">Status</th>
-                  <th scope="col" className="px-4 py-3 font-bold uppercase tracking-wider text-[10px]">Updated</th>
-                  <th scope="col" className="px-4 py-3 font-bold uppercase tracking-wider text-[10px] text-right">Action</th>
+      {/* Main Table or Empty State */}
+      <div className="bg-white border border-[#E2E8F0] rounded-2xl overflow-hidden shadow-sm">
+        {fetchState === "loading" ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-[#F8FAFC] border-b border-[#E2E8F0] text-[10px] font-black uppercase text-slate-500 tracking-wider">
+                <tr>
+                  <th className="px-4 py-3.5">Part Number</th>
+                  <th className="px-4 py-3.5">Manufacturer</th>
+                  <th className="px-4 py-3.5">Brand</th>
+                  <th className="px-4 py-3.5">Classpath / Leaf</th>
+                  <th className="px-4 py-3.5">Confidence</th>
+                  <th className="px-4 py-3.5">Status</th>
+                  <th className="px-4 py-3.5 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200">
-                {fetchState === "loading" && Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)}
-
-                {fetchState === "success" && products.length === 0 && (
-                  <tr>
-                    <td colSpan={8} className="px-6 py-16 text-center">
-                      <div className="flex flex-col items-center gap-3">
-                        <div className="w-14 h-14 rounded-2xl bg-[#F1F5F9] text-[#64748B] flex items-center justify-center">
-                          <Package className="w-7 h-7" />
-                        </div>
-                        <p className="text-sm font-extrabold text-[#000000]">No products found</p>
-                        <p className="text-xs text-[#64748B] font-bold max-w-xs">Upload a dataset to begin structured catalog enrichment.</p>
-                        <Link
-                          href="/upload"
-                          className="mt-2 px-5 py-2.5 text-xs font-bold bg-[#2563EB] text-white rounded-xl inline-flex items-center gap-2"
-                        >
-                          <UploadCloud className="w-4 h-4" /> Upload Data
-                        </Link>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-
-                {fetchState === "success" &&
-                  products.map((p) => {
-                    const resolvedMfg = getCleanManufacturerName(p.manufacturerName, p.brandName);
-                    const resolvedBrand = getCleanBrandName(p.brandName, resolvedMfg);
-                    const cleanClasspath = sanitizeText(p.classpath) || "Industrial > General Supplies > Components";
-                    const cleanPart = sanitizeText(p.partNumber);
-
-                    return (
-                      <tr key={p.productId} className="hover:bg-[#EFF6FF]/50 transition-colors">
-                        <td className="px-4 py-3 font-mono font-bold text-[#000000]">{cleanPart}</td>
-                        <td className="px-4 py-3 text-xs font-semibold text-[#000000]">
-                          {resolvedMfg}
-                        </td>
-                        <td className="px-4 py-3 text-xs font-semibold text-[#000000]">
-                          {resolvedBrand}
-                        </td>
-                        <td className="px-4 py-3 text-xs text-[#64748B] font-bold truncate max-w-[200px]" title={cleanClasspath}>
-                          {cleanClasspath}
-                        </td>
-                        <td className="px-4 py-3">
-                          <ConfidenceCell product={p} />
-                        </td>
-                        <td className="px-4 py-3">
-                          <StatusBadge status={p.status} />
-                        </td>
-                        <td className="px-4 py-3 text-slate-500 whitespace-nowrap text-[11px] font-medium">
-                          {formatDate(p.updatedAt)}
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <Link
-                            href={`/products/${p.productId}`}
-                            className="bg-white border border-[#CBD5E1] rounded-xl hover:bg-[#F8FAFC] transition-colors inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#2563EB] hover:text-[#1D4ED8] shadow-sm"
-                          >
-                            View <ArrowRight className="w-3 h-3" />
-                          </Link>
-                        </td>
-                      </tr>
-                    );
-                  })}
+              <tbody className="divide-y divide-[#F1F5F9]">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <SkeletonRow key={i} />
+                ))}
               </tbody>
             </table>
           </div>
-        </div>
-
-        {fetchState === "success" && products.length > 0 && (
-          <div className="pt-2 flex items-center justify-between text-xs text-[#000000] font-bold">
-            <span>
-              Page {page}
-              {totalPages !== null ? ` of ${totalPages}` : ""}
-            </span>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={page <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="bg-white border border-[#CBD5E1] rounded-xl hover:bg-[#F8FAFC] transition-colors px-3.5 py-1.5 text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
-              >
-                Previous
-              </button>
-              <button
-                type="button"
-                disabled={totalPages !== null && page >= totalPages}
-                onClick={() => setPage((p) => p + 1)}
-                className="bg-white border border-[#CBD5E1] rounded-xl hover:bg-[#F8FAFC] transition-colors px-3.5 py-1.5 text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
-              >
-                Next
-              </button>
+        ) : products.length === 0 ? (
+          /* Clean Initial State for New Users */
+          <div className="p-12 text-center space-y-4">
+            <div className="w-16 h-16 rounded-2xl bg-blue-50 border border-blue-200 text-[#2563EB] flex items-center justify-center mx-auto shadow-sm">
+              <Package className="w-8 h-8" />
             </div>
+            <div className="max-w-md mx-auto space-y-1.5">
+              <h3 className="text-base font-bold text-[#000000]">Your Catalog is Empty</h3>
+              <p className="text-xs text-[#64748B] leading-relaxed">
+                No products have been ingested or sourced in your workspace yet. Start by uploading a dataset file or use our AI Single Product Lookup.
+              </p>
+            </div>
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <Link
+                href="/upload"
+                className="px-4 py-2.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl text-xs font-bold inline-flex items-center gap-2 shadow-sm transition"
+              >
+                <UploadCloud className="w-4 h-4" />
+                <span>Upload CSV / XLSX</span>
+              </Link>
+              <Link
+                href="/upload?tab=ai-search"
+                className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold inline-flex items-center gap-2 transition"
+              >
+                <Sparkles className="w-4 h-4 text-purple-600" />
+                <span>AI Single Lookup</span>
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-[#F8FAFC] border-b border-[#E2E8F0] text-[10px] font-black uppercase text-slate-500 tracking-wider">
+                <tr>
+                  <th className="px-4 py-3.5">Part Number</th>
+                  <th className="px-4 py-3.5">Manufacturer</th>
+                  <th className="px-4 py-3.5">Brand</th>
+                  <th className="px-4 py-3.5">Classpath / Leaf</th>
+                  <th className="px-4 py-3.5">Confidence</th>
+                  <th className="px-4 py-3.5">Status</th>
+                  <th className="px-4 py-3.5 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#F1F5F9]">
+                {products.map((product) => {
+                  const prodId = product.productId || (product as any).id || product.partNumber;
+                  const resolvedMfg = getCleanManufacturerName(product.manufacturerName, product.brandName);
+                  const resolvedBrand = getCleanBrandName(product.brandName, resolvedMfg);
+                  const cleanClasspath = sanitizeText(product.classpath) || "Industrial > General";
+
+                  return (
+                    <tr key={prodId} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="px-4 py-3.5 font-mono font-bold text-[#000000]">
+                        <Link
+                          href={`/products/${encodeURIComponent(String(prodId))}`}
+                          className="hover:text-[#2563EB] transition-colors"
+                        >
+                          {sanitizeText(product.partNumber)}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3.5 font-medium text-slate-800">{resolvedMfg}</td>
+                      <td className="px-4 py-3.5 font-medium text-slate-600">{resolvedBrand}</td>
+                      <td className="px-4 py-3.5 text-slate-600 max-w-[220px] truncate" title={cleanClasspath}>
+                        {cleanClasspath}
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <ConfidenceCell product={product} />
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <StatusBadge status={product.status || "ingested"} />
+                      </td>
+                      <td className="px-4 py-3.5 text-right">
+                        <Link
+                          href={`/products/${encodeURIComponent(String(prodId))}`}
+                          className="inline-flex items-center gap-1 text-xs font-bold text-[#2563EB] hover:text-[#1D4ED8]"
+                        >
+                          <span>Inspect</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

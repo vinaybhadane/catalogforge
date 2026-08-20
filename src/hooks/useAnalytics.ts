@@ -1,6 +1,8 @@
 import { useState, useCallback } from "react";
 import { apiClient, ApiClientError } from "@/lib/api/client";
 import { AnalyticsSummary } from "@/types";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { computeUserWorkspaceAnalytics } from "@/lib/auth/workspace-guard";
 
 export interface AccuracyDataPoint {
   timestamp: string;
@@ -38,6 +40,8 @@ export interface AnalyticsDetail extends AnalyticsSummary {
   totalAssets?: number;
   totalJobs?: number;
   autoPublishRate?: number;
+  avgLatencySec?: number;
+  costPerSku?: number;
 }
 
 export type AnalyticsHookState = "idle" | "loading" | "success" | "error";
@@ -51,10 +55,11 @@ export interface UseAnalyticsReturn {
 }
 
 /**
- * Fetches real-time evaluation and performance metrics from the analytics API.
- * All metric values are computed live from the Azure SQL Database — zero guessing.
+ * Fetches real-time evaluation and performance metrics.
+ * Isolates new standalone users from shared organization analytics unless invited.
  */
 export function useAnalytics(): UseAnalyticsReturn {
+  const { user, isSharedMember } = useAuth();
   const [analytics, setAnalytics] = useState<AnalyticsDetail | null>(null);
   const [hookState, setHookState] = useState<AnalyticsHookState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -63,6 +68,22 @@ export function useAnalytics(): UseAnalyticsReturn {
   const refresh = useCallback(async () => {
     setHookState("loading");
     setErrorMessage(null);
+
+    // If user is a standalone new user (uninvited), compute private analytics
+    if (user && !isSharedMember) {
+      try {
+        const userAnalytics = computeUserWorkspaceAnalytics(user.uid || user.email || "");
+        setAnalytics(userAnalytics);
+        setLastRefreshedAt(new Date());
+        setHookState("success");
+      } catch (err) {
+        setErrorMessage("Unable to compute workspace analytics.");
+        setHookState("error");
+      }
+      return;
+    }
+
+    // For Admin & Invited Team Members, fetch live organization analytics
     try {
       const data = await apiClient.get<AnalyticsDetail>("/analytics/summary");
       setAnalytics(data);
@@ -85,7 +106,7 @@ export function useAnalytics(): UseAnalyticsReturn {
         setHookState("error");
       }
     }
-  }, []);
+  }, [user, isSharedMember]);
 
   return { analytics, hookState, errorMessage, lastRefreshedAt, refresh };
 }

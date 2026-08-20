@@ -21,6 +21,11 @@ import {
 } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase/config";
 import { apiClient } from "@/lib/api/client";
+import {
+  isSharedOrganizationMember,
+  getInvitedMembers,
+  DEFAULT_ADMIN_EMAILS,
+} from "@/lib/auth/workspace-guard";
 
 export type UserRole = "admin" | "reviewer" | "viewer";
 
@@ -31,6 +36,9 @@ export interface AuthUser {
   photoURL: string | null;
   role: UserRole;
   companyName?: string | null;
+  isSharedMember: boolean;
+  isInvited: boolean;
+  isWorkspaceOwner: boolean;
 }
 
 export interface SignUpData {
@@ -45,6 +53,9 @@ interface AuthContextValue {
   user: AuthUser | null;
   role: UserRole | null;
   loading: boolean;
+  isSharedMember: boolean;
+  isInvited: boolean;
+  isWorkspaceOwner: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (data: SignUpData) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
@@ -113,7 +124,7 @@ function getReadableAuthErrorMessage(error: unknown): string {
 
 /**
  * AuthProvider
- * Firebase-integrated Authentication Context Provider
+ * Firebase-integrated Authentication Context Provider with Multi-Tenancy / Invitation Guard
  */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -123,18 +134,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const mapFirebaseUser = useCallback(async (firebaseUser: FirebaseUser | null): Promise<AuthUser | null> => {
     if (!firebaseUser) return null;
 
-    let role: UserRole = "admin"; // Default admin for development/demo
-    try {
-      const idTokenResult = await firebaseUser.getIdTokenResult();
-      if (
-        idTokenResult.claims.role === "admin" ||
-        idTokenResult.claims.role === "reviewer" ||
-        idTokenResult.claims.role === "viewer"
-      ) {
-        role = idTokenResult.claims.role;
-      }
-    } catch (err) {
-      console.warn("Could not retrieve custom claims:", err);
+    const email = firebaseUser.email || "";
+    const isShared = isSharedOrganizationMember(email);
+    const isOwner = DEFAULT_ADMIN_EMAILS.some((adm) => adm.toLowerCase() === email.toLowerCase());
+
+    let role: UserRole = "admin";
+    const invitedList = getInvitedMembers();
+    const invitedMatch = invitedList.find((m) => m.email.toLowerCase() === email.toLowerCase());
+
+    if (invitedMatch) {
+      if (invitedMatch.role === "Catalog Manager") role = "reviewer";
+      else if (invitedMatch.role === "Auditor") role = "viewer";
+      else role = "admin";
+    } else if (isOwner) {
+      role = "admin";
     }
 
     return {
@@ -143,6 +156,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       displayName: firebaseUser.displayName || (firebaseUser.email ? firebaseUser.email.split("@")[0] : null),
       photoURL: firebaseUser.photoURL,
       role,
+      isSharedMember: isShared,
+      isInvited: !!invitedMatch,
+      isWorkspaceOwner: isOwner,
     };
   }, []);
 
@@ -210,13 +226,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
       }
 
+      const email = credential.user.email || "";
+      const isShared = isSharedOrganizationMember(email);
+      const isOwner = DEFAULT_ADMIN_EMAILS.some((adm) => adm.toLowerCase() === email.toLowerCase());
+
+      const invitedList = getInvitedMembers();
+      const invitedMatch = invitedList.find((m) => m.email.toLowerCase() === email.toLowerCase());
+
+      let role: UserRole = "admin";
+      if (invitedMatch) {
+        if (invitedMatch.role === "Catalog Manager") role = "reviewer";
+        else if (invitedMatch.role === "Auditor") role = "viewer";
+        else role = "admin";
+      }
+
       const authUser: AuthUser = {
         uid: credential.user.uid,
         email: credential.user.email,
         displayName: fullName || credential.user.email,
         photoURL: null,
-        role: "admin",
+        role,
         companyName: data.companyName ?? null,
+        isSharedMember: isShared,
+        isInvited: !!invitedMatch,
+        isWorkspaceOwner: isOwner,
       };
 
       setUser(authUser);
@@ -243,6 +276,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [mapFirebaseUser]);
 
+  // Change Password
+  const changePassword = useCallback(async (newPassword: string) => {
+    if (!auth.currentUser) {
+      throw new Error("No authenticated user found. Please log in again.");
+    }
+    try {
+      await updatePassword(auth.currentUser, newPassword);
+    } catch (error) {
+      const message = getReadableAuthErrorMessage(error);
+      throw new Error(message);
+    }
+  }, []);
+
   // Sign Out
   const signOut = useCallback(async () => {
     setLoading(true);
@@ -250,66 +296,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await firebaseSignOut(auth);
       setUser(null);
     } catch (error) {
-      const message = getReadableAuthErrorMessage(error);
-      throw new Error(message);
+      console.error("Sign out error:", error);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Change Password
-  const changePassword = useCallback(async (newPassword: string) => {
-    if (!auth.currentUser) {
-      throw new Error("No active user session found. Please log in again.");
-    }
-    try {
-      // First attempt with client updatePassword
-      await updatePassword(auth.currentUser, newPassword);
-    } catch (error: any) {
-      // If Firebase requires recent login, use fresh ID token with Firebase Auth REST endpoint
-      if (
-        error?.code === "auth/requires-recent-login" ||
-        (typeof error?.message === "string" && error.message.includes("requires-recent-login"))
-      ) {
-        try {
-          const idToken = await auth.currentUser.getIdToken(true);
-          const apiKey =
-            process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyDjcH_GcXPQLvWzDZmQ8GzRqHxOkL2jNaU";
-          const res = await fetch(
-            `https://identitytoolkit.googleapis.com/v1/accounts:update?key=${apiKey}`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                idToken,
-                password: newPassword,
-                returnSecureToken: true,
-              }),
-            }
-          );
-          const data = await res.json();
-          if (!res.ok || data.error) {
-            throw new Error(data.error?.message || "Failed to update password.");
-          }
-          return;
-        } catch (restErr: any) {
-          throw new Error(
-            restErr?.message || "Unable to update password. Please check your connection and try again."
-          );
-        }
-      }
-
-      const message = getReadableAuthErrorMessage(error);
-      throw new Error(message);
-    }
-  }, []);
-
   // Refresh Token
   const refreshToken = useCallback(async (): Promise<string | null> => {
-    if (auth.currentUser) {
-      return auth.currentUser.getIdToken(true);
+    if (!auth.currentUser) return null;
+    try {
+      return await auth.currentUser.getIdToken(true);
+    } catch {
+      return null;
     }
-    return null;
   }, []);
 
   const value = useMemo<AuthContextValue>(
@@ -317,6 +317,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user,
       role: user?.role ?? null,
       loading,
+      isSharedMember: user?.isSharedMember ?? false,
+      isInvited: user?.isInvited ?? false,
+      isWorkspaceOwner: user?.isWorkspaceOwner ?? false,
       signIn,
       signUp,
       signInWithGoogle,
@@ -330,13 +333,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-/**
- * Hook to consume AuthContext
- */
 export function useAuth(): AuthContextValue {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth must be used within an <AuthProvider>");
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }

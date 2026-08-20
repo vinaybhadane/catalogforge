@@ -31,6 +31,10 @@ import {
 } from "lucide-react";
 import { useUpload, UploadMode } from "@/hooks/useUpload";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import {
+  saveUserWorkspaceProduct,
+  saveUserWorkspaceJob,
+} from "@/lib/auth/workspace-guard";
 import { UploadDropzone } from "@/components/upload/UploadDropzone";
 import { PreflightSummary } from "@/components/upload/PreflightSummary";
 import { apiClient } from "@/lib/api/client";
@@ -207,6 +211,27 @@ export default function UploadPage() {
         assets: aiResult.assets,
       });
 
+      const userKey = user?.uid || user?.email || "";
+      if (userKey) {
+        saveUserWorkspaceProduct(userKey, {
+          id: saveRes.productId || `prod-${Date.now()}`,
+          partNumber: aiResult.partNumber,
+          manufacturerName: aiResult.manufacturer,
+          brandName: aiResult.manufacturer,
+          shortDesc: aiResult.officialTitle || aiResult.partNumber,
+          longDesc: aiResult.officialDescription || "",
+          status: "published",
+          confidence: 0.98,
+          rowConfidence: 0.98,
+          classpath: aiResult.classpath || "Industrial > General Supplies > Components",
+          unspsc: aiResult.unspsc || "40151500",
+          attributes: aiResult.attributes || [],
+          assets: aiResult.assets || [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+      }
+
       setSavedProductSuccess({
         productId: saveRes.productId,
         partNumber: aiResult.partNumber,
@@ -250,6 +275,27 @@ export default function UploadPage() {
         url: urlExtractionResult.sourceUrl,
         saveToCatalog: true,
       });
+
+      const userKey = user?.uid || user?.email || "";
+      if (userKey) {
+        saveUserWorkspaceProduct(userKey, {
+          id: saveRes.savedProductId || `prod-url-${Date.now()}`,
+          partNumber: urlExtractionResult.partNumber,
+          manufacturerName: urlExtractionResult.manufacturer,
+          brandName: urlExtractionResult.brand || urlExtractionResult.manufacturer,
+          shortDesc: urlExtractionResult.title || urlExtractionResult.partNumber,
+          longDesc: urlExtractionResult.description || "",
+          status: "published",
+          confidence: 0.96,
+          rowConfidence: 0.96,
+          classpath: urlExtractionResult.classpath || "Industrial > General",
+          unspsc: urlExtractionResult.unspsc || "40151500",
+          attributes: urlExtractionResult.attributes || [],
+          assets: urlExtractionResult.assets || [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+      }
 
       setSavedUrlProductSuccess({
         productId: saveRes.savedProductId || "new",
@@ -537,6 +583,42 @@ export default function UploadPage() {
       await apiClient.post("/ingestion/batch-save-catalog", {
         products: batchResult.products,
       });
+
+      const userKey = user?.uid || user?.email || "";
+      if (userKey) {
+        batchResult.products.forEach((p: any, idx: number) => {
+          saveUserWorkspaceProduct(userKey, {
+            id: p.id || `batch-prod-${Date.now()}-${idx}`,
+            partNumber: p.partNumber,
+            manufacturerName: p.manufacturer || p.brand,
+            brandName: p.brand || p.manufacturer,
+            shortDesc: p.title || p.partNumber,
+            longDesc: p.description || "",
+            status: "published",
+            confidence: 0.98,
+            rowConfidence: 0.98,
+            classpath: p.classpath || "Industrial > General",
+            unspsc: p.unspsc || "40151500",
+            attributes: p.attributes || [],
+            assets: p.assets || [],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          });
+        });
+
+        saveUserWorkspaceJob(userKey, {
+          id: batchResult.batchId || `job-${Date.now()}`,
+          jobId: batchResult.batchId || `job-${Date.now()}`,
+          fileName: batchResult.fileName,
+          totalRows: batchResult.processedCount || batchResult.products.length,
+          status: "completed",
+          currentStage: "published",
+          progressPercentage: 100,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        } as any);
+      }
+
       setBatchSavedSuccess(true);
     } catch (err: any) {
       setBatchError(err?.message || "Failed to save batch products to catalog.");

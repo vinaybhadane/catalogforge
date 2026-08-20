@@ -32,6 +32,8 @@ import {
   getCleanManufacturerName,
   calculateConfidenceScore,
 } from "@/lib/utils/sanitizer";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { getUserWorkspaceData } from "@/lib/auth/workspace-guard";
 import { buildDeliveryFields, DeliveryFieldEntry } from "@/lib/utils/delivery-schema";
 
 // ─────────────────────────────────────────────────────────────
@@ -587,6 +589,7 @@ export default function ProductDetailPage() {
   const params = useParams<{ productId: string }>();
   const productId = params.productId ?? "";
 
+  const { user } = useAuth();
   const [product, setProduct] = useState<Product | null>(null);
   const [liveIntelligence, setLiveIntelligence] = useState<any>(null);
   const [isSearching, setIsSearching] = useState(false);
@@ -603,10 +606,19 @@ export default function ProductDetailPage() {
       setProduct(rawProduct);
       setFetchState("success");
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "Unable to load product detail.");
-      setFetchState("error");
+      const userWorkspace = getUserWorkspaceData(user?.uid || user?.email);
+      const match = userWorkspace.products.find(
+        (p: any) => String(p.productId || p.id) === productId || p.partNumber === productId
+      );
+      if (match) {
+        setProduct(match);
+        setFetchState("success");
+      } else {
+        setErrorMessage(err instanceof Error ? err.message : "Unable to load product detail.");
+        setFetchState("error");
+      }
     }
-  }, [productId]);
+  }, [productId, user]);
 
   const handleLiveEnrichment = async () => {
     if (!product) return;
