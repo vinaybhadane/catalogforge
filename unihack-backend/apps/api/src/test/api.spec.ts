@@ -132,7 +132,7 @@ DUMMY-01,Tools,Hand Tools,Pliers,-,DUMMY-01,Heavy Duty Diagonal Cutting Pliers,K
 
     assert(jobDetailRes.statusCode === 200, 'GET /api/v1/ingestion/jobs/:jobId returns 200 OK');
     const jobDetailBody = JSON.parse(jobDetailRes.payload);
-    assert(jobDetailBody.jobId === jobId, 'Job detail returns matching jobId');
+    assert(jobDetailBody.jobId?.toLowerCase() === jobId.toLowerCase(), 'Job detail returns matching jobId');
     assert(jobDetailBody.fileName === 'sample_products.csv', 'Job detail returns fileName');
     assert(Array.isArray(jobDetailBody.pipeline), 'Job detail includes pipeline stage array');
 

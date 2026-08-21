@@ -327,21 +327,17 @@ export function buildDeliveryFields(product: Product): DeliveryFieldEntry[] {
     'Engineered for heavy-duty industrial and professional use. Delivers maximum durability and precision under demanding conditions.'
   );
 
-  // 4. Features (ITEM_FEATURES_1 to ITEM_FEATURES_20)
+  // 4. Features (ITEM_FEATURES_1 to ITEM_FEATURES_20) - Only verified extracted features
   const featuresList: string[] = [];
   if (Array.isArray(product.features) && product.features.length > 0) {
-    featuresList.push(...product.features.map((f: any) => sanitizeText(f.featureText)));
+    featuresList.push(...product.features.map((f: any) => sanitizeText(f.featureText)).filter(Boolean));
   } else if (Array.isArray(desc.bulletPoints) && desc.bulletPoints.length > 0) {
-    featuresList.push(...desc.bulletPoints.map((b: string) => sanitizeText(b)));
+    featuresList.push(...desc.bulletPoints.map((b: string) => sanitizeText(b)).filter(Boolean));
   }
-  if (featuresList.length === 0) {
-    if (mfg) featuresList.push(`Precision manufactured to ${mfg} performance standards`);
-    featuresList.push('Durable construction for demanding industrial environments');
-    featuresList.push('Compliant with international safety and quality certifications');
-  }
+
   for (let i = 1; i <= 20; i++) {
     const feat = featuresList[i - 1];
-    if (feat) row[`ITEM_FEATURES_${i}`] = sanitizeText(feat);
+    row[`ITEM_FEATURES_${i}`] = feat ? sanitizeText(feat) : '';
   }
 
   // 5. Product Name & Meta
@@ -353,14 +349,24 @@ export function buildDeliveryFields(product: Product): DeliveryFieldEntry[] {
   row['Application'] = '';
   row['Includes'] = '';
 
-  // 6. Attributes (1..50)
-  const attrs = product.attributes || [];
+  // 6. Attributes (1..50) - STRICT ZERO HALLUCINATION (>= 60% confidence only)
+  const validAttrs = (product.attributes || []).filter((a) => {
+    const conf = a.confidenceScore ?? a.confidence ?? (a as any).lovMatchConfidence ?? 0.95;
+    const val = a.attributeValue ? String(a.attributeValue).trim() : '';
+    const isPlaceholder = ['n/a', 'unknown', 'null', 'none', 'tbd'].includes(val.toLowerCase());
+    return conf >= 0.60 && val.length > 0 && !isPlaceholder;
+  });
+
   for (let i = 1; i <= 50; i++) {
-    const a = attrs[i - 1];
+    const a = validAttrs[i - 1];
     if (a) {
       row[`ATTRIBUTE_LABEL ${i}`] = sanitizeText(a.attributeLabel);
       row[`ATTRIBUTE_VALUE ${i}`] = sanitizeText(a.attributeValue);
       row[`ATTRIBUTE_UOM ${i}`] = sanitizeText(a.attributeUom);
+    } else {
+      row[`ATTRIBUTE_LABEL ${i}`] = '';
+      row[`ATTRIBUTE_VALUE ${i}`] = '';
+      row[`ATTRIBUTE_UOM ${i}`] = '';
     }
   }
 
@@ -369,7 +375,7 @@ export function buildDeliveryFields(product: Product): DeliveryFieldEntry[] {
   row['EAN'] = sanitizeText(product.ean);
   row['GTIN'] = sanitizeText(product.gtin);
   row['UNSPSC'] = sanitizeText(product.unspsc || '40151500');
-  row['Warranty'] = '1 Year Manufacturer Warranty';
+  row['Warranty'] = sanitizeText((product as any).warranty || (product as any).warrantyInfo?.term || '');
   row['List Price'] = '';
   row['Selling Qty'] = '1';
   row['Selling UOM'] = 'EA';
@@ -388,39 +394,52 @@ export function buildDeliveryFields(product: Product): DeliveryFieldEntry[] {
     row['WEIGHT_UOM'] = sanitizeText(dims.weightUom);
   }
 
-  // 9. Assets & Documents
-  const cleanPart = product.partNumber.replace(/[^a-zA-Z0-9_-]/g, '_');
-  const mfgPrefix = (mfg || 'Product').replace(/[^a-zA-Z0-9_-]/g, '_');
-  row['Product Image'] = `${mfgPrefix}_${cleanPart}.jpg`;
-  row['Specification Sheet'] = `${mfgPrefix}_${cleanPart}_Specification_Sheet.pdf`;
+  // 9. Assets & Documents - STRICT ZERO HALLUCINATION (Real verified files only)
+  row['Product Image'] = '';
+  row['Alternate Image 1'] = '';
+  row['Alternate Image 2'] = '';
+  row['Alternate Image 3'] = '';
+  row['Alternate Image 4'] = '';
+  row['Specification Sheet'] = '';
 
   if (Array.isArray(product.assets)) {
-    product.assets.forEach((ast: any) => {
+    const imageAssets = product.assets.filter((a: any) => a.assetType === 'image');
+    imageAssets.forEach((ast: any, idx: number) => {
       const fName = sanitizeText(ast.fileName || ast.blobUrl || ast.sourceUrl || '');
-      if (ast.assetType === 'image') {
-        if (!row['Product Image']) row['Product Image'] = fName;
-        else if (!row['Alternate Image 1']) row['Alternate Image 1'] = fName;
-        else if (!row['Alternate Image 2']) row['Alternate Image 2'] = fName;
-        else if (!row['Alternate Image 3']) row['Alternate Image 3'] = fName;
-        else if (!row['Alternate Image 4']) row['Alternate Image 4'] = fName;
-      } else if (ast.assetType === 'sds') {
+      if (!fName) return;
+      if (idx === 0) row['Product Image'] = fName;
+      else if (idx === 1) row['Alternate Image 1'] = fName;
+      else if (idx === 2) row['Alternate Image 2'] = fName;
+      else if (idx === 3) row['Alternate Image 3'] = fName;
+      else if (idx === 4) row['Alternate Image 4'] = fName;
+    });
+
+    const docAssets = product.assets.filter((a: any) => a.assetType !== 'image');
+    docAssets.forEach((ast: any) => {
+      const fName = sanitizeText(ast.fileName || ast.blobUrl || ast.sourceUrl || '');
+      if (!fName) return;
+
+      if (ast.assetType === 'sds') {
         if (!row['SDS']) row['SDS'] = fName;
         else if (!row['SDS_1']) row['SDS_1'] = fName;
       } else if (ast.assetType === 'spec_sheet') {
-        row['Specification Sheet'] = fName;
+        if (!row['Specification Sheet']) row['Specification Sheet'] = fName;
       } else if (ast.assetType === 'manual') {
-        row['Instruction/Installation Manual'] = fName;
+        if (!row['Instruction/Installation Manual']) row['Instruction/Installation Manual'] = fName;
       } else if (ast.assetType === 'line_drawing') {
-        row['Line Drawing'] = fName;
+        if (!row['Line Drawing']) row['Line Drawing'] = fName;
       } else if (ast.assetType === 'catalog') {
-        row['Catalog'] = fName;
+        if (!row['Catalog']) row['Catalog'] = fName;
       }
     });
   }
 
   row['Country Of Origin'] = sanitizeText(product.countryOfOrigin);
   row['Discontinued'] = product.discontinued ? 'Yes' : 'No';
-  row['Actual Image (Yes/No)'] = product.actualImage ? 'Yes' : 'Yes';
+  const hasRealImages = (product.assets || []).some((a: any) => a.assetType === 'image' && (a.sourceUrl || a.blobUrl || a.fileName));
+  row['Actual Image (Yes/No)'] = hasRealImages || Boolean(row['Product Image']) || product.actualImage ? 'Yes' : 'No';
+
+
 
   return DELIVERY_HEADERS_252.map((header, index) => {
     let category: DeliveryFieldEntry['category'] = 'Identifiers';

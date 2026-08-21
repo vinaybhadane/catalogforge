@@ -34,33 +34,58 @@ interface DynamicFieldRendererProps {
   value: unknown;
   confidence?: number | null;
   validationFlags?: string[];
+  sourceUrl?: string | null;
+  sourceTitle?: string | null;
 }
 
 /**
  * DynamicFieldRenderer — Section 95.
  * Schema-oriented renderer supporting all field types for 252-column compatibility.
  * Renders API-provided values only — never fabricates data.
+ * Displays intentional dimmed blanks for unverified fields.
  */
 export function DynamicFieldRenderer({
   field,
   value,
   confidence,
   validationFlags = [],
+  sourceUrl,
+  sourceTitle,
 }: DynamicFieldRendererProps) {
-  const isNull = value === null || value === undefined || value === "";
+  const isNull = value === null || value === undefined || value === "" || String(value).trim() === "";
 
   const renderValue = () => {
     if (isNull) {
       return (
-        <span className="text-slate-400 italic text-sm">
-          Not provided
-        </span>
+        <div className="flex items-center gap-1.5 py-0.5">
+          <span className="text-slate-400 font-mono text-xs select-none">
+            — Blank (Unverified in OEM docs)
+          </span>
+        </div>
       );
     }
 
     switch (field.type) {
       case "text":
-        return <span className="text-sm text-slate-900 break-words">{String(value)}</span>;
+        return (
+          <div className="flex flex-col gap-1">
+            <span className="text-sm text-slate-900 break-words font-normal leading-relaxed">
+              {String(value)}
+            </span>
+            {sourceUrl && (
+              <a
+                href={sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-[11px] text-blue-600 hover:text-blue-800 hover:underline w-fit font-medium"
+              >
+                <ExternalLink className="w-3 h-3" />
+                {sourceTitle || "Verified OEM Citation"}
+              </a>
+            )}
+          </div>
+        );
+
 
       case "number":
         return (

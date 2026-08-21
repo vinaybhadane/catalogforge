@@ -24,6 +24,7 @@ import {
   UploadRouteSchema,
 } from '../../schemas/ingestion.schemas';
 import { ingestionService } from '../../services/ingestion.service';
+import { ocrIngestionService } from '../../services/ocr-ingestion.service';
 
 export const ingestionRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   /**
@@ -885,6 +886,77 @@ export const ingestionRoutes: FastifyPluginAsync = async (fastify: FastifyInstan
         savedIds,
       });
     },
+  );
+
+  /**
+   * POST /api/v1/ingestion/ocr
+   * Multi-Modal OCR & Strict Sufficiency Gatekeeper for Product Label / Nameplate Images (Multipart)
+   */
+  fastify.post(
+    '/ocr',
+    {
+      preHandler: [authenticate],
+    },
+    async (request, reply) => {
+      const data = await request.file();
+      if (!data) {
+        throw new ValidationError('No image file was uploaded in the multipart request.');
+      }
+
+      const buffer = await data.toBuffer();
+      const fileName = data.filename || 'product-label.jpg';
+      const mimeType = data.mimetype || 'image/jpeg';
+      const user = request.user?.email || request.user?.uid || 'anonymous';
+
+      const result = await ocrIngestionService.processImageOcr(
+        buffer,
+        fileName,
+        mimeType,
+        user,
+        false
+      );
+
+      return reply.status(200).send(result);
+    }
+  );
+
+  /**
+   * POST /api/v1/ingestion/ocr-base64
+   * Multi-Modal OCR & Strict Sufficiency Gatekeeper via Base64 JSON Payload
+   */
+  fastify.post<{
+    Body: {
+      imageBase64: string;
+      fileName?: string;
+      mimeType?: string;
+      saveToCatalog?: boolean;
+    };
+  }>(
+    '/ocr-base64',
+    {
+      preHandler: [authenticate],
+    },
+    async (request, reply) => {
+      const { imageBase64, fileName, mimeType, saveToCatalog } = request.body || {};
+      if (!imageBase64 || typeof imageBase64 !== 'string') {
+        throw new ValidationError('imageBase64 string is required.');
+      }
+
+      // Strip data URL prefix if present
+      const cleanBase64 = imageBase64.replace(/^data:image\/[a-z0-9+]+;base64,/i, '');
+      const buffer = Buffer.from(cleanBase64, 'base64');
+      const user = request.user?.email || request.user?.uid || 'anonymous';
+
+      const result = await ocrIngestionService.processImageOcr(
+        buffer,
+        fileName || 'label-snapshot.jpg',
+        mimeType || 'image/jpeg',
+        user,
+        Boolean(saveToCatalog)
+      );
+
+      return reply.status(200).send(result);
+    }
   );
 };
 

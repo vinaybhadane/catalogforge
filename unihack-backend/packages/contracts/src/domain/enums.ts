@@ -100,7 +100,12 @@ export type AuditAction =
   | 'reject'
   | 'override'
   | 'publish'
-  | 'system_transition';
+  | 'system_transition'
+  | 'FIELD_EXTRACTED'
+  | 'FIELD_RETAINED'
+  | 'FIELD_SUPPRESSED_ZERO_HALLUCINATION'
+  | 'STATUS_UPDATE'
+  | 'EDIT_FIELD';
 
 export const AUDIT_ACTIONS: readonly AuditAction[] = [
   'create',
@@ -110,7 +115,13 @@ export const AUDIT_ACTIONS: readonly AuditAction[] = [
   'override',
   'publish',
   'system_transition',
+  'FIELD_EXTRACTED',
+  'FIELD_RETAINED',
+  'FIELD_SUPPRESSED_ZERO_HALLUCINATION',
+  'STATUS_UPDATE',
+  'EDIT_FIELD',
 ] as const;
+
 
 /**
  * Batch ingestion job status.

@@ -10,6 +10,7 @@
 
 import { AssetType, EvidenceReference } from '@unihack/contracts';
 import { env } from '../config/env';
+import { imageExtractorService } from './image-extractor.service';
 import { sourceGovernor } from './source-governor.service';
 import { sanitizeText, resolveBrandAndManufacturer, resolveAuthoritativeClasspath } from '../utils/text-sanitizer';
 
@@ -49,6 +50,9 @@ export interface ExtractedProductIntelligence {
   assets: VerifiedAsset[];
   warrantyInfo?: WarrantyDetails;
   citations: Array<EvidenceReference & { tier: string; domain: string; isLiveVerified: boolean }>;
+  completenessRate?: number;
+  expectedAttributesCount?: number;
+  populatedAttributesCount?: number;
   searchSummary: {
     query: string;
     aiModel: string;
@@ -60,6 +64,7 @@ export interface ExtractedProductIntelligence {
     allLinksVerifiedLive: boolean;
   };
 }
+
 
 export class GeminiSearchService {
   /**
@@ -229,6 +234,11 @@ TASK:
    - Only include document links if an actual PDF datasheet, spec sheet, or user manual was found in the search context.
    - For each verified document, provide assetType ('spec_sheet' | 'manual' | 'sds'), fileName, sourceUrl, and a concise 1-sentence short info summary.
    - If no real document URL was found, return an empty array [] (never invent fake URLs).
+8. Product Images Verification:
+   - Candidate Image URLs found in search: ${JSON.stringify(rawLiveResults.images || [])}
+   - Evaluate each candidate image URL. Return in 'verifiedImageUrls' ONLY image URLs that genuinely depict this specific product SKU ("${cleanPart}") or its packaging.
+   - Strictly EXCLUDE any image URLs showing unrelated products, accessories, screws, drill bits, anchor rods, or different tools.
+   - If only 1 image depicts this product, return only that 1 image in verifiedImageUrls (never add unrelated items).
 
 Respond with ONLY valid JSON matching this schema:
 {
@@ -260,6 +270,7 @@ Respond with ONLY valid JSON matching this schema:
     }
   ],
   "verifiedSourceUrl": "https://www.officialdomain.com/product",
+  "verifiedImageUrls": ["https://www.officialdomain.com/exact-product-image.jpg"],
   "verifiedImageUrl": "https://www.officialdomain.com/image.jpg"
 }`;
 
@@ -382,31 +393,43 @@ Respond with ONLY valid JSON matching this schema:
     // 5. Asset Verification with Genuine Verification (No Fake URLs)
     const assets: VerifiedAsset[] = [];
 
-    // Product Images (Use live scraped CDN images from Tavily / organic results)
-    const productImages = (rawLiveResults.images || []).filter(Boolean);
-    if (productImages.length > 0) {
-      productImages.slice(0, 4).forEach((imgUrl, i) => {
+    // Product Images: Use hardened image extractor for resolution, SKU affinity & gallery ranking
+    const rawImageCandidates = [
+      ...(Array.isArray(parsedAiData?.verifiedImageUrls) ? parsedAiData.verifiedImageUrls : []),
+      ...(parsedAiData?.verifiedImageUrl ? [parsedAiData.verifiedImageUrl] : []),
+      ...(Array.isArray(parsedAiData?.images) ? parsedAiData.images : []),
+      ...(rawLiveResults.images || []),
+    ];
+
+    const relevanceContext = {
+      partNumber: cleanPart,
+      manufacturer: cleanMfg,
+      brand: parsedAiData?.brand || cleanMfg,
+      title: parsedAiData?.officialTitle || rawLiveResults.title || '',
+      category: parsedAiData?.classpath || '',
+    };
+
+    const imageExtraction = imageExtractorService.validateAndRankImages(
+      rawImageCandidates,
+      defaultMfgDomain,
+      relevanceContext
+    );
+
+    if (imageExtraction.allValidImages.length > 0) {
+      imageExtraction.allValidImages.forEach((img, i) => {
+        const isPrimary = i === 0;
         assets.push({
           assetType: 'image',
-          fileName: `${cleanPart.replace(/[^a-zA-Z0-9_-]/g, '_')}-${i === 0 ? 'Primary-Photo' : `Alt-Photo-${i}`}.jpg`,
-          sourceUrl: imgUrl,
-          previewUrl: imgUrl,
+          fileName: `${cleanPart.replace(/[^a-zA-Z0-9_-]/g, '_')}-${isPrimary ? 'Primary-Photo' : `Alt-Photo-${i}`}.jpg`,
+          sourceUrl: img.url,
+          previewUrl: img.url,
           sourceDomain: defaultMfgDomain,
           isFromManufacturer: true,
           status: 'verified_live',
-          shortInfo: i === 0 ? `Authentic primary product photograph from ${cleanMfg || defaultMfgDomain}` : `Verified alternate perspective photograph`,
+          shortInfo: isPrimary
+            ? `Authentic primary product photograph from ${cleanMfg || defaultMfgDomain}`
+            : `Verified alternate perspective photograph ${i}`,
         });
-      });
-    } else if (parsedAiData?.verifiedImageUrl && typeof parsedAiData.verifiedImageUrl === 'string' && parsedAiData.verifiedImageUrl.startsWith('http') && !parsedAiData.verifiedImageUrl.toLowerCase().endsWith('.pdf')) {
-      assets.push({
-        assetType: 'image',
-        fileName: `${cleanPart.replace(/[^a-zA-Z0-9_-]/g, '_')}-Primary-Photo.jpg`,
-        sourceUrl: parsedAiData.verifiedImageUrl,
-        previewUrl: parsedAiData.verifiedImageUrl,
-        sourceDomain: defaultMfgDomain,
-        isFromManufacturer: true,
-        status: 'verified_live',
-        shortInfo: `Authentic primary product photograph from ${cleanMfg || defaultMfgDomain}`,
       });
     }
 
@@ -517,6 +540,29 @@ Respond with ONLY valid JSON matching this schema:
       parsedAiData?.classpath,
     );
 
+    const sanitizedAttributes = attributes.map((a) => ({
+      label: sanitizeText(a.label),
+      value: sanitizeText(a.value),
+      uom: sanitizeText(a.uom) || null,
+      confidence: a.confidence || 0.98,
+      sourceEvidence: a.sourceEvidence || {
+        sourceUrl: officialProductPage,
+        sourceTitle: `${resolved.manufacturerName} Official Specification`,
+        sourceSnippet: `${a.label}: ${a.value}`,
+        sourceSpan: String(a.value),
+        manufacturer: resolved.manufacturerName,
+        partNumber: cleanPart,
+        retrievedAt: new Date().toISOString(),
+      },
+    }));
+
+    // Dynamic Completeness Score computation: (Populated Valid Attributes / Total Expected Category Attributes) * 100
+    const populatedValidCount = sanitizedAttributes.filter(
+      (a) => a.confidence >= 0.60 && a.value && !['n/a', 'unknown', 'null', 'none', 'tbd'].includes(a.value.toLowerCase())
+    ).length;
+    const expectedCategoryCount = Math.max(10, sanitizedAttributes.length);
+    const completenessRate = Math.min(100, Math.round((populatedValidCount / expectedCategoryCount) * 100));
+
     return {
       partNumber: sanitizeText(cleanPart),
       manufacturer: resolved.manufacturerName,
@@ -525,16 +571,13 @@ Respond with ONLY valid JSON matching this schema:
       officialTitle,
       officialDescription,
       features,
-      attributes: attributes.map((a) => ({
-        label: sanitizeText(a.label),
-        value: sanitizeText(a.value),
-        uom: sanitizeText(a.uom) || null,
-        confidence: a.confidence || 0.98,
-        sourceEvidence: a.sourceEvidence,
-      })),
+      attributes: sanitizedAttributes,
       assets,
       warrantyInfo,
       citations,
+      completenessRate,
+      expectedAttributesCount: expectedCategoryCount,
+      populatedAttributesCount: populatedValidCount,
       searchSummary: {
         query: `"${resolved.manufacturerName}" "${cleanPart}" verified against ${defaultMfgDomain}`,
         aiModel: usedProvider,
@@ -547,6 +590,7 @@ Respond with ONLY valid JSON matching this schema:
       },
     };
   }
+
 
   /**
    * Deterministic attribute extraction based on authentic catalog part patterns

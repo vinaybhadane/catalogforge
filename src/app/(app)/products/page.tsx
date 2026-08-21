@@ -42,6 +42,7 @@ function formatDate(iso: string): string {
 
 function ConfidenceCell({ product }: { product: Product }) {
   const pct = calculateConfidenceScore(product);
+  const completeness = product.completenessRate ?? product.completenessScore ?? pct;
 
   const badgeColor =
     pct >= 85
@@ -51,16 +52,25 @@ function ConfidenceCell({ product }: { product: Product }) {
       : "bg-rose-50 text-rose-800 border-rose-200";
 
   return (
-    <span
-      className={cn(
-        "text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full border shadow-sm inline-flex items-center",
-        badgeColor
+    <div className="flex flex-col gap-0.5">
+      <span
+        className={cn(
+          "text-[11px] font-mono font-bold px-2 py-0.5 rounded-full border shadow-sm inline-flex items-center gap-1 w-fit",
+          badgeColor
+        )}
+      >
+        <span>{pct >= 85 ? "🟢" : pct >= 60 ? "🟡" : "🔴"}</span>
+        <span>{pct}% Conf</span>
+      </span>
+      {completeness !== undefined && completeness !== null && (
+        <span className="text-[10px] text-slate-500 font-mono font-medium">
+          {Math.round(completeness)}% verified
+        </span>
       )}
-    >
-      {pct}%
-    </span>
+    </div>
   );
 }
+
 
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, { dot: string; text: string; bg: string; border: string }> = {

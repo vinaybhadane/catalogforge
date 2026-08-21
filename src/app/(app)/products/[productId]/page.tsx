@@ -244,7 +244,9 @@ function DeliveryColumnsTab({ product }: { product: Product }) {
                         {hasVal ? (
                           <span className="text-slate-900 font-medium break-all">{f.value}</span>
                         ) : (
-                          <span className="text-slate-300 italic text-[11px]">—</span>
+                          <span className="text-slate-400 italic text-[11px] font-mono select-none">
+                            — Blank (Unverified in OEM docs)
+                          </span>
                         )}
                       </td>
                       <td className="px-3 py-2 text-center">
@@ -424,21 +426,60 @@ function AttributesTab({ attributes }: { attributes?: ProductAttribute[] }) {
               <th className="px-4 py-2.5">Normalized Value</th>
               <th className="px-4 py-2.5">UOM</th>
               <th className="px-4 py-2.5">Confidence</th>
+              <th className="px-4 py-2.5">Provenance Link</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">
-            {list.map((a, i) => (
-              <tr key={i} className="hover:bg-slate-50/70 transition-colors">
-                <td className="px-4 py-2.5 font-semibold text-slate-900">{sanitizeText(a.attributeLabel)}</td>
-                <td className="px-4 py-2.5 text-slate-800 font-medium">{sanitizeText(a.attributeValue)}</td>
-                <td className="px-4 py-2.5 text-slate-500 font-mono">{sanitizeText(a.attributeUom) || "—"}</td>
-                <td className="px-4 py-2.5">
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                    {Math.round((a.confidenceScore ?? 0.95) * 100)}%
-                  </span>
-                </td>
-              </tr>
-            ))}
+            {list.map((a, i) => {
+              const conf = a.confidenceScore ?? a.confidence ?? 0.95;
+              const isHigh = conf >= 0.85;
+              const hasVal = a.attributeValue && String(a.attributeValue).trim().length > 0;
+              const sourceUrl = a.source?.sourceUrl;
+
+              return (
+                <tr key={i} className="hover:bg-slate-50/70 transition-colors">
+                  <td className="px-4 py-2.5 font-semibold text-slate-900">{sanitizeText(a.attributeLabel)}</td>
+                  <td className="px-4 py-2.5 text-slate-800 font-medium">
+                    {hasVal ? (
+                      sanitizeText(a.attributeValue)
+                    ) : (
+                      <span className="text-slate-400 italic font-mono text-[11px]">
+                        — Blank (Unverified in OEM docs)
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-2.5 text-slate-500 font-mono">{sanitizeText(a.attributeUom) || "—"}</td>
+                  <td className="px-4 py-2.5">
+                    <span
+                      className={cn(
+                        "px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border inline-flex items-center gap-1",
+                        isHigh
+                          ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                          : "bg-amber-50 text-amber-800 border-amber-200"
+                      )}
+                    >
+                      <span>{isHigh ? "🟢" : "🟡"}</span>
+                      <span>{Math.round(conf * 100)}%</span>
+                    </span>
+                  </td>
+                  <td className="px-4 py-2.5 text-xs">
+                    {sourceUrl ? (
+                      <a
+                        href={sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#2563EB] hover:underline flex items-center gap-1 font-medium text-[11px]"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        <span>OEM Citation</span>
+                      </a>
+                    ) : (
+                      <span className="text-slate-400 text-[11px]">—</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

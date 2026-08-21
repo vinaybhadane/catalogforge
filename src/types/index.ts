@@ -96,6 +96,8 @@ export interface Product {
 
   confidence?: number | null;
   rowConfidence?: number | null;
+  completenessRate?: number | null;
+  completenessScore?: number | null;
   upc?: string | null;
   ean?: string | null;
   gtin?: string | null;

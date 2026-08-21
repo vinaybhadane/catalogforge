@@ -81,6 +81,8 @@ export interface EnrichedProductOutput {
   discontinued?: boolean;
   actualImage?: boolean;
   rowConfidence: number;
+  completenessRate?: number;
+  completenessScore?: number;
   status: 'published' | 'pending_review';
   features: string[];
   attributes: Array<{
@@ -88,6 +90,7 @@ export interface EnrichedProductOutput {
     value: string;
     uom: string | null;
     confidence: number;
+    sourceEvidence?: any;
   }>;
   assets: Array<{
     assetType: string;
@@ -97,6 +100,7 @@ export interface EnrichedProductOutput {
   }>;
   evidence?: any[];
 }
+
 
 export class AiPipelineService {
   /**
@@ -238,7 +242,7 @@ export class AiPipelineService {
       { assetType: 'spec_sheet', fileName: `${mfgPrefix}_${cleanPart}_Specification_Sheet.pdf` },
     ];
 
-    // 8. Calculate Confidence Score
+    // 8. Calculate Confidence Score & Completeness Rate
     let confidence = 0.80;
     if (mfgName && mfgName !== 'Unknown') confidence += 0.08;
     if (brandName) confidence += 0.05;
@@ -247,6 +251,11 @@ export class AiPipelineService {
     confidence = Math.min(0.99, Number(confidence.toFixed(2)));
 
     const status: 'published' | 'pending_review' = confidence >= 0.85 ? 'published' : 'pending_review';
+
+    const populatedValid = attributes.filter(
+      (a) => a.confidence >= 0.60 && a.value && !['n/a', 'unknown', 'null', 'none', 'tbd'].includes(a.value.toLowerCase())
+    ).length;
+    const completenessRate = Math.min(100, Math.round((populatedValid / Math.max(10, attributes.length)) * 100));
 
     return {
       partNumber: raw.part_number,
@@ -278,6 +287,8 @@ export class AiPipelineService {
       discontinued: false,
       actualImage: true,
       rowConfidence: confidence,
+      completenessRate,
+      completenessScore: completenessRate,
       status,
       features: features.slice(0, 20),
       attributes: attributes.slice(0, 50),
@@ -328,6 +339,8 @@ export class AiPipelineService {
       table.columns.add('actual_image', sql.Bit, { nullable: false });
       table.columns.add('unspsc', sql.VarChar(50), { nullable: true });
       table.columns.add('row_confidence', sql.Decimal(5, 2), { nullable: true });
+      table.columns.add('completeness_rate', sql.Decimal(5, 2), { nullable: true });
+      table.columns.add('completeness_score', sql.Decimal(5, 2), { nullable: true });
       table.columns.add('status', sql.VarChar(30), { nullable: false });
 
       items.forEach(({ enriched, rawInputId }) => {
@@ -353,6 +366,8 @@ export class AiPipelineService {
           enriched.actualImage ? 1 : 0,
           enriched.unspsc ? enriched.unspsc.substring(0, 50) : '40151500',
           enriched.rowConfidence,
+          enriched.completenessRate ?? null,
+          enriched.completenessScore ?? enriched.completenessRate ?? null,
           enriched.status,
         );
       });
@@ -372,6 +387,12 @@ export class AiPipelineService {
     if (!pool || !pool.connected) return null;
 
     try {
+      const completenessRate = enriched.completenessRate ?? (
+        enriched.attributes && enriched.attributes.length > 0
+          ? Math.min(100, Math.round((enriched.attributes.filter(a => a.confidence >= 0.60 && a.value).length / Math.max(10, enriched.attributes.length)) * 100))
+          : 0
+      );
+
       const req = pool.request();
       req.input('raw_input_id', sql.BigInt, rawInputId || null);
       req.input('part_number', sql.VarChar(50), enriched.partNumber.substring(0, 50));
@@ -387,19 +408,21 @@ export class AiPipelineService {
       req.input('marketing_description', sql.NVarChar(sql.MAX), enriched.marketingDescription);
       req.input('unspsc', sql.VarChar(50), enriched.unspsc ? enriched.unspsc.substring(0, 50) : null);
       req.input('row_confidence', sql.Decimal(5, 2), enriched.rowConfidence);
+      req.input('completeness_rate', sql.Decimal(5, 2), completenessRate);
+      req.input('completeness_score', sql.Decimal(5, 2), completenessRate);
       req.input('status', sql.VarChar(30), enriched.status);
 
       const res = await req.query(`
         INSERT INTO dbo.product (
           raw_input_id, part_number, manufacturer_name, brand_name, manufacturer_part_number,
           classpath, short_desc, long_desc1, mobile_desc, invoice_desc, retail_desc, marketing_description,
-          unspsc, row_confidence, status
+          unspsc, row_confidence, completeness_rate, completeness_score, status
         )
         OUTPUT INSERTED.product_id
         VALUES (
           @raw_input_id, @part_number, @manufacturer_name, @brand_name, @manufacturer_part_number,
           @classpath, @short_desc, @long_desc1, @mobile_desc, @invoice_desc, @retail_desc, @marketing_description,
-          @unspsc, @row_confidence, @status
+          @unspsc, @row_confidence, @completeness_rate, @completeness_score, @status
         );
       `);
 
@@ -420,21 +443,56 @@ export class AiPipelineService {
           }
         }
 
-        // Persist attributes
+        // Persist attributes and field-level audit log entries
         if (enriched.attributes && enriched.attributes.length > 0) {
           for (let i = 0; i < enriched.attributes.length; i++) {
             const attr = enriched.attributes[i]!;
-            const aReq = pool.request();
-            aReq.input('product_id', sql.BigInt, productId);
-            aReq.input('sequence', sql.Int, i + 1);
-            aReq.input('attribute_label', sql.VarChar(100), attr.label);
-            aReq.input('attribute_value', sql.NVarChar(sql.MAX), attr.value);
-            aReq.input('attribute_uom', sql.VarChar(50), attr.uom || 'N/A');
-            aReq.input('confidence_score', sql.Decimal(5, 2), attr.confidence);
-            await aReq.query(`
-              INSERT INTO dbo.product_attribute (product_id, sequence, attribute_label, attribute_value, attribute_uom, confidence_score)
-              VALUES (@product_id, @sequence, @attribute_label, @attribute_value, @attribute_uom, @confidence_score);
-            `).catch(() => null);
+            const isVerified = (attr.confidence ?? 0.95) >= 0.60 && attr.value && !['n/a', 'unknown', 'null', 'none'].includes(attr.value.toLowerCase());
+
+            if (isVerified) {
+              const aReq = pool.request();
+              aReq.input('product_id', sql.BigInt, productId);
+              aReq.input('sequence', sql.Int, i + 1);
+              aReq.input('attribute_label', sql.VarChar(100), attr.label);
+              aReq.input('attribute_value', sql.NVarChar(sql.MAX), attr.value);
+              aReq.input('attribute_uom', sql.VarChar(50), attr.uom || 'N/A');
+              aReq.input('confidence_score', sql.Decimal(5, 2), attr.confidence);
+              await aReq.query(`
+                INSERT INTO dbo.product_attribute (product_id, sequence, attribute_label, attribute_value, attribute_uom, confidence_score)
+                VALUES (@product_id, @sequence, @attribute_label, @attribute_value, @attribute_uom, @confidence_score);
+              `).catch(() => null);
+
+              // Field-level audit trail: RETAINED
+              const auditReq = pool.request();
+              auditReq.input('product_id', sql.BigInt, productId);
+              auditReq.input('field_name', sql.VarChar(100), `ATTRIBUTE_LABEL ${i + 1} (${attr.label})`);
+              auditReq.input('generated_value', sql.NVarChar(sql.MAX), attr.value);
+              auditReq.input('confidence_score', sql.Decimal(5, 2), attr.confidence);
+              auditReq.input('reviewer', sql.VarChar(255), 'SYSTEM_AI_ENGINE');
+              auditReq.input('action', sql.VarChar(50), 'FIELD_RETAINED');
+              auditReq.input('final_value', sql.NVarChar(sql.MAX), attr.value);
+              auditReq.input('reason', sql.NVarChar(1000), 'Confidence >= 60% with verified OEM or authorized distributor provenance');
+              await auditReq.query(`
+                INSERT INTO dbo.audit_log (product_id, field_name, generated_value, confidence_score, reviewer, action, final_value, reason, timestamp)
+                VALUES (@product_id, @field_name, @generated_value, @confidence_score, @reviewer, @action, @final_value, @reason, SYSUTCDATETIME());
+              `).catch((err) => console.warn('[AiPipeline] Audit log insert warning:', err.message));
+            } else {
+              // Field-level audit trail: SUPPRESSED ZERO HALLUCINATION
+              const auditReq = pool.request();
+              auditReq.input('product_id', sql.BigInt, productId);
+              auditReq.input('field_name', sql.VarChar(100), `ATTRIBUTE_LABEL ${i + 1} (${attr.label || 'Unverified Attribute'})`);
+              auditReq.input('generated_value', sql.NVarChar(sql.MAX), attr.value || 'N/A');
+              auditReq.input('confidence_score', sql.Decimal(5, 2), attr.confidence || 0);
+              auditReq.input('reviewer', sql.VarChar(255), 'SYSTEM_ZERO_HALLUCINATION_POLICY');
+              auditReq.input('action', sql.VarChar(50), 'FIELD_SUPPRESSED_ZERO_HALLUCINATION');
+              auditReq.input('final_value', sql.NVarChar(sql.MAX), '');
+              auditReq.input('reason', sql.NVarChar(1000), 'Confidence < 60% or unverified provenance - strictly suppressed as blank per Zero-Hallucination policy');
+              await auditReq.query(`
+                INSERT INTO dbo.audit_log (product_id, field_name, generated_value, confidence_score, reviewer, action, final_value, reason, timestamp)
+                VALUES (@product_id, @field_name, @generated_value, @confidence_score, @reviewer, @action, @final_value, @reason, SYSUTCDATETIME());
+              `).catch((err) => console.warn('[AiPipeline] Audit log insert warning:', err.message));
+            }
+
           }
         }
 
@@ -474,6 +532,7 @@ export class AiPipelineService {
       console.error('[AiPipeline] Failed to persist product:', err);
       return null;
     }
+
   }
 }
 

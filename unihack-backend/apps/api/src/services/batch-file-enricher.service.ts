@@ -15,7 +15,8 @@ import { AssetType } from '@unihack/contracts';
 import { fileParser, ParsedRawRow } from './file-parser.service';
 import { geminiSearchService, ExtractedProductIntelligence, WarrantyDetails } from './gemini-search.service';
 import { DELIVERY_HEADERS } from './delivery-exporter.service';
-import { sanitizeText, resolveBrandAndManufacturer, resolveAuthoritativeClasspath } from '../utils/text-sanitizer';
+import { resolveBrandAndManufacturer, resolveAuthoritativeClasspath, sanitizeText } from '../utils/text-sanitizer';
+import { imageExtractorService } from './image-extractor.service';
 
 export interface EnrichedBatchProduct {
   rowIndex: number;
@@ -38,6 +39,7 @@ export interface EnrichedBatchProduct {
     value: string;
     uom: string | null;
     confidence: number;
+    sourceEvidence?: any;
   }>;
   images: Array<{
     url: string;
@@ -67,7 +69,17 @@ export interface EnrichedBatchProduct {
   deliveryRow: Record<string, string>;
   nonEmptyColumnsCount: number;
   confidenceScore: number;
+  completenessRate: number;
+  expectedAttributesCount: number;
+  populatedAttributesCount: number;
+  auditTrails?: Array<{
+    fieldName: string;
+    status: 'retained' | 'blank_zero_hallucination';
+    confidence: number;
+    reason: string;
+  }>;
 }
+
 
 export interface BatchEnrichmentResponse {
   success: boolean;
@@ -116,6 +128,21 @@ export class BatchFileEnricherService {
 
     if (!rawRows || rawRows.length === 0) {
       throw new Error(`The uploaded file '${fileName}' contains no readable data rows.`);
+    }
+
+    return this.processRawRows(rawRows, fileName, batchLimit);
+  }
+
+  /**
+   * Processes pre-parsed canonical rows (from spreadsheet, PDF, or Multi-Modal OCR)
+   */
+  async processRawRows(
+    rawRows: ParsedRawRow[],
+    fileName: string,
+    batchLimit: number = this.DEFAULT_BATCH_LIMIT,
+  ): Promise<BatchEnrichmentResponse> {
+    if (!rawRows || rawRows.length === 0) {
+      throw new Error(`No readable data rows found for '${fileName}'.`);
     }
 
     // 2. Clean and deduplicate items
@@ -283,22 +310,27 @@ export class BatchFileEnricherService {
     );
 
     const shortDesc = sanitizeText(intel.officialTitle || raw.part_desc || `${mfgName} ${brandName} ${partNum}`).substring(0, 150);
-    const longDesc = sanitizeText(intel.officialDescription || `${mfgName} ${partNum} professional industrial equipment.`);
+    const longDesc = sanitizeText(intel.officialDescription || `${mfgName} ${partNum} industrial grade specification component.`);
     const mobileDesc = sanitizeText(`${mfgName} ${brandName}, ${partNum}`).substring(0, 80);
     const invoiceDesc = sanitizeText(`${brandName} ${partNum}`).toUpperCase().substring(0, 40);
     const retailDesc = sanitizeText(`${brandName} ${shortDesc}`);
-    const marketingDescription = 'Engineered for heavy-duty industrial and professional use. Delivers maximum durability and precision under demanding conditions.';
+    const marketingDescription = sanitizeText(intel.officialDescription || '');
 
-    // Images: only genuine scraped photographic images (never PDFs)
-    const imageAssets = (intel.assets || []).filter((a) => a.assetType === 'image');
-    const images = imageAssets
-      .map((img, i) => ({
-        url: img.previewUrl || img.sourceUrl || '',
-        alt: img.fileName || `${partNum} Product Photo`,
-        isPrimary: i === 0,
-        shortInfo: img.shortInfo || 'Verified OEM Product Photo',
-      }))
-      .filter((img) => Boolean(img.url));
+    // Images: only genuine scraped photographic images (never PDFs or non-product media)
+    const rawImages = (intel.assets || []).filter((a) => a.assetType === 'image').map((a) => a.previewUrl || a.sourceUrl || '');
+    const imageExtraction = imageExtractorService.validateAndRankImages(rawImages, '', {
+      partNumber: partNum,
+      manufacturer: mfgName,
+      brand: brandName,
+      title: shortDesc,
+      category: classpath,
+    });
+    const images = imageExtraction.allValidImages.map((img, i) => ({
+      url: img.url,
+      alt: `${partNum} ${i === 0 ? 'Primary Photo' : `Alternate View ${i}`}`,
+      isPrimary: i === 0,
+      shortInfo: i === 0 ? 'Verified OEM Product Photo' : `Verified Alternate Perspective ${i}`,
+    }));
 
     // Documents: only real verified technical PDFs (datasheets, SDS, manuals)
     const docAssets = (intel.assets || []).filter((a) => a.assetType !== 'image');
@@ -313,8 +345,8 @@ export class BatchFileEnricherService {
 
     // Warranty
     const warrantyInfo: WarrantyDetails = intel.warrantyInfo || {
-      term: '1-Year Limited Manufacturer Warranty',
-      shortInfo: `Standard manufacturer warranty coverage under normal industrial usage.`,
+      term: '',
+      shortInfo: '',
       verifiedUrl: null,
       isVerified: false,
     };
@@ -369,30 +401,36 @@ export class BatchFileEnricherService {
     row['RETAIL_DESC'] = retailDesc;
     row['MARKETING_DESCRIPTION'] = marketingDescription;
 
-    // 4. Features (1 to 20)
-    const feats = intel.features && intel.features.length > 0
-      ? intel.features
-      : [
-          `Precision engineered to ${mfgName} industrial standards`,
-          'Heavy-duty commercial grade durability',
-          'Standard mounting and interface compatibility',
-        ];
+    // 4. Features (1 to 20) - Strict extraction (only real features)
+    const feats = (intel.features || []).filter((f) => Boolean(f && f.trim().length > 0));
     for (let i = 1; i <= 20; i++) {
       const feat = feats[i - 1];
       row[`ITEM_FEATURES_${i}`] = feat ? sanitizeText(feat) : '';
     }
 
-    // 5. Attributes (1 to 50)
-    const attrs = intel.attributes && intel.attributes.length > 0
-      ? intel.attributes
-      : [];
+    // 5. Attributes (1 to 50) - STRICT ZERO HALLUCINATION (>= 60% confidence only)
+    const rawAttrs = intel.attributes || [];
+    const validAttrs = rawAttrs.filter((a) => {
+      const conf = a.confidence ?? 0.95;
+      const val = a.value ? String(a.value).trim() : '';
+      const isPlaceholder = ['n/a', 'unknown', 'null', 'none', 'tbd'].includes(val.toLowerCase());
+      return conf >= 0.60 && val.length > 0 && !isPlaceholder;
+    });
+
+    const auditTrails: NonNullable<EnrichedBatchProduct['auditTrails']> = [];
 
     for (let i = 1; i <= 50; i++) {
-      const attr = attrs[i - 1];
+      const attr = validAttrs[i - 1];
       if (attr) {
         row[`ATTRIBUTE_LABEL ${i}`] = sanitizeText(attr.label);
         row[`ATTRIBUTE_VALUE ${i}`] = sanitizeText(attr.value);
         row[`ATTRIBUTE_UOM ${i}`] = sanitizeText(attr.uom || '');
+        auditTrails.push({
+          fieldName: `ATTRIBUTE_LABEL ${i}`,
+          status: 'retained',
+          confidence: attr.confidence || 0.95,
+          reason: 'Verified Tier-1 OEM or authorized distributor provenance (confidence >= 60%)',
+        });
       } else {
         row[`ATTRIBUTE_LABEL ${i}`] = '';
         row[`ATTRIBUTE_VALUE ${i}`] = '';
@@ -400,23 +438,28 @@ export class BatchFileEnricherService {
       }
     }
 
+    // Dynamic SKU Completeness Rate: (Populated Valid Attributes / Total Expected Category Attributes) * 100
+    const expectedCategoryCount = Math.max(10, rawAttrs.length);
+    const populatedValidCount = validAttrs.length;
+    const completenessRate = Math.min(100, Math.round((populatedValidCount / expectedCategoryCount) * 100));
+
     // 6. Pricing & Codes
     row['UPC'] = '';
     row['EAN'] = '';
     row['GTIN'] = '';
     row['UNSPSC'] = '40151500';
-    row['Warranty'] = sanitizeText(warrantyInfo.term || '1-Year Limited Manufacturer Warranty');
+    row['Warranty'] = sanitizeText(warrantyInfo.term || '');
     row['List Price'] = '';
     row['Selling Qty'] = '1';
     row['Selling UOM'] = 'EA';
     row['Standard Packaging Information'] = '';
 
-    // 7. Assets & Images
-    if (images[0]) row['Product Image'] = images[0].url;
-    if (images[1]) row['Alternate Image 1'] = images[1].url;
-    if (images[2]) row['Alternate Image 2'] = images[2].url;
-    if (images[3]) row['Alternate Image 3'] = images[3].url;
-    if (images[4]) row['Alternate Image 4'] = images[4].url;
+    // 7. Assets & Images - Strict Schema Output Mapping
+    row['Product Image'] = images[0]?.url || '';
+    row['Alternate Image 1'] = images[1]?.url || '';
+    row['Alternate Image 2'] = images[2]?.url || '';
+    row['Alternate Image 3'] = images[3]?.url || '';
+    row['Alternate Image 4'] = images[4]?.url || '';
 
     if (warrantyInfo.verifiedUrl) {
       row['Warranty Information'] = warrantyInfo.verifiedUrl;
@@ -462,11 +505,12 @@ export class BatchFileEnricherService {
       retailDesc,
       marketingDescription,
       features: feats,
-      attributes: attrs.map((a) => ({
+      attributes: validAttrs.map((a) => ({
         label: a.label,
         value: a.value,
         uom: a.uom,
         confidence: a.confidence || 0.95,
+        sourceEvidence: a.sourceEvidence,
       })),
       images,
       warrantyInfo,
@@ -475,11 +519,16 @@ export class BatchFileEnricherService {
       deliveryRow: row,
       nonEmptyColumnsCount: nonEmptyCount,
       confidenceScore: 0.98,
+      completenessRate,
+      expectedAttributesCount: expectedCategoryCount,
+      populatedAttributesCount: populatedValidCount,
+      auditTrails,
     };
   }
 
   /**
    * Deterministic fallback when AI rate limit is hit or network is offline
+   * Never drops the SKU row; preserves schema alignment with clean empty string cells for unverified attributes
    */
   private buildFallbackProduct(
     index: number,
@@ -521,8 +570,8 @@ export class BatchFileEnricherService {
     const retailDesc = sanitizeText(`${brandName} ${shortDesc}`);
 
     const warrantyInfo: WarrantyDetails = {
-      term: '1-Year Standard Manufacturer Warranty',
-      shortInfo: `Standard manufacturer warranty applies.`,
+      term: '',
+      shortInfo: '',
       verifiedUrl: null,
       isVerified: false,
     };
@@ -554,7 +603,7 @@ export class BatchFileEnricherService {
     row['LONG_DESC1'] = longDesc;
     row['RETAIL_DESC'] = retailDesc;
     row['UNSPSC'] = '40151500';
-    row['Warranty'] = warrantyInfo.term;
+    row['Warranty'] = '';
     row['Selling Qty'] = '1';
     row['Selling UOM'] = 'EA';
     row['Country Of Origin'] = 'United States';
@@ -580,12 +629,8 @@ export class BatchFileEnricherService {
       mobileDesc,
       invoiceDesc,
       retailDesc,
-      marketingDescription: 'Engineered for industrial performance and durability.',
-      features: [
-        `Precision engineered to ${mfgName} standards`,
-        'Heavy-duty industrial construction',
-        'Standard commercial mounting and interface',
-      ],
+      marketingDescription: '',
+      features: [],
       attributes: [],
       images: [],
       documents: [],
@@ -594,8 +639,20 @@ export class BatchFileEnricherService {
       deliveryRow: row,
       nonEmptyColumnsCount: nonEmptyCount,
       confidenceScore: 0.88,
+      completenessRate: 0,
+      expectedAttributesCount: 10,
+      populatedAttributesCount: 0,
+      auditTrails: [
+        {
+          fieldName: 'ATTRIBUTES_ALL',
+          status: 'blank_zero_hallucination',
+          confidence: 0,
+          reason: 'Offline/Rate-limited fallback: All 50 attribute columns strictly preserved as blank to prevent hallucination',
+        },
+      ],
     };
   }
+
 }
 
 export const batchFileEnricherService = new BatchFileEnricherService();

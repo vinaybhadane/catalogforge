@@ -33,6 +33,9 @@ export interface ProductAttribute {
   attributeUom: string | null;
   lovMatchConfidence: number | null;
   confidenceScore: number | null;
+  confidence?: number | null;
+  provenanceTier?: string | null;
+  isVerifiedLive?: boolean | null;
   validationFlags: string[];
   sourceEvidenceId: number | string | null;
   source?: EvidenceReference | null;
@@ -117,9 +120,13 @@ export interface Product {
   discontinued: boolean;
   actualImage: boolean;
 
+  confidence?: number | null;
   rowConfidence: number | null;
+  completenessRate?: number | null;
+  completenessScore?: number | null;
   status: ProductStatus;
   version: number;
   createdAt: string; // ISO-8601
   updatedAt: string; // ISO-8601
 }
+

@@ -7,6 +7,7 @@
 
 import { AssetType, Product } from '@unihack/contracts';
 import { env } from '../config/env';
+import { imageExtractorService } from './image-extractor.service';
 import { deliveryExporterService, DELIVERY_HEADERS } from './delivery-exporter.service';
 import { aiPipelineService, EnrichedProductOutput } from './ai-pipeline.service';
 
@@ -151,32 +152,10 @@ export class UrlExtractorService {
         fetchedDescription = metaDescMatch[1].trim();
       }
 
-      // OG Images & High-Res Product Image Tags
-      const ogImgMatches = [
-        ...rawHtml.matchAll(/<meta\s+property=["']og:image(?::secure_url)?["']\s+content=["']([^"']+)["']/gi),
-        ...rawHtml.matchAll(/<meta\s+name=["']twitter:image["']\s+content=["']([^"']+)["']/gi),
-      ];
-      for (const m of ogImgMatches) {
-        if (m[1]) ogImages.push(this.resolveAbsoluteUrl(m[1].trim(), cleanUrl));
-      }
-
-      // Scan <img> tags for product photos
-      const imgTagMatches = [...rawHtml.matchAll(/<img[^>]+(?:src|data-src|data-original)=["']([^"']+)["'][^>]*>/gi)];
-      for (const m of imgTagMatches) {
-        const src = m[1]?.trim();
-        if (
-          src &&
-          !src.includes('.svg') &&
-          !src.includes('logo') &&
-          !src.includes('icon') &&
-          !src.includes('badge') &&
-          !src.includes('pixel') &&
-          !src.includes('avatar') &&
-          !src.includes('footer') &&
-          (src.includes('.jpg') || src.includes('.jpeg') || src.includes('.png') || src.includes('.webp') || src.includes('product') || src.includes('image'))
-        ) {
-          ogImages.push(this.resolveAbsoluteUrl(src, cleanUrl));
-        }
+      // Extract hardened, isolated product images using ImageExtractorService
+      const imageResult = imageExtractorService.extractProductImages(rawHtml, cleanUrl);
+      if (imageResult.allValidImages.length > 0) {
+        ogImages.push(...imageResult.allValidImages.map((img) => img.url));
       }
 
       // Scan PDF / Spec Sheet document links
@@ -424,29 +403,26 @@ Return ONLY a valid JSON object matching this schema:
       }
     }
 
-    // Assemble verified images
-    const images: ExtractedUrlProduct['images'] = [];
-    if (Array.isArray(extractedJson.images) && extractedJson.images.length > 0) {
-      extractedJson.images.forEach((img: any, idx: number) => {
-        const u = typeof img === 'string' ? img : img.url;
-        if (u && typeof u === 'string' && u.startsWith('http')) {
-          images.push({
-            url: u,
-            alt: typeof img === 'object' ? img.alt : `${mfgName} ${partNum} Photo ${idx + 1}`,
-            isPrimary: idx === 0,
-          });
-        }
-      });
-    }
-    if (images.length === 0 && uniqueImages.length > 0) {
-      uniqueImages.slice(0, 5).forEach((u, idx) => {
-        images.push({
-          url: u,
-          alt: `${mfgName} ${partNum} Photo ${idx + 1}`,
-          isPrimary: idx === 0,
-        });
-      });
-    }
+    // Assemble verified images using hardened image extractor ranking
+    const imageExtraction = imageExtractorService.validateAndRankImages(
+      Array.isArray(extractedJson.images) && extractedJson.images.length > 0
+        ? extractedJson.images
+        : uniqueImages,
+      cleanUrl,
+      {
+        partNumber: partNum,
+        manufacturer: mfgName,
+        brand: brandName || undefined,
+        title,
+        category: classpath,
+      }
+    );
+
+    const images: ExtractedUrlProduct['images'] = imageExtraction.allValidImages.map((img, idx) => ({
+      url: img.url,
+      alt: img.alt || `${mfgName} ${partNum} ${idx === 0 ? 'Primary Photo' : `Alternate View ${idx}`}`,
+      isPrimary: idx === 0,
+    }));
 
     // Assemble verified documents (datasheets, SDS, warranty)
     const documents: ExtractedUrlProduct['documents'] = [];
