@@ -186,10 +186,10 @@ export default function UploadPage() {
     uploadState === "rejected";
 
   const TABS = [
-    { id: "ai-search" as ExtendedUploadMode, label: "AI Product Lookup", sublabel: "Gemini Sourcing", icon: Sparkles },
-    { id: "image-ocr" as ExtendedUploadMode, label: "Product Image / Label OCR", sublabel: "Nameplate / Vision", icon: Camera },
-    { id: "url" as ExtendedUploadMode, label: "Manufacturer URL", sublabel: "Datasheet / Product link", icon: Globe },
-    { id: "file" as ExtendedUploadMode, label: "Manufacturer PDF & File Upload", sublabel: "CSV / XLSX / PDF", icon: UploadCloud },
+    { id: "ai-search" as ExtendedUploadMode, label: "AI Product Lookup", shortLabel: "AI Lookup", sublabel: "Gemini Sourcing", icon: Sparkles },
+    { id: "image-ocr" as ExtendedUploadMode, label: "Product Image / Label OCR", shortLabel: "Image / OCR", sublabel: "Nameplate / Vision", icon: Camera },
+    { id: "url" as ExtendedUploadMode, label: "Manufacturer URL", shortLabel: "OEM URL", sublabel: "Datasheet / Product link", icon: Globe },
+    { id: "file" as ExtendedUploadMode, label: "Manufacturer PDF & File Upload", shortLabel: "PDF & Batch", sublabel: "CSV / XLSX / PDF", icon: UploadCloud },
   ];
 
   const handleRunAiLookup = async (e?: React.FormEvent) => {
@@ -681,8 +681,8 @@ export default function UploadPage() {
         </div>
       </div>
 
-      {/* ── Upload Mode Tabs ──────────────────────────────────────────── */}
-      <div className="bg-white border border-[#E2E8F0] rounded-2xl p-1 sm:p-1.5 flex gap-1 sm:gap-1.5 overflow-x-auto scrollbar-none shadow-sm">
+      {/* ── Upload Mode Tabs (Responsive 2x2 Grid on Mobile / Flex Row on Desktop) ── */}
+      <div className="bg-white border border-[#E2E8F0] rounded-2xl p-1.5 sm:p-2 grid grid-cols-2 sm:flex sm:overflow-x-auto gap-1.5 sm:gap-2 shadow-sm">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTabMode === tab.id;
@@ -699,16 +699,17 @@ export default function UploadPage() {
               }}
               disabled={isProcessing}
               className={cn(
-                "flex-1 min-w-[95px] sm:min-w-[120px] flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all whitespace-nowrap",
+                "flex items-center justify-center sm:flex-1 gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2.5 sm:py-2.5 rounded-xl text-xs font-bold transition-all text-center",
                 isActive
-                  ? "bg-[#2563EB] text-white shadow-sm"
-                  : "text-[#475569] hover:bg-[#F8FAFC] hover:text-[#000000]",
+                  ? "bg-[#2563EB] text-white shadow-sm ring-1 ring-[#2563EB]"
+                  : "bg-slate-50/80 sm:bg-transparent text-[#475569] hover:bg-[#F1F5F9] hover:text-[#000000] border border-slate-200/60 sm:border-transparent",
                 isProcessing && "opacity-50 cursor-not-allowed"
               )}
               suppressHydrationWarning
             >
-              <Icon className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0", isActive ? "text-white" : "text-[#94A3B8]")} />
-              <span>{tab.label}</span>
+              <Icon className={cn("w-4 h-4 shrink-0", isActive ? "text-white" : "text-[#2563EB]")} />
+              <span className="sm:hidden truncate">{tab.shortLabel}</span>
+              <span className="hidden sm:inline whitespace-nowrap">{tab.label}</span>
             </button>
           );
         })}
