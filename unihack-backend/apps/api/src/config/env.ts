@@ -49,11 +49,15 @@ const envSchema = z.object({
   GEMINI_API_KEY: z.string().optional(),
   GEMINI_MODEL: z.string().default('gemini-2.5-flash'),
 
-  // Brevo (Sendinblue) Email & Security Service
+  // Resend Transactional Email & Security Service
+  RESEND_API_KEY: z.string().optional(),
+  RESEND_SENDER_EMAIL: z.string().default('CatalogForge Security <onboarding@resend.dev>'),
+  APP_BASE_URL: z.string().default('http://localhost:3000'),
+
+  // Legacy Brevo (Optional Fallback)
   BREVO_API_KEY: z.string().optional(),
   BREVO_SENDER_EMAIL: z.string().default('vinaybhadane06@gmail.com'),
   BREVO_SENDER_NAME: z.string().default('CatalogForge Security'),
-  APP_BASE_URL: z.string().default('http://localhost:3000'),
 
   // Dev Overrides
   ENABLE_MOCK_AUTH_IN_DEV: z.preprocess((val) => val === 'true' || val === true, z.boolean()).default(false),

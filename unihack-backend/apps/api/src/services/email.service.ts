@@ -1,29 +1,11 @@
 /**
- * Brevo (Sendinblue) Email & OTP Security Service
- * Handles transactional emails, 2FA OTP codes, signup verifications, and notifications.
+ * Resend Email & OTP Security Service
+ * Handles transactional emails, 2FA OTP codes, signup verifications, and batch notifications.
+ * Powered by Resend (https://resend.com)
  */
 
+import { Resend } from 'resend';
 import { env } from '../config/env';
-
-interface BrevoEmailRecipient {
-  email: string;
-  name?: string;
-}
-
-interface BrevoSendPayload {
-  sender: {
-    name: string;
-    email: string;
-  };
-  to: BrevoEmailRecipient[];
-  replyTo?: {
-    name: string;
-    email: string;
-  };
-  subject: string;
-  htmlContent: string;
-  textContent?: string;
-}
 
 export type OtpPurpose = 'signup_verification' | 'login_2fa' | 'password_reset';
 
@@ -39,28 +21,29 @@ class EmailService {
   private otpStore = new Map<string, OtpRecord>();
 
   /**
-   * Retrieves the configured Brevo API key dynamically from environment
+   * Retrieves the configured Resend API key dynamically from environment
    */
   private getApiKey(): string {
-    return (process.env.BREVO_API_KEY || (env as any).BREVO_API_KEY || '').trim();
+    return (
+      process.env.RESEND_API_KEY ||
+      (env as any).RESEND_API_KEY ||
+      ''
+    ).trim();
   }
 
   /**
-   * Retrieves the configured Brevo sender email
+   * Retrieves the configured Resend sender address
    */
-  private getSenderEmail(): string {
-    return (process.env.BREVO_SENDER_EMAIL || (env as any).BREVO_SENDER_EMAIL || 'vinaybhadane06@gmail.com').trim();
+  private getSender(): string {
+    return (
+      process.env.RESEND_SENDER_EMAIL ||
+      (env as any).RESEND_SENDER_EMAIL ||
+      'CatalogForge Security <onboarding@resend.dev>'
+    ).trim();
   }
 
   /**
-   * Retrieves the configured Brevo sender name
-   */
-  private getSenderName(): string {
-    return (process.env.BREVO_SENDER_NAME || (env as any).BREVO_SENDER_NAME || 'CatalogForge Security').trim();
-  }
-
-  /**
-   * Generates a 6-digit numeric OTP code
+   * Generates a secure 6-digit numeric OTP code
    */
   generateOtp(): string {
     return Math.floor(100000 + Math.random() * 900000).toString();
@@ -103,7 +86,7 @@ class EmailService {
 
     record.attempts += 1;
 
-    // Check OTP match (allow master test code 999888 in local development if needed)
+    // Check OTP match (allow master test code 999888 in non-production if needed)
     const cleanInput = inputOtp.trim();
     if (record.otp === cleanInput || (process.env.NODE_ENV !== 'production' && cleanInput === '999888')) {
       record.verified = true;
@@ -115,7 +98,7 @@ class EmailService {
   }
 
   /**
-   * Sends transactional email via Brevo API v3 using the single fixed API key
+   * Sends transactional email via Resend API
    */
   async sendEmail(
     toEmail: string,
@@ -125,121 +108,94 @@ class EmailService {
     textContent?: string
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     const apiKey = this.getApiKey();
-    const senderEmail = this.getSenderEmail();
-    const senderName = this.getSenderName();
+    const sender = this.getSender();
 
     if (!apiKey) {
       console.warn(
-        `[Brevo Email Service] No BREVO_API_KEY configured in unihack-backend/.env. Email to ${toEmail} skipped. Please define BREVO_API_KEY to send live emails.`
+        `[Resend Email Service] No RESEND_API_KEY configured. Email to ${toEmail} skipped.`
       );
       return {
         success: false,
-        error: 'BREVO_API_KEY is not configured in backend environment.',
+        error: 'RESEND_API_KEY is not configured in backend environment.',
       };
     }
 
-    const payload: BrevoSendPayload = {
-      sender: {
-        name: senderName,
-        email: senderEmail,
-      },
-      to: [
-        {
-          email: toEmail.trim(),
-          name: toName || toEmail.split('@')[0],
-        },
-      ],
-      replyTo: {
-        name: 'CatalogForge Support',
-        email: senderEmail,
-      },
-      subject,
-      htmlContent,
-      textContent: textContent || htmlContent.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(),
-    };
-
     try {
-      const res = await fetch('https://api.brevo.com/v3/smtp/email', {
-        method: 'POST',
-        headers: {
-          'api-key': apiKey,
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify(payload),
+      const resend = new Resend(apiKey);
+      const { data, error } = await resend.emails.send({
+        from: sender,
+        to: [toEmail.trim()],
+        subject,
+        html: htmlContent,
+        text: textContent || htmlContent.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(),
       });
 
-      const data = (await res.json()) as any;
-
-      if (!res.ok) {
-        const errorMsg = data?.message || res.statusText || `HTTP ${res.status}`;
-        console.warn(`[Brevo Email Service] API notice for ${toEmail} [HTTP ${res.status}]:`, errorMsg);
-
-        // Help diagnose Brevo unauthorized IP or key issues
-        if (res.status === 401 || String(errorMsg).toLowerCase().includes('unauthorized')) {
-          console.warn(
-            `[Brevo Email Service] Brevo reported unauthorized API key or IP restriction. Please verify your BREVO_API_KEY in .env and check "Authorized IPs" in Brevo Dashboard (SMTP & API > API Keys).`
-          );
-        }
-
+      if (error) {
+        console.warn(`[Resend Email Service] Error delivering to ${toEmail}:`, error.message);
         return {
           success: false,
-          error: errorMsg,
+          error: error.message,
         };
       }
 
-      console.log(`[Brevo Email Service] Email successfully sent to ${toEmail} (MessageId: ${data?.messageId})`);
+      console.log(`[Resend Email Service] Successfully delivered email to ${toEmail} (ID: ${data?.id})`);
       return {
         success: true,
-        messageId: data?.messageId,
+        messageId: data?.id,
       };
     } catch (err: any) {
-      console.warn(`[Brevo Email Service] Network communication error:`, err?.message);
+      console.error(`[Resend Email Service] Exception sending to ${toEmail}:`, err.message);
       return {
         success: false,
-        error: err?.message || 'Network error communicating with Brevo',
+        error: err?.message || 'Failed to dispatch email via Resend API',
       };
     }
   }
 
   /**
-   * Sends 6-digit OTP verification email for Sign Up or 2FA Login
+   * Generates and emails a 6-digit OTP code using Resend
    */
   async sendOtpEmail(
     email: string,
-    purpose: OtpPurpose,
+    purpose: OtpPurpose = 'login_2fa',
     recipientName?: string
   ): Promise<{ success: boolean; otp: string; emailSent: boolean; error?: string }> {
     const otp = this.generateOtp();
     this.storeOtp(email, purpose, otp);
 
+    const subjectMap: Record<OtpPurpose, string> = {
+      signup_verification: `[CatalogForge] Verify Your Account — Security Code: ${otp}`,
+      login_2fa: `[CatalogForge] 2FA Login Security Code: ${otp}`,
+      password_reset: `[CatalogForge] Password Reset Code: ${otp}`,
+    };
+
     const titleMap: Record<OtpPurpose, string> = {
       signup_verification: 'Verify Your Email Address',
-      login_2fa: 'Two-Factor Authentication Code',
-      password_reset: 'Reset Your Account Password',
+      login_2fa: 'Two-Factor Authentication Required',
+      password_reset: 'Reset Your Password',
     };
 
     const subtitleMap: Record<OtpPurpose, string> = {
-      signup_verification: 'Thank you for registering with CatalogForge. Please enter this verification code to activate your account and access your enterprise catalog workspace.',
-      login_2fa: 'A sign-in attempt was initiated for your CatalogForge account. Enter the 6-digit security code below to complete authentication.',
-      password_reset: 'A password change request was received for your CatalogForge account. Enter the code below to reset your password.',
+      signup_verification: `Hello ${recipientName || 'there'}, use the 6-digit security code below to activate your CatalogForge account.`,
+      login_2fa: `A login request was initiated for your CatalogForge workspace account (${email}). Enter the code below to authorize access.`,
+      password_reset: `We received a password reset request for your account (${email}). Use the code below to proceed.`,
     };
 
-    const subject = `Your CatalogForge Verification Code: ${otp}`;
+    const subject = subjectMap[purpose];
 
     const htmlContent = `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${subject}</title>
 </head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f1f5f9; margin: 0; padding: 30px 15px; color: #0f172a;">
-  <table width="100%" border="0" cellspacing="0" cellpadding="0">
+<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 40px 16px;">
     <tr>
       <td align="center">
-        <table width="100%" max-width="520" style="max-width: 520px; background-color: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);" cellpadding="0" cellspacing="0">
+        <table width="100%" style="max-width: 520px; background-color: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);" cellpadding="0" cellspacing="0">
           <!-- Header Bar -->
           <tr>
             <td style="background-color: #0b0f17; padding: 24px 30px; text-align: center; border-bottom: 2px solid #2563eb;">
@@ -283,8 +239,8 @@ class EmailService {
           <!-- Footer -->
           <tr>
             <td style="background-color: #f8fafc; padding: 18px 30px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8;">
-              Sent by CatalogForge Security Operations • Brevo SMTP Engine<br>
-              Authorized Sender: vinaybhadane06@gmail.com
+              Sent by CatalogForge Security Operations • Resend Cloud Infrastructure<br>
+              Authorized Sender: onboarding@resend.dev
             </td>
           </tr>
         </table>
@@ -324,7 +280,7 @@ class EmailService {
       filledColumns: number;
     }>,
     recipientName?: string,
-    appBaseUrl?: string,
+    appBaseUrl?: string
   ): Promise<{ success: boolean; error?: string }> {
     const baseUrl = (appBaseUrl || process.env.APP_BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
     const reviewUrl = `${baseUrl}/upload?batchId=${batchId}`;
@@ -344,107 +300,100 @@ class EmailService {
           <td style="padding: 10px 8px; text-align: center; font-weight: 700; color: #2563eb;">${p.imageCount} imgs / ${p.docCount} pdfs</td>
           <td style="padding: 10px 8px; text-align: right; font-weight: 700; color: #059669;">${p.filledColumns}/252 cols</td>
         </tr>
-      `,
+      `
       )
       .join('');
 
     const htmlContent = `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
   <title>${subject}</title>
 </head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f1f5f9; margin: 0; padding: 30px 15px; color: #0f172a;">
-  <table width="100%" border="0" cellspacing="0" cellpadding="0">
+<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 40px 16px;">
     <tr>
       <td align="center">
-        <table width="100%" style="max-width: 600px; background-color: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.06);" cellpadding="0" cellspacing="0">
-          
-          <!-- Header -->
+        <table width="100%" style="max-width: 600px; background-color: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);" cellpadding="0" cellspacing="0">
+          <!-- Header Bar -->
           <tr>
-            <td style="background-color: #0b0f17; padding: 24px 30px; text-align: center; border-bottom: 3px solid #2563eb;">
-              <span style="font-size: 24px; font-weight: 900; color: #ffffff; letter-spacing: -0.5px;">
+            <td style="background-color: #0b0f17; padding: 26px 32px; text-align: left; border-bottom: 2px solid #2563eb;">
+              <span style="font-size: 22px; font-weight: 900; color: #ffffff; letter-spacing: -0.5px;">
                 <span style="color: #38bdf8;">Catalog</span><span style="color: #ffffff;">Forge</span>
               </span>
-              <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 1.5px; margin-top: 4px;">
-                Live Product Intelligence Engine
+              <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px;">
+                Catalog Intelligence Notification
               </div>
             </td>
           </tr>
 
-          <!-- Content -->
+          <!-- Main Body -->
           <tr>
-            <td style="padding: 32px 30px;">
-              <div style="display: inline-block; background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 800; color: #065f46; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">
-                ✓ Process Completed Successfully
+            <td style="padding: 32px 32px 24px 32px;">
+              <div style="display: inline-block; background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 4px 12px; font-size: 11px; font-weight: 800; color: #065f46; text-transform: uppercase; margin-bottom: 16px;">
+                ✓ Batch Enrichment Complete
               </div>
-              <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0; margin-bottom: 8px;">
-                Your process has been done — you can now check your dataset!
-              </h2>
-              <p style="font-size: 13px; line-height: 1.6; color: #475569; margin-top: 0; margin-bottom: 22px;">
-                Hello${recipientName ? ` <strong>${recipientName}</strong>` : ''}, your dataset processing job for <strong>"${fileName}"</strong> (${totalRows} total rows) has completed. All authentic OEM product photos, technical PDF datasheets, warranty terms, and complete 252-column schemas are processed and ready. You can now check and inspect your catalog.
+
+              <h1 style="font-size: 20px; font-weight: 900; color: #0f172a; margin: 0 0 10px 0; letter-spacing: -0.5px;">
+                Your process has been done!
+              </h1>
+              <p style="font-size: 14px; line-height: 1.6; color: #475569; margin: 0 0 24px 0;">
+                Hello ${recipientName || 'there'}, your batch file <strong>${fileName}</strong> has completed 8-stage Tier-1 OEM intelligence extraction and 252-column schema compilation.
               </p>
 
-              <!-- Metrics Box -->
-              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 24px; text-align: center;">
+              <!-- Metrics Summary Cards -->
+              <table width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 24px;">
                 <tr>
-                  <td style="padding: 16px 10px; border-right: 1px solid #e2e8f0; width: 25%;">
-                    <div style="font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase;">Enriched</div>
-                    <div style="font-size: 20px; font-weight: 900; color: #0f172a; margin-top: 2px;">${processedCount}</div>
-                    <div style="font-size: 10px; color: #059669;">Products</div>
+                  <td width="32%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 12px; text-align: center;">
+                    <div style="font-size: 22px; font-weight: 900; color: #0f172a;">${processedCount}</div>
+                    <div style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-top: 2px;">Enriched SKUs</div>
                   </td>
-                  <td style="padding: 16px 10px; border-right: 1px solid #e2e8f0; width: 25%;">
-                    <div style="font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase;">Photos</div>
-                    <div style="font-size: 20px; font-weight: 900; color: #2563eb; margin-top: 2px;">${totalImages}</div>
-                    <div style="font-size: 10px; color: #2563eb;">CDN Images</div>
+                  <td width="2%"></td>
+                  <td width="32%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 12px; text-align: center;">
+                    <div style="font-size: 22px; font-weight: 900; color: #2563eb;">${totalImages}</div>
+                    <div style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-top: 2px;">OEM CDN Photos</div>
                   </td>
-                  <td style="padding: 16px 10px; border-right: 1px solid #e2e8f0; width: 25%;">
-                    <div style="font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase;">PDFs</div>
-                    <div style="font-size: 20px; font-weight: 900; color: #7c3aed; margin-top: 2px;">${totalDocs}</div>
-                    <div style="font-size: 10px; color: #7c3aed;">Datasheets</div>
-                  </td>
-                  <td style="padding: 16px 10px; width: 25%;">
-                    <div style="font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase;">Schema</div>
-                    <div style="font-size: 20px; font-weight: 900; color: #059669; margin-top: 2px;">252</div>
-                    <div style="font-size: 10px; color: #059669;">Unihack Columns</div>
+                  <td width="2%"></td>
+                  <td width="32%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 12px; text-align: center;">
+                    <div style="font-size: 22px; font-weight: 900; color: #059669;">${totalDocs}</div>
+                    <div style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-top: 2px;">Verified PDFs</div>
                   </td>
                 </tr>
               </table>
 
-              <!-- Processed Products Preview Table -->
-              <h3 style="font-size: 13px; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
-                Extracted Products Overview
+              <!-- Action Button -->
+              <table width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 30px;">
+                <tr>
+                  <td align="center">
+                    <a href="${reviewUrl}" target="_blank" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 800; padding: 14px 28px; border-radius: 10px; box-shadow: 0 4px 12px rgba(37,99,235,0.25);">
+                      Inspect &amp; Export Batch Products →
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Product Preview List -->
+              <h3 style="font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; margin: 0 0 12px 0;">
+                Extracted Products Sample
               </h3>
-              <table width="100%" cellpadding="0" cellspacing="0" style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-bottom: 24px;">
-                <tr style="background-color: #f8fafc; font-size: 11px; font-weight: 800; color: #475569; text-transform: uppercase; border-bottom: 1px solid #e2e8f0;">
-                  <th style="padding: 8px; text-align: left;">Part Number</th>
-                  <th style="padding: 8px; text-align: left;">Manufacturer</th>
-                  <th style="padding: 8px; text-align: center;">Assets</th>
-                  <th style="padding: 8px; text-align: right;">Columns</th>
+              <table width="100%" cellspacing="0" cellpadding="0" style="border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; margin-bottom: 24px;">
+                <tr style="background-color: #f8fafc; font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase;">
+                  <th style="padding: 10px 8px; text-align: left;">Part Number</th>
+                  <th style="padding: 10px 8px; text-align: left;">Brand / Mfg</th>
+                  <th style="padding: 10px 8px; text-align: center;">Assets</th>
+                  <th style="padding: 10px 8px; text-align: right;">Coverage</th>
                 </tr>
                 ${productRowsHtml}
               </table>
-
-              <!-- Big Call to Action -->
-              <div style="text-align: center; margin: 28px 0 16px 0;">
-                <a href="${reviewUrl}" target="_blank" style="background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 10px; font-size: 14px; font-weight: 800; display: inline-block; box-shadow: 0 4px 10px rgba(37,99,235,0.25);">
-                  Check Your Processed Dataset Now →
-                </a>
-              </div>
-
-              <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; margin-top: 20px; font-size: 11px; color: #64748b; word-break: break-all;">
-                <strong>Direct Link:</strong> <a href="${reviewUrl}" style="color: #2563eb; text-decoration: underline;">${reviewUrl}</a>
-              </div>
             </td>
           </tr>
 
           <!-- Footer -->
           <tr>
-            <td style="background-color: #f8fafc; padding: 18px 30px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8;">
-              Sent by CatalogForge Automation Service • Brevo SMTP Engine<br>
-              Authorized Sender: vinaybhadane06@gmail.com
+            <td style="background-color: #f8fafc; padding: 20px 32px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8;">
+              CatalogForge Enterprise Intelligence Platform • Powered by Resend<br>
+              Direct Review URL: <a href="${reviewUrl}" style="color: #2563eb; text-decoration: none;">${reviewUrl}</a>
             </td>
           </tr>
         </table>
@@ -455,17 +404,13 @@ class EmailService {
 </html>
     `;
 
-    const sendRes = await this.sendEmail(toEmail, recipientName, subject, htmlContent);
-    return {
-      success: sendRes.success,
-      error: sendRes.error,
-    };
+    return this.sendEmail(toEmail, recipientName, subject, htmlContent);
   }
 
   /**
-   * Sends an attractive Team Invitation Email via Brevo with a direct acceptance link
+   * Sends rich invitation email for new team members joining an enterprise workspace
    */
-  async sendTeamInvitationEmail(options: {
+  async sendTeamInvitationEmail(params: {
     toEmail: string;
     recipientName?: string;
     inviterName?: string;
@@ -475,99 +420,54 @@ class EmailService {
     inviteToken: string;
     appBaseUrl?: string;
   }): Promise<{ success: boolean; error?: string }> {
-    const {
-      toEmail,
-      recipientName,
-      inviterName,
-      inviterEmail,
-      role,
-      department,
-      inviteToken,
-      appBaseUrl,
-    } = options;
+    const baseUrl = (params.appBaseUrl || process.env.APP_BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
+    const acceptUrl = `${baseUrl}/invite/accept?token=${encodeURIComponent(params.inviteToken)}&email=${encodeURIComponent(params.toEmail)}`;
 
-    const baseUrl = (appBaseUrl || process.env.APP_BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
-    const acceptUrl = `${baseUrl}/invite/accept?token=${encodeURIComponent(inviteToken)}&email=${encodeURIComponent(toEmail)}&role=${encodeURIComponent(role)}&name=${encodeURIComponent(recipientName || '')}&department=${encodeURIComponent(department || '')}`;
-
-    const subject = `[CatalogForge] You have been invited to join the Workspace as ${role}`;
+    const subject = `[CatalogForge] Invitation to join enterprise workspace as ${params.role}`;
 
     const htmlContent = `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
   <title>${subject}</title>
 </head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f1f5f9; margin: 0; padding: 30px 15px; color: #0f172a;">
-  <table width="100%" border="0" cellspacing="0" cellpadding="0">
+<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 40px 16px;">
     <tr>
       <td align="center">
-        <table width="100%" style="max-width: 560px; background-color: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.06);" cellpadding="0" cellspacing="0">
-          
-          <!-- Header -->
+        <table width="100%" style="max-width: 540px; background-color: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);" cellpadding="0" cellspacing="0">
           <tr>
-            <td style="background-color: #0b0f17; padding: 24px 30px; text-align: center; border-bottom: 3px solid #2563eb;">
-              <span style="font-size: 24px; font-weight: 900; color: #ffffff; letter-spacing: -0.5px;">
+            <td style="background-color: #0b0f17; padding: 26px 32px; text-align: left; border-bottom: 2px solid #2563eb;">
+              <span style="font-size: 22px; font-weight: 900; color: #ffffff; letter-spacing: -0.5px;">
                 <span style="color: #38bdf8;">Catalog</span><span style="color: #ffffff;">Forge</span>
               </span>
-              <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 1.5px; margin-top: 4px;">
-                Enterprise Team Invitation
+              <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px;">
+                Workspace Invitation
               </div>
             </td>
           </tr>
-
-          <!-- Content -->
           <tr>
-            <td style="padding: 32px 30px;">
-              <div style="display: inline-block; background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 800; color: #1e40af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">
-                Team Member Invitation
-              </div>
-              <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0; margin-bottom: 8px;">
-                You're invited to join CatalogForge!
+            <td style="padding: 32px;">
+              <h2 style="font-size: 18px; font-weight: 800; color: #0f172a; margin-top: 0;">
+                You're invited to join CatalogForge
               </h2>
-              <p style="font-size: 14px; line-height: 1.6; color: #475569; margin-top: 0; margin-bottom: 20px;">
-                Hello${recipientName ? ` <strong>${recipientName}</strong>` : ''},<br>
-                Administrator <strong>${inviterName || inviterEmail || 'Workspace Administrator'}</strong> has invited you to collaborate in their <strong>CatalogForge Enterprise Workspace</strong>.
+              <p style="font-size: 14px; line-height: 1.6; color: #475569;">
+                Hello ${params.recipientName || 'there'}, ${params.inviterName || 'An administrator'} (${params.inviterEmail || 'admin'}) has invited you to collaborate on the CatalogForge platform as <strong>${params.role}</strong>${params.department ? ` in the ${params.department} team` : ''}.
               </p>
-
-              <!-- Invitation Details Box -->
-              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 24px; font-size: 13px;">
+              <table width="100%" cellspacing="0" cellpadding="0" style="margin: 28px 0;">
                 <tr>
-                  <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; color: #64748b; font-weight: 600; width: 40%;">Assigned Workspace Role</td>
-                  <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; color: #0f172a; font-weight: 800;">
-                    <span style="background-color: #eff6ff; color: #2563eb; padding: 2px 8px; border-radius: 4px; border: 1px solid #bfdbfe;">${role}</span>
+                  <td align="center">
+                    <a href="${acceptUrl}" target="_blank" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 800; padding: 14px 30px; border-radius: 10px; box-shadow: 0 4px 12px rgba(37,99,235,0.25);">
+                      Accept Invitation &amp; Join Workspace →
+                    </a>
                   </td>
                 </tr>
-                <tr>
-                  <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; color: #64748b; font-weight: 600;">Department</td>
-                  <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; color: #0f172a; font-weight: 700;">${department || 'Catalog Operations'}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 12px 16px; color: #64748b; font-weight: 600;">Invited Email</td>
-                  <td style="padding: 12px 16px; color: #0f172a; font-weight: 700; font-family: monospace;">${toEmail}</td>
-                </tr>
               </table>
-
-              <!-- Big Call to Action -->
-              <div style="text-align: center; margin: 28px 0 16px 0;">
-                <a href="${acceptUrl}" target="_blank" style="background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 10px; font-size: 14px; font-weight: 800; display: inline-block; box-shadow: 0 4px 12px rgba(37,99,235,0.25);">
-                  Accept Invitation &amp; Access Workspace →
-                </a>
-              </div>
-
-              <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; margin-top: 20px; font-size: 11px; color: #64748b; word-break: break-all;">
-                <strong>Direct Invitation Link:</strong><br>
-                <a href="${acceptUrl}" style="color: #2563eb; text-decoration: underline;">${acceptUrl}</a>
-              </div>
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td style="background-color: #f8fafc; padding: 18px 30px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8;">
-              Sent by CatalogForge Security • Brevo SMTP Engine<br>
-              Authorized Sender: vinaybhadane06@gmail.com
+              <p style="font-size: 12px; color: #64748b;">
+                Or copy and paste this direct link into your browser:<br>
+                <a href="${acceptUrl}" style="color: #2563eb; word-break: break-all;">${acceptUrl}</a>
+              </p>
             </td>
           </tr>
         </table>
@@ -578,28 +478,8 @@ class EmailService {
 </html>
     `;
 
-    const textContent = `
-Hello ${recipientName || 'there'},
-
-You have been invited by ${inviterName || inviterEmail || 'Workspace Administrator'} to join the CatalogForge Enterprise Workspace.
-
-Assigned Role: ${role}
-Department: ${department || 'Catalog Operations'}
-Invited Email: ${toEmail}
-
-To accept this invitation and access the workspace, open the link below:
-${acceptUrl}
-
-If you have any questions, feel free to reply to this email.
-`;
-
-    const sendRes = await this.sendEmail(toEmail, recipientName, subject, htmlContent, textContent);
-    return {
-      success: sendRes.success,
-      error: sendRes.error,
-    };
+    return this.sendEmail(params.toEmail, params.recipientName, subject, htmlContent);
   }
 }
 
 export const emailService = new EmailService();
-
