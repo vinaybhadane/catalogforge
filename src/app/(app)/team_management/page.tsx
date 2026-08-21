@@ -37,6 +37,18 @@ interface TeamMember {
   joinedDate: string;
 }
 
+function generateSafeToken(email: string): string {
+  const raw = `${email}:${Date.now()}:${Math.random().toString(36).substring(2, 10)}`;
+  try {
+    if (typeof window !== "undefined" && typeof window.btoa === "function") {
+      return window.btoa(unescape(encodeURIComponent(raw))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    }
+  } catch {
+    // fallback
+  }
+  return `tok_${Date.now()}_${Math.random().toString(36).substring(2, 12)}`;
+}
+
 export default function TeamManagementPage() {
   const { user } = useAuth();
 
@@ -94,7 +106,7 @@ export default function TeamManagementPage() {
           role: m.role || "Catalog Manager",
           department: m.department || "Catalog Operations",
           status: m.status === "Accepted" || m.status === "Active" ? "Accepted" : "Pending",
-          inviteToken: m.inviteToken || Buffer.from(`${m.email}:${Date.now()}`).toString("base64url"),
+          inviteToken: m.inviteToken || generateSafeToken(m.email || "member"),
           joinedDate: m.joinedDate || "Invited Recently",
         }));
 
@@ -134,7 +146,7 @@ export default function TeamManagementPage() {
     }
 
     setIsSendingInvite(true);
-    const inviteToken = Buffer.from(`${emailToInvite}:${Date.now()}:${Math.random().toString(36).substring(2, 8)}`).toString("base64url");
+    const inviteToken = generateSafeToken(emailToInvite);
 
     const newMember: TeamMember = {
       id: Date.now().toString(),
@@ -201,7 +213,7 @@ export default function TeamManagementPage() {
   const handleCopyInviteLink = (member: TeamMember) => {
     if (typeof window === "undefined") return;
     const baseUrl = window.location.origin;
-    const token = member.inviteToken || Buffer.from(`${member.email}:${Date.now()}`).toString("base64url");
+    const token = member.inviteToken || generateSafeToken(member.email || "member");
     const link = `${baseUrl}/invite/accept?token=${encodeURIComponent(token)}&email=${encodeURIComponent(member.email)}&role=${encodeURIComponent(member.role)}&name=${encodeURIComponent(member.name)}`;
     navigator.clipboard.writeText(link);
     setCopiedMemberId(member.id);
