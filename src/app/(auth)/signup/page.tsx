@@ -21,10 +21,10 @@ export default function SignUpPage() {
 
   // Auto-redirect to dashboard when user session is active
   useEffect(() => {
-    if (user) {
-      router.replace("/dashboard");
+    if (user && !authLoading) {
+      window.location.href = "/dashboard";
     }
-  }, [user, router]);
+  }, [user, authLoading]);
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -88,7 +88,7 @@ export default function SignUpPage() {
         password,
         companyName: companyName.trim() || undefined,
       });
-      router.push("/dashboard");
+      window.location.href = "/dashboard";
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Account creation failed. Please try again."
@@ -103,7 +103,7 @@ export default function SignUpPage() {
     setError(null);
     try {
       await signInWithGoogle();
-      router.push("/dashboard");
+      window.location.href = "/dashboard";
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Google sign-up failed. Please try again."

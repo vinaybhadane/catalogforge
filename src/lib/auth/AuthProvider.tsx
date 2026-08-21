@@ -129,7 +129,15 @@ function getReadableAuthErrorMessage(error: unknown): string {
  * Firebase-integrated Authentication Context Provider with Multi-Tenancy / Invitation Guard
  */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem("catalogforge_active_user");
+        if (cached) return JSON.parse(cached);
+      } catch {}
+    }
+    return null;
+  });
   const [loading, setLoading] = useState(true);
 
   // Helper to transform Firebase User to application AuthUser model
@@ -152,7 +160,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       role = "admin";
     }
 
-    return {
+    const mapped: AuthUser = {
       uid: firebaseUser.uid,
       email: firebaseUser.email,
       displayName: firebaseUser.displayName || (firebaseUser.email ? firebaseUser.email.split("@")[0] : null),
@@ -162,6 +170,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isInvited: !!invitedMatch,
       isWorkspaceOwner: isOwner,
     };
+
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("catalogforge_active_user", JSON.stringify(mapped));
+      } catch {}
+    }
+
+    return mapped;
   }, []);
 
   // Listen to Firebase auth state changes
@@ -183,6 +199,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (result?.user) {
           const authUser = await mapFirebaseUser(result.user);
           setUser(authUser);
+          if (typeof window !== "undefined") {
+            window.location.href = "/dashboard";
+          }
         }
       })
       .catch((err) => {
@@ -196,6 +215,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(authUser);
         } else {
           setUser(null);
+          if (typeof window !== "undefined") {
+            try {
+              localStorage.removeItem("catalogforge_active_user");
+            } catch {}
+          }
         }
       } catch (err) {
         console.error("Auth state transition error:", err);
@@ -323,6 +347,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     try {
       await firebaseSignOut(auth);
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.removeItem("catalogforge_active_user");
+        } catch {}
+      }
       setUser(null);
     } catch (error) {
       console.error("Sign out error:", error);

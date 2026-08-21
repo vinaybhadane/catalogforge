@@ -21,10 +21,10 @@ export default function LoginPage() {
 
   // Auto-redirect to dashboard when user session is active
   useEffect(() => {
-    if (user) {
-      router.replace("/dashboard");
+    if (user && !authLoading) {
+      window.location.href = "/dashboard";
     }
-  }, [user, router]);
+  }, [user, authLoading]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -76,7 +76,7 @@ export default function LoginPage() {
 
   // Step 2: 2FA OTP Verified Successfully -> Grant Dashboard Access
   const handleOtpVerified = () => {
-    router.push("/dashboard");
+    window.location.href = "/dashboard";
   };
 
   // Google OAuth Direct Sign-In
@@ -85,7 +85,7 @@ export default function LoginPage() {
     setError(null);
     try {
       await signInWithGoogle();
-      router.push("/dashboard");
+      window.location.href = "/dashboard";
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Google sign-in failed. Please try again."
