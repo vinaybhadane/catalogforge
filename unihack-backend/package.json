@@ -25,6 +25,12 @@
   ],
   "author": "UniHack Engineering Team",
   "license": "UNLICENSED",
+  "dependencies": {
+    "@types/node": "^20.11.24",
+    "rimraf": "^5.0.5",
+    "tsx": "^4.7.1",
+    "typescript": "^5.3.3"
+  },
   "devDependencies": {
     "@types/node": "^20.11.24",
     "rimraf": "^5.0.5",

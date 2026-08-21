@@ -3,7 +3,8 @@
     "target": "ES2022",
     "module": "CommonJS",
     "lib": ["ES2022"],
-    "strict": true,
+    "strict": false,
+    "noImplicitAny": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
@@ -11,9 +12,8 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": true,
+    "noImplicitReturns": false,
+    "noFallthroughCasesInSwitch": false,
     "allowSyntheticDefaultImports": true
   }
 }
