@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -17,7 +17,14 @@ import { OtpVerification } from "@/components/auth/OtpVerification";
 
 export default function SignUpPage() {
   const router = useRouter();
-  const { signUp, signInWithGoogle, loading: authLoading } = useAuth();
+  const { user, signUp, signInWithGoogle, loading: authLoading } = useAuth();
+
+  // Auto-redirect to dashboard when user session is active
+  useEffect(() => {
+    if (user) {
+      router.replace("/dashboard");
+    }
+  }, [user, router]);
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
