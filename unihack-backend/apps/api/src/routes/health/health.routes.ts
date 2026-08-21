@@ -9,6 +9,27 @@ import { DependencyHealthResponseSchema, HealthResponseSchema } from '../../sche
 
 export const healthRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   /**
+   * GET /
+   * Root welcome info & sitemap
+   */
+  fastify.get('/', async (_request, reply) => {
+    return reply.status(200).send({
+      name: 'CatalogForge UniHack AI Enterprise API',
+      status: 'online',
+      version: '1.0.0',
+      documentation: '/api/docs',
+      health: '/health',
+      endpoints: {
+        ocr: '/api/v1/ingestion/ocr',
+        urlIngestion: '/api/v1/ingestion/url',
+        batchFile: '/api/v1/ingestion/process-batch-file',
+        searchLive: '/api/v1/products/search-live',
+        products: '/api/v1/products',
+      },
+    });
+  });
+
+  /**
    * GET /health
    * Public lightweight liveness probe
    */
