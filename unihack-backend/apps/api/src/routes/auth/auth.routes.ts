@@ -76,7 +76,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =
         const result = await emailService.sendOtpEmail(email, targetPurpose, name);
 
         if (!result.emailSent) {
-          return reply.status(500).send({
+          return reply.status(400).send({
             success: false,
             error: result.error || 'Failed to dispatch verification email to your inbox. Please try again.',
           });
