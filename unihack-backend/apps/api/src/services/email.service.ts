@@ -16,8 +16,13 @@ interface BrevoSendPayload {
     email: string;
   };
   to: BrevoEmailRecipient[];
+  replyTo?: {
+    name: string;
+    email: string;
+  };
   subject: string;
   htmlContent: string;
+  textContent?: string;
 }
 
 export type OtpPurpose = 'signup_verification' | 'login_2fa' | 'password_reset';
@@ -116,7 +121,8 @@ class EmailService {
     toEmail: string,
     toName: string | undefined,
     subject: string,
-    htmlContent: string
+    htmlContent: string,
+    textContent?: string
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     const apiKey = this.getApiKey();
     const senderEmail = this.getSenderEmail();
@@ -143,8 +149,13 @@ class EmailService {
           name: toName || toEmail.split('@')[0],
         },
       ],
+      replyTo: {
+        name: 'CatalogForge Support',
+        email: senderEmail,
+      },
       subject,
       htmlContent,
+      textContent: textContent || htmlContent.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(),
     };
 
     try {
@@ -567,7 +578,22 @@ class EmailService {
 </html>
     `;
 
-    const sendRes = await this.sendEmail(toEmail, recipientName, subject, htmlContent);
+    const textContent = `
+Hello ${recipientName || 'there'},
+
+You have been invited by ${inviterName || inviterEmail || 'Workspace Administrator'} to join the CatalogForge Enterprise Workspace.
+
+Assigned Role: ${role}
+Department: ${department || 'Catalog Operations'}
+Invited Email: ${toEmail}
+
+To accept this invitation and access the workspace, open the link below:
+${acceptUrl}
+
+If you have any questions, feel free to reply to this email.
+`;
+
+    const sendRes = await this.sendEmail(toEmail, recipientName, subject, htmlContent, textContent);
     return {
       success: sendRes.success,
       error: sendRes.error,

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Users,
   ShieldCheck,
@@ -20,6 +20,7 @@ import {
   RefreshCw,
   Copy,
   Check,
+  Info,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { apiClient } from "@/lib/api/client";
@@ -69,15 +70,9 @@ export default function TeamManagementPage() {
   const [notification, setNotification] = useState<string | null>(null);
   const [copiedMemberId, setCopiedMemberId] = useState<string | null>(null);
 
-  // Initialize members: ONLY logged in user + real invited members (zero mock members)
-  useEffect(() => {
+  // Sync and fetch team members from backend and local storage
+  const refreshMembers = useCallback(async () => {
     try {
-      const savedMembersStr = localStorage.getItem("catalogforge_team_members");
-      let storedList: any[] = [];
-      if (savedMembersStr) {
-        storedList = JSON.parse(savedMembersStr);
-      }
-
       const primaryUser: TeamMember = {
         id: user?.uid || "current-session-user",
         name: currentUserName,
@@ -89,38 +84,90 @@ export default function TeamManagementPage() {
         joinedDate: "Workspace Owner",
       };
 
-      // Filter out stale mock users and map legitimate saved members
-      const otherMembers: TeamMember[] = storedList
-        .filter(
-          (m) =>
-            m.email &&
-            m.email.toLowerCase() !== currentUserEmail.toLowerCase() &&
-            m.email.toLowerCase() !== "patil.sakshi@catalogforge.tech" &&
-            m.email.toLowerCase() !== "vinay.bhadane@catalogforge.tech" &&
-            m.email.toLowerCase() !== "compliance@catalogforge.tech"
-        )
-        .map((m, idx) => ({
-          id: m.id || `member-${idx}`,
-          name: m.name || "Team Member",
-          email: m.email || "member@company.com",
-          role: m.role || "Catalog Manager",
-          department: m.department || "Catalog Operations",
-          status: m.status === "Accepted" || m.status === "Active" ? "Accepted" : "Pending",
-          inviteToken: m.inviteToken || generateSafeToken(m.email || "member"),
-          joinedDate: m.joinedDate || "Invited Recently",
-        }));
+      // 1. Read local storage
+      const savedMembersStr = localStorage.getItem("catalogforge_team_members");
+      let localList: TeamMember[] = [];
+      if (savedMembersStr) {
+        localList = JSON.parse(savedMembersStr);
+      }
 
-      setTeamMembers([primaryUser, ...otherMembers]);
+      // 2. Fetch from backend API
+      let backendList: any[] = [];
+      try {
+        const res = await apiClient.get<{ success: boolean; members: any[] }>("/auth/team-members");
+        if (res && res.members) {
+          backendList = res.members;
+        }
+      } catch {
+        // Backend optional fallback
+      }
 
-      // Save sanitized list back to storage
-      localStorage.setItem(
-        "catalogforge_team_members",
-        JSON.stringify(otherMembers)
-      );
+      // Merge local and backend by email
+      const memberMap = new Map<string, TeamMember>();
+
+      localList.forEach((m) => {
+        if (
+          m.email &&
+          m.email.toLowerCase() !== currentUserEmail.toLowerCase() &&
+          m.email.toLowerCase() !== "patil.sakshi@catalogforge.tech" &&
+          m.email.toLowerCase() !== "vinay.bhadane@catalogforge.tech" &&
+          m.email.toLowerCase() !== "compliance@catalogforge.tech"
+        ) {
+          memberMap.set(m.email.toLowerCase(), {
+            id: m.id || Date.now().toString(),
+            name: m.name || "Team Member",
+            email: m.email.toLowerCase(),
+            role: m.role || "Catalog Manager",
+            department: m.department || "Catalog Operations",
+            status: m.status === "Accepted" || (m as any).status === "Active" ? "Accepted" : "Pending",
+            inviteToken: m.inviteToken || generateSafeToken(m.email),
+            joinedDate: m.joinedDate || "Invited Recently",
+          });
+        }
+      });
+
+      backendList.forEach((m) => {
+        if (
+          m.email &&
+          m.email.toLowerCase() !== currentUserEmail.toLowerCase() &&
+          m.email.toLowerCase() !== "patil.sakshi@catalogforge.tech" &&
+          m.email.toLowerCase() !== "vinay.bhadane@catalogforge.tech" &&
+          m.email.toLowerCase() !== "compliance@catalogforge.tech"
+        ) {
+          const normEmail = m.email.toLowerCase();
+          const existing = memberMap.get(normEmail);
+          memberMap.set(normEmail, {
+            id: m.id || existing?.id || Date.now().toString(),
+            name: m.name || existing?.name || normEmail.split("@")[0],
+            email: normEmail,
+            role: (m.role as any) || existing?.role || "Catalog Manager",
+            department: m.department || existing?.department || "Catalog Operations",
+            status: m.status === "Accepted" || existing?.status === "Accepted" ? "Accepted" : "Pending",
+            inviteToken: m.inviteToken || existing?.inviteToken || generateSafeToken(normEmail),
+            joinedDate: m.acceptedAt
+              ? new Date(m.acceptedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+              : existing?.joinedDate || "Invited Recently",
+          });
+        }
+      });
+
+      const mergedOthers = Array.from(memberMap.values());
+      setTeamMembers([primaryUser, ...mergedOthers]);
+
+      localStorage.setItem("catalogforge_team_members", JSON.stringify(mergedOthers));
     } catch {
-      // Ignore localStorage errors
+      // Ignore
     }
   }, [user, currentUserEmail, currentUserName]);
+
+  useEffect(() => {
+    refreshMembers();
+    // Poll every 5s so when invited user accepts invitation, admin sees Accepted in real time
+    const interval = setInterval(() => {
+      refreshMembers();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [refreshMembers]);
 
   const saveToStorage = (list: TeamMember[]) => {
     try {
@@ -160,7 +207,6 @@ export default function TeamManagementPage() {
     };
 
     try {
-      // 1. Dispatch Brevo Invitation Email via backend
       const appBaseUrl = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
       await apiClient.post("/auth/invite", {
         email: emailToInvite,
@@ -172,7 +218,7 @@ export default function TeamManagementPage() {
         appBaseUrl,
       });
 
-      setNotification(`Invitation email sent to ${emailToInvite}! Status set to Pending Acceptance.`);
+      setNotification(`Invitation email sent to ${emailToInvite}! Status is Pending until the user accepts.`);
     } catch (err: any) {
       console.warn("Backend email dispatch notice:", err);
       setNotification(`Invitation registered for ${emailToInvite} (Pending Acceptance).`);
@@ -186,7 +232,7 @@ export default function TeamManagementPage() {
 
     setNewMemberName("");
     setNewMemberEmail("");
-    setTimeout(() => setNotification(null), 4500);
+    setTimeout(() => setNotification(null), 6000);
   };
 
   // Resend Invitation Email
@@ -202,11 +248,11 @@ export default function TeamManagementPage() {
         inviterEmail: currentUserEmail,
         appBaseUrl,
       });
-      setNotification(`Invitation email re-sent to ${member.email}!`);
+      setNotification(`Invitation email re-sent to ${member.email}! Please check inbox & spam folder.`);
     } catch {
-      setNotification(`Invitation re-dispatched to ${member.email}!`);
+      setNotification(`Invitation email re-dispatched to ${member.email}!`);
     }
-    setTimeout(() => setNotification(null), 3500);
+    setTimeout(() => setNotification(null), 5000);
   };
 
   // Copy Direct Invite Link
@@ -214,42 +260,50 @@ export default function TeamManagementPage() {
     if (typeof window === "undefined") return;
     const baseUrl = window.location.origin;
     const token = member.inviteToken || generateSafeToken(member.email || "member");
-    const link = `${baseUrl}/invite/accept?token=${encodeURIComponent(token)}&email=${encodeURIComponent(member.email)}&role=${encodeURIComponent(member.role)}&name=${encodeURIComponent(member.name)}`;
+    const link = `${baseUrl}/invite/accept?token=${encodeURIComponent(token)}&email=${encodeURIComponent(member.email)}&role=${encodeURIComponent(member.role)}&name=${encodeURIComponent(member.name)}&department=${encodeURIComponent(member.department || "")}`;
     navigator.clipboard.writeText(link);
     setCopiedMemberId(member.id);
-    setNotification(`Direct invitation link copied to clipboard for ${member.name}!`);
+    setNotification(`Direct invitation link copied! You can share this with ${member.name}.`);
     setTimeout(() => {
       setCopiedMemberId(null);
       setNotification(null);
-    }, 3000);
+    }, 3500);
   };
 
-  // Mark as Accepted manually (Admin override)
-  const handleMarkAccepted = (memberId: string) => {
-    const updated = teamMembers.map((m) =>
-      m.id === memberId
-        ? { ...m, status: "Accepted" as const, joinedDate: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) }
-        : m
-    );
-    setTeamMembers(updated);
-    saveToStorage(updated);
-    setNotification("Member marked as Accepted!");
-    setTimeout(() => setNotification(null), 3000);
-  };
-
-  const handleRoleChange = (memberId: string, newRole: "Administrator" | "Catalog Manager" | "Auditor") => {
+  const handleRoleChange = async (memberId: string, newRole: "Administrator" | "Catalog Manager" | "Auditor") => {
     const updated = teamMembers.map((m) => (m.id === memberId ? { ...m, role: newRole } : m));
     setTeamMembers(updated);
     saveToStorage(updated);
+
+    const target = teamMembers.find((m) => m.id === memberId);
+    if (target) {
+      try {
+        await apiClient.post("/auth/team-members/update-role", {
+          id: memberId,
+          email: target.email,
+          role: newRole,
+        });
+      } catch {
+        // Ignore
+      }
+    }
+
     setNotification(`Role updated to ${newRole}!`);
     setTimeout(() => setNotification(null), 3000);
   };
 
-  const handleRemoveMember = (id: string, name: string) => {
+  const handleRemoveMember = async (id: string, name: string, email: string) => {
     if (!confirm(`Are you sure you want to revoke workspace access for ${name}?`)) return;
     const updated = teamMembers.filter((m) => m.id !== id);
     setTeamMembers(updated);
     saveToStorage(updated);
+
+    try {
+      await apiClient.post("/auth/team-members/remove", { id, email });
+    } catch {
+      // Ignore
+    }
+
     setNotification(`Access revoked for ${name}.`);
     setTimeout(() => setNotification(null), 3000);
   };
@@ -323,7 +377,7 @@ export default function TeamManagementPage() {
             <div>
               <h2 className="text-sm font-bold text-[#000000]">Invite New Team Member via Email</h2>
               <p className="text-xs text-[#64748B]">
-                An official invitation email will be sent via Brevo with a direct acceptance link.
+                An invitation email will be dispatched via Brevo. The member remains &quot;Pending&quot; until they accept the invitation.
               </p>
             </div>
           </div>
@@ -336,7 +390,7 @@ export default function TeamManagementPage() {
               type="text"
               value={newMemberName}
               onChange={(e) => setNewMemberName(e.target.value)}
-              placeholder="e.g. Alex Morgan"
+              placeholder="e.g. Vinay Bhadane"
               className="w-full px-3 py-2 bg-[#FAFAFA] border border-[#E2E8F0] rounded-xl text-xs font-medium text-[#000000] focus:outline-none focus:border-[#2563EB]"
               required
             />
@@ -348,7 +402,7 @@ export default function TeamManagementPage() {
               type="email"
               value={newMemberEmail}
               onChange={(e) => setNewMemberEmail(e.target.value)}
-              placeholder="alex.morgan@company.com"
+              placeholder="name@company.com"
               className="w-full px-3 py-2 bg-[#FAFAFA] border border-[#E2E8F0] rounded-xl text-xs font-medium text-[#000000] focus:outline-none focus:border-[#2563EB]"
               required
             />
@@ -434,7 +488,7 @@ export default function TeamManagementPage() {
             Authorized Workspace Members ({filteredMembers.length})
           </h2>
           <span className="text-[10px] text-[#64748B]">
-            Only invited members who accept can view &amp; manage catalog data
+            Invitations must be accepted by the invited recipient to activate access
           </span>
         </div>
 
@@ -516,16 +570,6 @@ export default function TeamManagementPage() {
                         <RefreshCw className="w-3 h-3 text-[#2563EB]" />
                         <span>Resend Email</span>
                       </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleMarkAccepted(member.id)}
-                        className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1 transition"
-                        title="Manually confirm acceptance"
-                      >
-                        <Check className="w-3 h-3 text-emerald-600" />
-                        <span>Confirm</span>
-                      </button>
                     </div>
                   ) : (
                     <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 inline-flex items-center gap-1">
@@ -556,7 +600,7 @@ export default function TeamManagementPage() {
                   {!member.isCurrentSession && (
                     <button
                       type="button"
-                      onClick={() => handleRemoveMember(member.id, member.name)}
+                      onClick={() => handleRemoveMember(member.id, member.name, member.email)}
                       className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
                       title="Revoke access"
                     >
@@ -567,6 +611,17 @@ export default function TeamManagementPage() {
               </div>
             );
           })}
+        </div>
+      </div>
+
+      {/* ── Help Tip Card ────────────────────────────────────────────── */}
+      <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs text-slate-600 flex items-start gap-3">
+        <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+        <div className="space-y-1">
+          <p className="font-bold text-slate-800">How Invitation Confirmation Works:</p>
+          <p className="leading-relaxed">
+            When you send an invitation, an email is delivered to the recipient with an <strong>&quot;Accept Invitation&quot;</strong> link. Once the invited member clicks the link and accepts, their status on this dashboard automatically turns from <strong>Pending Acceptance</strong> to <strong>Accepted / Active</strong>, granting them full workspace access. You can also use the <strong>Copy Link</strong> icon to send the direct invitation link to them via chat.
+          </p>
         </div>
       </div>
 
