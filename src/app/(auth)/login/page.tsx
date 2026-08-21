@@ -32,8 +32,8 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 2FA OTP Step State
   const [pendingOtp, setPendingOtp] = useState(false);
+  const [fallbackOtp, setFallbackOtp] = useState<string | undefined>(undefined);
 
   const isValid = email.trim().length > 0 && password.length >= 6;
 
@@ -64,6 +64,7 @@ export default function LoginPage() {
         throw new Error(data.error || "Failed to dispatch 2FA security code. Please try again.");
       }
 
+      setFallbackOtp(data.devOtp);
       setPendingOtp(true);
     } catch (err: any) {
       setError(
@@ -136,6 +137,7 @@ export default function LoginPage() {
             <OtpVerification
               email={email.trim()}
               purpose="login_2fa"
+              fallbackOtp={fallbackOtp}
               onSuccess={handleOtpVerified}
               onCancel={() => {
                 setPendingOtp(false);
