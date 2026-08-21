@@ -21,6 +21,7 @@ import {
   Lock,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { apiClient } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 
 type SettingsTab = "general" | "notifications" | "access";
@@ -94,7 +95,14 @@ function SettingsContent() {
         isCurrentSession: true,
       };
 
-      const otherMembers = storedList.filter((m) => m.email.toLowerCase() !== currentUserEmail.toLowerCase());
+      const otherMembers = storedList.filter(
+        (m) =>
+          m.email &&
+          m.email.toLowerCase() !== currentUserEmail.toLowerCase() &&
+          m.email.toLowerCase() !== "patil.sakshi@catalogforge.tech" &&
+          m.email.toLowerCase() !== "vinay.bhadane@catalogforge.tech" &&
+          m.email.toLowerCase() !== "compliance@catalogforge.tech"
+      );
       setTeamMembers([primaryUser, ...otherMembers]);
 
       const savedSettings = localStorage.getItem("catalogforge_user_settings");
@@ -143,7 +151,7 @@ function SettingsContent() {
     setTimeout(() => setTestAlertSent(false), 4000);
   };
 
-  const handleAddMember = (e: React.FormEvent) => {
+  const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMemberEmail.trim() || !newMemberName.trim()) return;
 
@@ -152,10 +160,11 @@ function SettingsContent() {
       return;
     }
 
+    const emailToInvite = newMemberEmail.trim().toLowerCase();
     const newMember: TeamMember = {
       id: Date.now().toString(),
       name: newMemberName.trim(),
-      email: newMemberEmail.trim(),
+      email: emailToInvite,
       role: newMemberRole,
     };
     const updatedList = [...teamMembers, newMember];
@@ -164,6 +173,22 @@ function SettingsContent() {
       "catalogforge_team_members",
       JSON.stringify(updatedList.filter((m) => !m.isCurrentSession))
     );
+
+    // Try dispatching Brevo invite email in background
+    try {
+      const appBaseUrl = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
+      await apiClient.post("/auth/invite", {
+        email: emailToInvite,
+        name: newMember.name,
+        role: newMember.role,
+        inviterName: currentUserName,
+        inviterEmail: currentUserEmail,
+        appBaseUrl,
+      });
+    } catch {
+      // Ignore background dispatch
+    }
+
     setNewMemberName("");
     setNewMemberEmail("");
     setIsSaved(true);

@@ -450,6 +450,129 @@ class EmailService {
       error: sendRes.error,
     };
   }
+
+  /**
+   * Sends an attractive Team Invitation Email via Brevo with a direct acceptance link
+   */
+  async sendTeamInvitationEmail(options: {
+    toEmail: string;
+    recipientName?: string;
+    inviterName?: string;
+    inviterEmail?: string;
+    role: string;
+    department?: string;
+    inviteToken: string;
+    appBaseUrl?: string;
+  }): Promise<{ success: boolean; error?: string }> {
+    const {
+      toEmail,
+      recipientName,
+      inviterName,
+      inviterEmail,
+      role,
+      department,
+      inviteToken,
+      appBaseUrl,
+    } = options;
+
+    const baseUrl = (appBaseUrl || process.env.APP_BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
+    const acceptUrl = `${baseUrl}/invite/accept?token=${encodeURIComponent(inviteToken)}&email=${encodeURIComponent(toEmail)}&role=${encodeURIComponent(role)}&name=${encodeURIComponent(recipientName || '')}&department=${encodeURIComponent(department || '')}`;
+
+    const subject = `[CatalogForge] You have been invited to join the Workspace as ${role}`;
+
+    const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${subject}</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f1f5f9; margin: 0; padding: 30px 15px; color: #0f172a;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0">
+    <tr>
+      <td align="center">
+        <table width="100%" style="max-width: 560px; background-color: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.06);" cellpadding="0" cellspacing="0">
+          
+          <!-- Header -->
+          <tr>
+            <td style="background-color: #0b0f17; padding: 24px 30px; text-align: center; border-bottom: 3px solid #2563eb;">
+              <span style="font-size: 24px; font-weight: 900; color: #ffffff; letter-spacing: -0.5px;">
+                <span style="color: #38bdf8;">Catalog</span><span style="color: #ffffff;">Forge</span>
+              </span>
+              <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 1.5px; margin-top: 4px;">
+                Enterprise Team Invitation
+              </div>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding: 32px 30px;">
+              <div style="display: inline-block; background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 800; color: #1e40af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">
+                Team Member Invitation
+              </div>
+              <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0; margin-bottom: 8px;">
+                You're invited to join CatalogForge!
+              </h2>
+              <p style="font-size: 14px; line-height: 1.6; color: #475569; margin-top: 0; margin-bottom: 20px;">
+                Hello${recipientName ? ` <strong>${recipientName}</strong>` : ''},<br>
+                Administrator <strong>${inviterName || inviterEmail || 'Workspace Administrator'}</strong> has invited you to collaborate in their <strong>CatalogForge Enterprise Workspace</strong>.
+              </p>
+
+              <!-- Invitation Details Box -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 24px; font-size: 13px;">
+                <tr>
+                  <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; color: #64748b; font-weight: 600; width: 40%;">Assigned Workspace Role</td>
+                  <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; color: #0f172a; font-weight: 800;">
+                    <span style="background-color: #eff6ff; color: #2563eb; padding: 2px 8px; border-radius: 4px; border: 1px solid #bfdbfe;">${role}</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; color: #64748b; font-weight: 600;">Department</td>
+                  <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; color: #0f172a; font-weight: 700;">${department || 'Catalog Operations'}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px 16px; color: #64748b; font-weight: 600;">Invited Email</td>
+                  <td style="padding: 12px 16px; color: #0f172a; font-weight: 700; font-family: monospace;">${toEmail}</td>
+                </tr>
+              </table>
+
+              <!-- Big Call to Action -->
+              <div style="text-align: center; margin: 28px 0 16px 0;">
+                <a href="${acceptUrl}" target="_blank" style="background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 10px; font-size: 14px; font-weight: 800; display: inline-block; box-shadow: 0 4px 12px rgba(37,99,235,0.25);">
+                  Accept Invitation &amp; Access Workspace →
+                </a>
+              </div>
+
+              <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; margin-top: 20px; font-size: 11px; color: #64748b; word-break: break-all;">
+                <strong>Direct Invitation Link:</strong><br>
+                <a href="${acceptUrl}" style="color: #2563eb; text-decoration: underline;">${acceptUrl}</a>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f8fafc; padding: 18px 30px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8;">
+              Sent by CatalogForge Security • Brevo SMTP Engine<br>
+              Authorized Sender: vinaybhadane06@gmail.com
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `;
+
+    const sendRes = await this.sendEmail(toEmail, recipientName, subject, htmlContent);
+    return {
+      success: sendRes.success,
+      error: sendRes.error,
+    };
+  }
 }
 
 export const emailService = new EmailService();

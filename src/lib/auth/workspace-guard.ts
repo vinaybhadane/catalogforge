@@ -6,12 +6,9 @@
 import { Product, ProcessingJob } from "@/types";
 import { AnalyticsDetail } from "@/hooks/useAnalytics";
 
-// Primary Workspace Owner & Administrator Emails
-export const DEFAULT_ADMIN_EMAILS = [
-  "patil.sakshi@catalogforge.tech",
-  "vinay.bhadane@catalogforge.tech",
+// Primary Workspace Owner / Administrator fallback identifier
+export const DEFAULT_ADMIN_EMAILS: string[] = [
   "admin@catalogforge.tech",
-  "compliance@catalogforge.tech",
 ];
 
 export interface InvitedMember {
@@ -20,12 +17,15 @@ export interface InvitedMember {
   email: string;
   role: "Administrator" | "Catalog Manager" | "Auditor";
   department?: string;
-  status: "Active" | "Invited";
+  status: "Pending" | "Accepted";
+  inviteToken?: string;
+  invitedAt?: string;
+  acceptedAt?: string;
   joinedDate?: string;
 }
 
 /**
- * Checks whether an email belongs to an Admin or an invited team member of the organization.
+ * Checks whether an email belongs to an Admin or an accepted team member of the organization.
  */
 export function isSharedOrganizationMember(email?: string | null): boolean {
   if (!email) return false;
@@ -42,7 +42,9 @@ export function isSharedOrganizationMember(email?: string | null): boolean {
       const savedMembersStr = localStorage.getItem("catalogforge_team_members");
       if (savedMembersStr) {
         const members: InvitedMember[] = JSON.parse(savedMembersStr);
-        if (members.some((m) => m.email && m.email.trim().toLowerCase() === normalized)) {
+        // Shared access is granted if the member was invited AND accepted (or is active)
+        const match = members.find((m) => m.email && m.email.trim().toLowerCase() === normalized);
+        if (match && (match.status === "Accepted" || (match as any).status === "Active")) {
           return true;
         }
       }
@@ -55,20 +57,28 @@ export function isSharedOrganizationMember(email?: string | null): boolean {
 }
 
 /**
- * Gets all invited team members from storage
+ * Gets all invited team members from storage (without any hardcoded mock users)
  */
 export function getInvitedMembers(): InvitedMember[] {
   if (typeof window === "undefined") return [];
   try {
     const saved = localStorage.getItem("catalogforge_team_members");
-    return saved ? JSON.parse(saved) : [];
+    if (!saved) return [];
+    const parsed: InvitedMember[] = JSON.parse(saved);
+    // Filter out any stale mock emails
+    return parsed.filter(
+      (m) =>
+        m.email.toLowerCase() !== "patil.sakshi@catalogforge.tech" &&
+        m.email.toLowerCase() !== "vinay.bhadane@catalogforge.tech" &&
+        m.email.toLowerCase() !== "compliance@catalogforge.tech"
+    );
   } catch {
     return [];
   }
 }
 
 /**
- * Registers an invited team member
+ * Registers an invited team member with status 'Pending'
  */
 export function registerInvitedMember(member: InvitedMember): void {
   if (typeof window === "undefined") return;
@@ -84,6 +94,27 @@ export function registerInvitedMember(member: InvitedMember): void {
   } catch {
     // Ignore
   }
+}
+
+/**
+ * Accepts an invitation for a specific user email
+ */
+export function acceptInvitation(email: string, token?: string): boolean {
+  if (typeof window === "undefined" || !email) return false;
+  try {
+    const members = getInvitedMembers();
+    const member = members.find((m) => m.email.toLowerCase() === email.trim().toLowerCase());
+    if (member) {
+      member.status = "Accepted";
+      member.acceptedAt = new Date().toISOString();
+      member.joinedDate = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      localStorage.setItem("catalogforge_team_members", JSON.stringify(members));
+      return true;
+    }
+  } catch {
+    // Ignore
+  }
+  return false;
 }
 
 /**

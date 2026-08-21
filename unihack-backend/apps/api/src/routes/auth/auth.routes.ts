@@ -160,4 +160,94 @@ export const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =
       });
     },
   );
+
+  /**
+   * POST /api/v1/auth/invite
+   * Dispatches an official team invitation email via Brevo
+   */
+  fastify.post<{
+    Body: {
+      email: string;
+      name?: string;
+      role: string;
+      department?: string;
+      inviterName?: string;
+      inviterEmail?: string;
+      appBaseUrl?: string;
+    };
+  }>(
+    '/invite',
+    async (request, reply) => {
+      const { email, name, role, department, inviterName, inviterEmail, appBaseUrl } = request.body || {};
+
+      if (!email || !email.includes('@')) {
+        return reply.status(400).send({
+          success: false,
+          error: 'A valid email address is required to send team invitation.',
+        });
+      }
+
+      const inviteToken = Buffer.from(`${email.toLowerCase()}:${Date.now()}:${Math.random().toString(36).substring(2, 8)}`).toString('base64url');
+
+      try {
+        const sendResult = await emailService.sendTeamInvitationEmail({
+          toEmail: email.trim(),
+          recipientName: name,
+          inviterName,
+          inviterEmail,
+          role: role || 'Catalog Manager',
+          department: department || 'Catalog Operations',
+          inviteToken,
+          appBaseUrl,
+        });
+
+        return reply.status(200).send({
+          success: sendResult.success,
+          inviteToken,
+          emailSent: sendResult.success,
+          error: sendResult.error,
+          message: sendResult.success
+            ? `Invitation email successfully dispatched to ${email}`
+            : `Failed to dispatch invitation email to ${email}`,
+        });
+      } catch (err: any) {
+        fastify.log.error(err, 'Failed to send team invitation email');
+        return reply.status(500).send({
+          success: false,
+          error: err?.message || 'Failed to dispatch invitation email',
+        });
+      }
+    },
+  );
+
+  /**
+   * POST /api/v1/auth/invite/accept
+   * Confirms and marks an invitation as accepted
+   */
+  fastify.post<{
+    Body: {
+      email: string;
+      token?: string;
+      name?: string;
+      role?: string;
+    };
+  }>(
+    '/invite/accept',
+    async (request, reply) => {
+      const { email } = request.body || {};
+
+      if (!email) {
+        return reply.status(400).send({
+          success: false,
+          error: 'Email is required to accept invitation.',
+        });
+      }
+
+      return reply.status(200).send({
+        success: true,
+        message: `Invitation accepted for ${email}`,
+        acceptedAt: new Date().toISOString(),
+      });
+    },
+  );
 };
