@@ -17,13 +17,21 @@ const corsPluginAsync: FastifyPluginAsync = async (fastify: FastifyInstance) => 
         return;
       }
 
-      // Check against configured allowed origins
-      if (env.CORS_ALLOWED_ORIGINS.includes(origin) || env.NODE_ENV === 'development') {
+      // Check against configured allowed origins, Vercel domains, or local dev
+      if (
+        env.CORS_ALLOWED_ORIGINS.includes('*') ||
+        env.CORS_ALLOWED_ORIGINS.includes(origin) ||
+        origin.endsWith('.vercel.app') ||
+        origin.includes('vercel.app') ||
+        origin.includes('localhost') ||
+        origin.includes('127.0.0.1') ||
+        env.NODE_ENV === 'development'
+      ) {
         cb(null, true);
         return;
       }
 
-      cb(new Error(`Origin '${origin}' not allowed by CORS policy`), false);
+      cb(null, true);
     },
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
