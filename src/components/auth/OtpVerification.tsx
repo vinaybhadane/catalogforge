@@ -15,7 +15,6 @@ interface OtpVerificationProps {
   email: string;
   purpose: "signup_verification" | "login_2fa" | "password_reset";
   recipientName?: string;
-  fallbackOtp?: string;
   onSuccess: () => void | Promise<void>;
   onCancel?: () => void;
   title?: string;
@@ -26,7 +25,6 @@ export function OtpVerification({
   email,
   purpose,
   recipientName,
-  fallbackOtp,
   onSuccess,
   onCancel,
   title,
@@ -225,26 +223,6 @@ export function OtpVerification({
         <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800">
           <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
           <span>{resendSuccessNotice}</span>
-        </div>
-      )}
-
-      {/* Fallback OTP for IP-restricted networks */}
-      {fallbackOtp && (
-        <div
-          onClick={() => {
-            const splitted = fallbackOtp.split("").slice(0, 6);
-            setDigits(splitted);
-            setError(null);
-          }}
-          className="cursor-pointer p-3 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 text-xs flex items-center justify-between hover:bg-blue-100/70 transition-all"
-        >
-          <div className="flex items-center gap-2">
-            <span className="font-semibold">Security Access Code:</span>
-            <span className="font-mono font-black tracking-widest text-[#2563EB] text-sm">{fallbackOtp}</span>
-          </div>
-          <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-blue-200/60 text-[#2563EB]">
-            Auto-Fill
-          </span>
         </div>
       )}
 

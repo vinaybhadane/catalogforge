@@ -35,8 +35,8 @@ export default function SignUpPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // OTP Verification State
   const [pendingOtp, setPendingOtp] = useState(false);
-  const [fallbackOtp, setFallbackOtp] = useState<string | undefined>(undefined);
 
   const isValid =
     firstName.trim().length > 0 &&
@@ -68,7 +68,6 @@ export default function SignUpPage() {
         throw new Error(data.error || "Failed to dispatch verification email. Please try again.");
       }
 
-      setFallbackOtp(data.devOtp);
       setPendingOtp(true);
     } catch (err: any) {
       setError(
@@ -154,7 +153,6 @@ export default function SignUpPage() {
               email={email.trim()}
               purpose="signup_verification"
               recipientName={`${firstName} ${lastName}`.trim()}
-              fallbackOtp={fallbackOtp}
               onSuccess={handleOtpVerified}
               onCancel={() => {
                 setPendingOtp(false);

@@ -75,15 +75,19 @@ export const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =
       try {
         const result = await emailService.sendOtpEmail(email, targetPurpose, name);
 
+        if (!result.emailSent) {
+          return reply.status(500).send({
+            success: false,
+            error: result.error || 'Failed to dispatch verification email to your inbox. Please try again.',
+          });
+        }
+
         return reply.status(200).send({
           success: true,
-          message: `6-digit verification code dispatched to ${email}`,
+          message: `6-digit verification code dispatched strictly to ${email}`,
           email,
           purpose: targetPurpose,
-          emailSent: result.emailSent,
-          // Return devOtp in local development / non-production if Brevo encountered unwhitelisted IP
-          devOtp: !result.emailSent ? result.otp : undefined,
-          errorNotice: result.error,
+          emailSent: true,
         });
       } catch (err: any) {
         fastify.log.error(err, 'Failed to send OTP email');
