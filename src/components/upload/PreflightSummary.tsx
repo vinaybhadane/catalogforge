@@ -67,7 +67,7 @@ export const PreflightSummary: React.FC<PreflightSummaryProps> = ({
 
       {/* ── Status Banner ── */}
       <div className={cn(
-        "px-6 py-4 flex items-center justify-between border-b",
+        "p-4 sm:px-6 sm:py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between border-b gap-3",
         isRejected
           ? "bg-rose-50 border-rose-200"
           : hasWarnings
@@ -76,18 +76,18 @@ export const PreflightSummary: React.FC<PreflightSummaryProps> = ({
       )}>
         <div className="flex items-center gap-3">
           <div className={cn(
-            "w-9 h-9 rounded-lg flex items-center justify-center shrink-0",
+            "w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center shrink-0",
             isRejected ? "bg-rose-100" : hasWarnings ? "bg-amber-100" : "bg-emerald-100"
           )}>
             {isRejected
-              ? <XCircle className="w-5 h-5 text-rose-600" />
+              ? <XCircle className="w-4 h-4 sm:w-5 sm:h-5 text-rose-600" />
               : hasWarnings
-              ? <AlertTriangle className="w-5 h-5 text-amber-600" />
-              : <CheckCircle2 className="w-5 h-5 text-emerald-600" />}
+              ? <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" />
+              : <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" />}
           </div>
           <div>
             <h3 className={cn(
-              "text-sm font-bold",
+              "text-xs sm:text-sm font-bold",
               isRejected ? "text-rose-900" : hasWarnings ? "text-amber-900" : "text-emerald-900"
             )}>
               {isRejected
@@ -97,7 +97,7 @@ export const PreflightSummary: React.FC<PreflightSummaryProps> = ({
                 : "Pre-flight Scan Passed"}
             </h3>
             <p className={cn(
-              "text-xs mt-0.5",
+              "text-[11px] sm:text-xs mt-0.5",
               isRejected ? "text-rose-700" : hasWarnings ? "text-amber-700" : "text-emerald-700"
             )}>
               {isRejected
@@ -107,7 +107,7 @@ export const PreflightSummary: React.FC<PreflightSummaryProps> = ({
           </div>
         </div>
         <span className={cn(
-          "text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider border",
+          "text-[9px] sm:text-[10px] font-bold px-2.5 sm:px-3 py-1 rounded-full uppercase tracking-wider border self-start sm:self-auto",
           isRejected
             ? "text-rose-700 border-rose-300 bg-white"
             : hasWarnings
@@ -224,34 +224,34 @@ export const PreflightSummary: React.FC<PreflightSummaryProps> = ({
       </div>
 
       {/* ── Action Footer ── */}
-      <div className="px-6 py-4 border-t border-[#E2E8F0] bg-[#FAFAFA] flex items-center justify-between flex-wrap gap-3">
+      <div className="p-4 sm:px-6 sm:py-4 border-t border-[#E2E8F0] bg-[#FAFAFA] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <button
           type="button"
           onClick={onReset}
-          className="flex items-center gap-2 text-sm font-medium text-[#64748B] hover:text-[#000000] transition-colors"
+          className="flex items-center justify-center gap-2 text-xs sm:text-sm font-medium text-[#64748B] hover:text-[#000000] transition-colors py-1.5"
         >
           <RefreshCw className="w-4 h-4" />
           Upload Another File
         </button>
 
         {!isRejected && (
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
             <button
               type="button"
               onClick={handleExportDelivery}
               disabled={isExporting}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors shadow-sm disabled:opacity-50"
+              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold transition-colors shadow-sm disabled:opacity-50 w-full sm:w-auto"
               title="Download 252-column Expected Output Delivery Format (.xlsx)"
             >
               {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSpreadsheet className="w-4 h-4" />}
-              Export Delivery Format (.xlsx)
+              <span>Export Delivery Format (.xlsx)</span>
             </button>
             <button
               type="button"
               onClick={onProceed}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#3386E7] hover:bg-[#2563EB] text-white text-sm font-semibold transition-colors shadow-sm"
+              className="flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl bg-[#3386E7] hover:bg-[#2563EB] text-white text-xs sm:text-sm font-semibold transition-colors shadow-sm w-full sm:w-auto"
             >
-              View Processed Pipeline
+              <span>View Processed Pipeline</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

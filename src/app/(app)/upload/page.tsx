@@ -662,19 +662,19 @@ export default function UploadPage() {
   const currentBatchProduct = batchResult?.products?.[selectedBatchProductIndex] || null;
 
   return (
-    <div className="max-w-4xl mx-auto pb-16 space-y-6">
+    <div className="max-w-5xl mx-auto pb-16 space-y-4 sm:space-y-6 px-3 sm:px-4 md:px-6">
 
       {/* ── Page Header ─────────────────────────────────────────────── */}
-      <div className="bg-white border border-[#E2E8F0] rounded-2xl px-6 py-5 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-11 h-11 rounded-xl bg-[#EFF6FF] border border-[#BFDBFE] flex items-center justify-center shrink-0">
+      <div className="bg-white border border-[#E2E8F0] rounded-2xl p-4 sm:px-6 sm:py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 shadow-sm">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#EFF6FF] border border-[#BFDBFE] flex items-center justify-center shrink-0">
             <UploadCloud className="w-5 h-5 text-[#3386E7]" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-[#000000] tracking-tight">
+            <h1 className="text-lg sm:text-xl font-bold text-[#000000] tracking-tight">
               Dataset Upload &amp; Ingestion
             </h1>
-            <p className="text-sm text-[#64748B] mt-0.5 leading-snug">
+            <p className="text-xs sm:text-sm text-[#64748B] mt-0.5 leading-snug">
               Extract verified specifications via AI Product Lookup, Manufacturer URLs, or Manufacturer PDF &amp; batch file uploads.
             </p>
           </div>
@@ -682,7 +682,7 @@ export default function UploadPage() {
       </div>
 
       {/* ── Upload Mode Tabs ──────────────────────────────────────────── */}
-      <div className="bg-white border border-[#E2E8F0] rounded-2xl p-1.5 flex gap-1.5 overflow-x-auto">
+      <div className="bg-white border border-[#E2E8F0] rounded-2xl p-1 sm:p-1.5 flex gap-1 sm:gap-1.5 overflow-x-auto scrollbar-none shadow-sm">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTabMode === tab.id;
@@ -699,7 +699,7 @@ export default function UploadPage() {
               }}
               disabled={isProcessing}
               className={cn(
-                "flex-1 min-w-[120px] flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap",
+                "flex-1 min-w-[95px] sm:min-w-[120px] flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all whitespace-nowrap",
                 isActive
                   ? "bg-[#2563EB] text-white shadow-sm"
                   : "text-[#475569] hover:bg-[#F8FAFC] hover:text-[#000000]",
@@ -707,7 +707,7 @@ export default function UploadPage() {
               )}
               suppressHydrationWarning
             >
-              <Icon className={cn("w-4 h-4 shrink-0", isActive ? "text-white" : "text-[#94A3B8]")} />
+              <Icon className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0", isActive ? "text-white" : "text-[#94A3B8]")} />
               <span>{tab.label}</span>
             </button>
           );
@@ -716,15 +716,15 @@ export default function UploadPage() {
 
       {/* ── TAB: SINGLE PRODUCT QUICK LOOKUP (GEMINI 3.5 FLASH-LITE) ─── */}
       {activeTabMode === "ai-search" && (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Search Box */}
-          <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 space-y-4">
+          <div className="bg-white border border-[#E2E8F0] rounded-2xl p-4 sm:p-6 space-y-4 shadow-sm">
             <div>
-              <h3 className="text-base font-bold text-[#000000] tracking-tight flex items-center gap-2">
+              <h3 className="text-sm sm:text-base font-bold text-[#000000] tracking-tight flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-[#2563EB]" />
                 Single Product AI Search &amp; Enrichment
               </h3>
-              <p className="text-xs text-[#64748B] mt-1">
+              <p className="text-[11px] sm:text-xs text-[#64748B] mt-1 leading-relaxed">
                 Enter a product part number or name. Google Gemini 3.5 Flash-Lite extracts verified specs from the official manufacturer website.
               </p>
             </div>
@@ -1586,7 +1586,7 @@ export default function UploadPage() {
                     </p>
                   </div>
 
-                  <div className="flex items-center flex-wrap gap-2">
+                  <div className="flex items-center flex-wrap gap-2 w-full sm:w-auto">
                     <button
                       type="button"
                       onClick={async () => {
@@ -1621,7 +1621,7 @@ export default function UploadPage() {
                         }
                       }}
                       disabled={isOcrExportingExcel || isOcrExportingCsv}
-                      className="px-3.5 py-2 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors disabled:opacity-50 shadow-sm"
+                      className="px-3 sm:px-3.5 py-2 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 shadow-sm w-full sm:w-auto"
                     >
                       {isOcrExportingExcel ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1689,7 +1689,7 @@ export default function UploadPage() {
                         }
                       }}
                       disabled={isOcrExportingExcel || isOcrExportingCsv}
-                      className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors disabled:opacity-50 border border-slate-300 shadow-sm"
+                      className="px-3 sm:px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 border border-slate-300 shadow-sm w-full sm:w-auto"
                     >
                       {isOcrExportingCsv ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1703,7 +1703,7 @@ export default function UploadPage() {
                       type="button"
                       onClick={() => setShowOcrDeliveryColumns(!showOcrDeliveryColumns)}
                       className={cn(
-                        "px-3.5 py-2 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors border shadow-sm",
+                        "px-3 sm:px-3.5 py-2 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors border shadow-sm w-full sm:w-auto",
                         showOcrDeliveryColumns
                           ? "bg-blue-600 text-white border-blue-600"
                           : "bg-white text-slate-700 hover:bg-slate-50 border-slate-300"
@@ -1758,7 +1758,7 @@ export default function UploadPage() {
                         }
                       }}
                       disabled={isSavingOcrProduct}
-                      className="px-4 py-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors disabled:opacity-50 shadow-sm"
+                      className="px-3.5 sm:px-4 py-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 shadow-sm w-full sm:w-auto"
                     >
                       {isSavingOcrProduct ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -2592,12 +2592,12 @@ export default function UploadPage() {
                     </p>
                   </div>
 
-                  <div className="flex items-center flex-wrap gap-2">
+                  <div className="flex items-center flex-wrap gap-2 w-full sm:w-auto">
                     <button
                       type="button"
                       onClick={handleExportBatchExcel}
                       disabled={isBatchExportingExcel || isBatchExportingCsv}
-                      className="px-4 py-2.5 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors disabled:opacity-50 shadow-sm"
+                      className="px-3.5 sm:px-4 py-2 sm:py-2.5 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 shadow-sm w-full sm:w-auto"
                     >
                       {isBatchExportingExcel ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -2611,7 +2611,7 @@ export default function UploadPage() {
                       type="button"
                       onClick={handleExportBatchCsv}
                       disabled={isBatchExportingExcel || isBatchExportingCsv}
-                      className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors disabled:opacity-50 border border-slate-300 shadow-sm"
+                      className="px-3.5 py-2 sm:py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 border border-slate-300 shadow-sm w-full sm:w-auto"
                     >
                       {isBatchExportingCsv ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -2626,7 +2626,7 @@ export default function UploadPage() {
                         type="button"
                         onClick={handleSaveBatchToCatalog}
                         disabled={isBatchSavingCatalog}
-                        className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center gap-2 transition-colors disabled:opacity-50 shadow-sm"
+                        className="px-4 py-2 sm:py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-colors disabled:opacity-50 shadow-sm w-full sm:w-auto"
                       >
                         {isBatchSavingCatalog ? (
                           <>
@@ -2645,7 +2645,7 @@ export default function UploadPage() {
                     <button
                       type="button"
                       onClick={handleResetBatch}
-                      className="px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl flex items-center gap-1 transition"
+                      className="px-3 py-2 sm:py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl flex items-center justify-center gap-1 transition w-full sm:w-auto"
                       title="Upload new file"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
@@ -2655,7 +2655,7 @@ export default function UploadPage() {
                 </div>
 
                 {/* Metrics */}
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
                   <div className="bg-[#F0FDF4] border border-emerald-200 p-3 rounded-xl">
                     <span className="text-[10px] font-bold text-emerald-800 uppercase">252-Column Format</span>
                     <p className="text-base font-black text-emerald-950 mt-0.5">100% Compliant</p>

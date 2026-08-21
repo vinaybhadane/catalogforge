@@ -84,7 +84,7 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
         <div
           {...getRootProps()}
           className={cn(
-            "bg-white border-2 border-dashed rounded-2xl p-10 sm:p-14 text-center cursor-pointer transition-all select-none",
+            "bg-white border-2 border-dashed rounded-2xl p-6 sm:p-10 md:p-12 text-center cursor-pointer transition-all select-none",
             isDragActive
               ? "border-[#3386E7] bg-[#EFF6FF]"
               : isDragReject
@@ -95,58 +95,62 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
         >
           <input {...getInputProps()} />
           <div className={cn(
-            "w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 transition-colors",
+            "w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-4 transition-colors",
             isDragActive ? "bg-[#DBEAFE]" : "bg-[#F1F5F9]"
           )}>
             <UploadCloud className={cn(
-              "w-7 h-7 transition-colors",
+              "w-6 h-6 sm:w-7 sm:h-7 transition-colors",
               isDragActive ? "text-[#3386E7]" : "text-[#94A3B8]"
             )} />
           </div>
-          <p className="text-[15px] font-bold text-[#000000] mb-1">
+          <p className="text-sm sm:text-base font-bold text-[#000000] mb-1">
             {isDragActive ? "Drop your file here" : "Drag & drop your file or PDF here"}
           </p>
-          <p className="text-sm text-[#64748B] mb-5">
+          <p className="text-xs sm:text-sm text-[#64748B] mb-4 sm:mb-5 max-w-md mx-auto leading-relaxed">
             Supports manufacturer technical PDFs (.pdf) and supplier spreadsheets (.csv, .xlsx, .xls) up to 50MB
           </p>
-          <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-[#E2E8F0] bg-white text-sm font-semibold text-[#000000] shadow-sm hover:border-[#3386E7] hover:text-[#3386E7] transition-colors">
+          <span className="inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl border border-[#E2E8F0] bg-white text-xs sm:text-sm font-semibold text-[#000000] shadow-sm hover:border-[#3386E7] hover:text-[#3386E7] transition-colors w-full sm:w-auto">
             <File className="w-4 h-4" />
             Browse files &amp; PDFs
           </span>
-          <p className="text-xs text-[#94A3B8] mt-4 font-medium">
+          <p className="text-[11px] sm:text-xs text-[#94A3B8] mt-3 sm:mt-4 font-medium">
             PDF · CSV · XLSX · XLS — max 50 MB
           </p>
         </div>
       ) : (
-        <div className="bg-white border border-[#E2E8F0] rounded-2xl overflow-hidden">
-          <div className="flex items-center gap-4 px-5 py-4 border-b border-[#F1F5F9]">
-            <div className="w-11 h-11 rounded-xl bg-[#F1F5F9] flex items-center justify-center shrink-0">
-              {getFileIcon(selectedFile)}
+        <div className="bg-white border border-[#E2E8F0] rounded-2xl overflow-hidden shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:px-5 sm:py-4 border-b border-[#F1F5F9]">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#F1F5F9] flex items-center justify-center shrink-0">
+                {getFileIcon(selectedFile)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs sm:text-sm font-bold text-[#000000] truncate">{selectedFile.name}</p>
+                <p className="text-[11px] sm:text-xs text-[#64748B] mt-0.5">{formatBytes(selectedFile.size)}</p>
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-[#000000] truncate">{selectedFile.name}</p>
-              <p className="text-xs text-[#64748B] mt-0.5">{formatBytes(selectedFile.size)}</p>
+            <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
+              <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full shrink-0">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Ready for AI Processing</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => onFileSelect(null)}
+                disabled={isUploading}
+                className="p-1.5 text-[#94A3B8] hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors shrink-0"
+                aria-label="Remove file"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              Ready for AI Processing
-            </div>
-            <button
-              type="button"
-              onClick={() => onFileSelect(null)}
-              disabled={isUploading}
-              className="p-1.5 text-[#94A3B8] hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
-              aria-label="Remove file"
-            >
-              <X className="w-4 h-4" />
-            </button>
           </div>
-          <div className="flex items-center justify-between px-5 py-3 bg-[#FAFAFA] flex-wrap gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-3 sm:px-5 sm:py-3 bg-[#FAFAFA] gap-2.5">
             <button
               type="button"
               onClick={() => onFileSelect(null)}
               disabled={isUploading}
-              className="text-sm font-medium text-[#64748B] hover:text-[#000000] transition-colors"
+              className="text-xs sm:text-sm font-medium text-[#64748B] hover:text-[#000000] transition-colors py-1 text-center sm:text-left"
             >
               Choose different file
             </button>
@@ -154,7 +158,7 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
               type="button"
               onClick={onUploadSubmit}
               disabled={isUploading}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm font-semibold disabled:opacity-50 transition-colors shadow-sm"
+              className="flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs sm:text-sm font-semibold disabled:opacity-50 transition-colors shadow-sm w-full sm:w-auto"
             >
               <SubmitIcon className="w-4 h-4" />
               <span>{submitButtonText}</span>
