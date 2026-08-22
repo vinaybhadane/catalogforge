@@ -1,8 +1,8 @@
-# CatalogForge — Enterprise AI Product Intelligence & Catalog Governance Platform
+# CatalogForge — Enterprise AI Product Intelligence Platform
 
 <div align="center">
 
-![CatalogForge Logo](public/logo-icon.png)
+<img src="public/logo-icon.png" width="60" height="60" alt="CatalogForge Logo" style="border-radius: 12px; margin-bottom: 8px;" />
 
 ### **Transform raw, chaotic catalog data into validated, source-grounded commerce records.**
 
@@ -113,7 +113,7 @@ flowchart LR
 
 3. **Stage 3: Source-Grounded Attribute Enrichment**
    - Parses technical dimensions, electrical ratings (voltage, amperage, poles, interrupt rating), and materials.
-   - Normalizes fractions and units (`1/2"` -> `0.5 in`, `1-3/4"` -> `1.75 in`, `INCHES` -> `in`).
+   - Normalizes fractions and units (`1/2"` $\rightarrow$ `0.5 in`, `1-3/4"` $\rightarrow$ `1.75 in`, `INCHES` $\rightarrow$ `in`).
 
 4. **Stage 4: Controlled Vocabulary (LOV) Resolution**
    - Maps messy variations (e.g., `Polycarb`, `PC`, `Polycarbonate Resin`) into standardized Master Data terms.
@@ -152,7 +152,7 @@ flowchart LR
   - **Administrator:** Full workspace configuration, policy governance, and member invitation management.
   - **Catalog Manager:** Ingest datasets, trigger AI lookups, review pending items, and publish approved records.
   - **Auditor (Read-Only):** Inspect product provenance, view audit logs, and download delivery files.
-- Email invitation workflow with real-time `Pending Acceptance` -> `Accepted / Active` tracking.
+- Email invitation workflow with real-time `Pending Acceptance` $\rightarrow$ `Accepted / Active` tracking.
 
 ---
 
@@ -310,7 +310,7 @@ npm run db:seed
 cd unihack-backend
 npm run dev
 # Server listening on http://localhost:8000
-# Swagger API docs available at http://localhost:8000/documentation
+# Swagger API docs available at http://localhost:8000/api/docs
 ```
 
 **Start Next.js Frontend (in a new terminal):**
