@@ -17,6 +17,7 @@ import { geminiSearchService, ExtractedProductIntelligence, WarrantyDetails } fr
 import { DELIVERY_HEADERS } from './delivery-exporter.service';
 import { resolveBrandAndManufacturer, resolveAuthoritativeClasspath, sanitizeText } from '../utils/text-sanitizer';
 import { imageExtractorService } from './image-extractor.service';
+import { urlHealthVerifierService } from './url-health-verifier.service';
 
 export interface EnrichedBatchProduct {
   rowIndex: number;
@@ -205,7 +206,6 @@ export class BatchFileEnricherService {
     const quotaNotice = isQuotaCapped
       ? `⚡ API Rate Quota Guard: To avoid external AI API rate limits (Gemini 429 quota exhaustion), the first ${effectiveLimit} products out of ${totalDistinctItems} total products in this file were deeply enriched with 100% authentic OEM specs, real CDN images, warranty terms, and complete 252-column Unihack delivery schemas.`
       : null;
-
     // 3. Process each item individually with live Tavily web search + Gemini extraction
     const processItemWithTimeout = async (
       item: (typeof itemsToProcess)[0],
@@ -221,7 +221,7 @@ export class BatchFileEnricherService {
           item.title || item.raw.part_desc || undefined,
         );
         const intel = await Promise.race([searchPromise, timeoutPromise]);
-        return this.buildEnrichedProduct(idx + 1, item, intel);
+        return await this.buildEnrichedProduct(idx + 1, item, intel);
       } catch (err) {
         console.warn(`[BatchEnricher] Live AI search retry for item #${idx + 1} (${item.partNumber}):`, err);
         try {
@@ -231,7 +231,7 @@ export class BatchFileEnricherService {
             item.manufacturer,
             item.title || undefined,
           );
-          return this.buildEnrichedProduct(idx + 1, item, intel);
+          return await this.buildEnrichedProduct(idx + 1, item, intel);
         } catch (e) {
           return this.buildFallbackProduct(idx + 1, item);
         }
@@ -274,8 +274,9 @@ export class BatchFileEnricherService {
 
   /**
    * Formats ExtractedProductIntelligence into 252-Column Unihack Delivery Representation
+   * with automated Head-Check URL health verification and dead-link suppression
    */
-  private buildEnrichedProduct(
+  private async buildEnrichedProduct(
     index: number,
     item: {
       raw: ParsedRawRow;
@@ -289,7 +290,7 @@ export class BatchFileEnricherService {
       fine?: string;
     },
     intel: ExtractedProductIntelligence,
-  ): EnrichedBatchProduct {
+  ): Promise<EnrichedBatchProduct> {
     const raw = item.raw;
     const resolved = resolveBrandAndManufacturer(
       raw.e1_brand || raw.unilog_brand || raw.dib_brand || item.brand || undefined,
@@ -316,9 +317,9 @@ export class BatchFileEnricherService {
     const retailDesc = sanitizeText(`${brandName} ${shortDesc}`);
     const marketingDescription = sanitizeText(intel.officialDescription || '');
 
-    // Images: only genuine scraped photographic images (never PDFs or non-product media)
+    // Images: only genuine scraped photographic images verified live via HTTP HEAD/GET Range
     const rawImages = (intel.assets || []).filter((a) => a.assetType === 'image').map((a) => a.previewUrl || a.sourceUrl || '');
-    const imageExtraction = imageExtractorService.validateAndRankImages(rawImages, '', {
+    const imageExtraction = await imageExtractorService.validateAndFilterLiveImagesAsync(rawImages, '', {
       partNumber: partNum,
       manufacturer: mfgName,
       brand: brandName,
@@ -334,7 +335,7 @@ export class BatchFileEnricherService {
 
     // Documents: only real verified technical PDFs (datasheets, SDS, manuals)
     const docAssets = (intel.assets || []).filter((a) => a.assetType !== 'image');
-    const documents = docAssets
+    const rawDocuments = docAssets
       .map((d) => ({
         assetType: d.assetType,
         fileName: d.fileName || `${partNum}_Datasheet.pdf`,
@@ -342,6 +343,15 @@ export class BatchFileEnricherService {
         shortInfo: d.shortInfo || 'Official Technical Document',
       }))
       .filter((doc) => Boolean(doc.sourceUrl));
+
+    // Verify document URLs asynchronously
+    const docChecks = await urlHealthVerifierService.verifyUrlsBatch(
+      rawDocuments.map((d) => ({ url: d.sourceUrl, expectedType: 'pdf' as const }))
+    );
+    const documents = rawDocuments.filter((d) => {
+      const v = docChecks.get(d.sourceUrl);
+      return v && v.isValid;
+    });
 
     // Warranty
     const warrantyInfo: WarrantyDetails = intel.warrantyInfo || {
@@ -351,61 +361,76 @@ export class BatchFileEnricherService {
       isVerified: false,
     };
 
+    if (warrantyInfo.verifiedUrl) {
+      const wCheck = await urlHealthVerifierService.verifyUrl(warrantyInfo.verifiedUrl, { expectedType: 'any' });
+      if (!wCheck.isValid) {
+        warrantyInfo.verifiedUrl = null;
+        warrantyInfo.isVerified = false;
+      }
+    }
+
     // Citations
     const rawCitations = intel.citations || [];
-    const citations = rawCitations.map((c) => ({
-      sourceUrl: c.sourceUrl || null,
-      domain: c.domain || 'official-site.com',
-      sourceTitle: c.sourceTitle || `${mfgName} Product Record`,
-      sourceSnippet: c.sourceSnippet || '',
-      tier: c.tier || 'Primary Source',
-    }));
+    const citationChecks = await urlHealthVerifierService.verifyUrlsBatch(
+      rawCitations.filter((c) => Boolean(c.sourceUrl)).map((c) => ({ url: c.sourceUrl!, expectedType: 'any' as const }))
+    );
+
+    const citations = rawCitations.map((c) => {
+      const isLive = c.sourceUrl ? (citationChecks.get(c.sourceUrl)?.isValid ?? false) : false;
+      return {
+        sourceUrl: isLive ? c.sourceUrl : null,
+        domain: c.domain || 'official-site.com',
+        sourceTitle: c.sourceTitle || `${mfgName} Product Record`,
+        sourceSnippet: c.sourceSnippet || '',
+        tier: c.tier || 'Primary Source',
+      };
+    });
 
     // Initialize exact 252-column row
-    const row: Record<string, string> = {};
+    const rawRow: Record<string, string> = {};
     for (const h of DELIVERY_HEADERS) {
-      row[h] = '';
+      rawRow[h] = '';
     }
 
     // 1. Evidence URLs
     const sourceUrls = citations.map((c) => c.sourceUrl).filter((u): u is string => Boolean(u));
-    if (sourceUrls.length > 0) row['MFR URL'] = sanitizeText(sourceUrls[0]);
+    if (sourceUrls.length > 0) rawRow['MFR URL'] = sanitizeText(sourceUrls[0]);
     for (let i = 1; i <= 5; i++) {
-      if (sourceUrls[i]) row[`Ref URL ${i}`] = sanitizeText(sourceUrls[i]);
+      if (sourceUrls[i]) rawRow[`Ref URL ${i}`] = sanitizeText(sourceUrls[i]);
     }
 
     // 2. Identifiers & Taxonomy
-    row['PART_NUMBER'] = sanitizeText(partNum);
-    row['Dept'] = sanitizeText(item.dept || raw.dept);
-    row['Class'] = sanitizeText(item.class || raw.class);
-    row['Fine'] = sanitizeText(item.fine || raw.fine);
-    row['SKU - MY_PART_NUMBER'] = sanitizeText(raw.sku_my_part_number || partNum.toUpperCase());
-    row['Mfg_Part_Num'] = sanitizeText(raw.mfg_part_num || partNum);
-    row['Part_Desc'] = sanitizeText(raw.part_desc || shortDesc);
-    row['E1_Brand'] = sanitizeText(raw.e1_brand || brandName);
-    row['Unilog_Brand'] = sanitizeText(raw.unilog_brand || brandName);
-    row['DIB_Brand'] = sanitizeText(raw.dib_brand || brandName);
-    row['Part_Manuf'] = sanitizeText(raw.part_manuf || mfgName);
-    row['MANUFACTURER_NAME'] = sanitizeText(mfgName);
-    row['BRAND_NAME'] = sanitizeText(brandName);
-    row['TRADE_NAME'] = sanitizeText(brandName);
-    row['MANUFACTURER_PART_NUMBER'] = sanitizeText(partNum);
-    row['ALTERNATE_PART_NUMBER'] = '';
-    row['Classpath'] = sanitizeText(classpath);
+    rawRow['PART_NUMBER'] = sanitizeText(partNum);
+    rawRow['Dept'] = sanitizeText(item.dept || raw.dept);
+    rawRow['Class'] = sanitizeText(item.class || raw.class);
+    rawRow['Fine'] = sanitizeText(item.fine || raw.fine);
+    rawRow['SKU - MY_PART_NUMBER'] = sanitizeText(raw.sku_my_part_number || partNum.toUpperCase());
+    rawRow['Mfg_Part_Num'] = sanitizeText(raw.mfg_part_num || partNum);
+    rawRow['Part_Desc'] = sanitizeText(raw.part_desc || shortDesc);
+    rawRow['E1_Brand'] = sanitizeText(raw.e1_brand || brandName);
+    rawRow['Unilog_Brand'] = sanitizeText(raw.unilog_brand || brandName);
+    rawRow['DIB_Brand'] = sanitizeText(raw.dib_brand || brandName);
+    rawRow['Part_Manuf'] = sanitizeText(raw.part_manuf || mfgName);
+    rawRow['MANUFACTURER_NAME'] = sanitizeText(mfgName);
+    rawRow['BRAND_NAME'] = sanitizeText(brandName);
+    rawRow['TRADE_NAME'] = sanitizeText(brandName);
+    rawRow['MANUFACTURER_PART_NUMBER'] = sanitizeText(partNum);
+    rawRow['ALTERNATE_PART_NUMBER'] = '';
+    rawRow['Classpath'] = sanitizeText(classpath);
 
     // 3. Descriptions
-    row['MOBILE_DESC'] = mobileDesc;
-    row['INVOICE_DESC'] = invoiceDesc;
-    row['SHORT_DESC'] = shortDesc;
-    row['LONG_DESC1'] = longDesc;
-    row['RETAIL_DESC'] = retailDesc;
-    row['MARKETING_DESCRIPTION'] = marketingDescription;
+    rawRow['MOBILE_DESC'] = mobileDesc;
+    rawRow['INVOICE_DESC'] = invoiceDesc;
+    rawRow['SHORT_DESC'] = shortDesc;
+    rawRow['LONG_DESC1'] = longDesc;
+    rawRow['RETAIL_DESC'] = retailDesc;
+    rawRow['MARKETING_DESCRIPTION'] = marketingDescription;
 
     // 4. Features (1 to 20) - Strict extraction (only real features)
     const feats = (intel.features || []).filter((f) => Boolean(f && f.trim().length > 0));
     for (let i = 1; i <= 20; i++) {
       const feat = feats[i - 1];
-      row[`ITEM_FEATURES_${i}`] = feat ? sanitizeText(feat) : '';
+      rawRow[`ITEM_FEATURES_${i}`] = feat ? sanitizeText(feat) : '';
     }
 
     // 5. Attributes (1 to 50) - STRICT ZERO HALLUCINATION (>= 60% confidence only)
@@ -422,9 +447,9 @@ export class BatchFileEnricherService {
     for (let i = 1; i <= 50; i++) {
       const attr = validAttrs[i - 1];
       if (attr) {
-        row[`ATTRIBUTE_LABEL ${i}`] = sanitizeText(attr.label);
-        row[`ATTRIBUTE_VALUE ${i}`] = sanitizeText(attr.value);
-        row[`ATTRIBUTE_UOM ${i}`] = sanitizeText(attr.uom || '');
+        rawRow[`ATTRIBUTE_LABEL ${i}`] = sanitizeText(attr.label);
+        rawRow[`ATTRIBUTE_VALUE ${i}`] = sanitizeText(attr.value);
+        rawRow[`ATTRIBUTE_UOM ${i}`] = sanitizeText(attr.uom || '');
         auditTrails.push({
           fieldName: `ATTRIBUTE_LABEL ${i}`,
           status: 'retained',
@@ -432,9 +457,9 @@ export class BatchFileEnricherService {
           reason: 'Verified Tier-1 OEM or authorized distributor provenance (confidence >= 60%)',
         });
       } else {
-        row[`ATTRIBUTE_LABEL ${i}`] = '';
-        row[`ATTRIBUTE_VALUE ${i}`] = '';
-        row[`ATTRIBUTE_UOM ${i}`] = '';
+        rawRow[`ATTRIBUTE_LABEL ${i}`] = '';
+        rawRow[`ATTRIBUTE_VALUE ${i}`] = '';
+        rawRow[`ATTRIBUTE_UOM ${i}`] = '';
       }
     }
 
@@ -444,42 +469,45 @@ export class BatchFileEnricherService {
     const completenessRate = Math.min(100, Math.round((populatedValidCount / expectedCategoryCount) * 100));
 
     // 6. Pricing & Codes
-    row['UPC'] = '';
-    row['EAN'] = '';
-    row['GTIN'] = '';
-    row['UNSPSC'] = '40151500';
-    row['Warranty'] = sanitizeText(warrantyInfo.term || '');
-    row['List Price'] = '';
-    row['Selling Qty'] = '1';
-    row['Selling UOM'] = 'EA';
-    row['Standard Packaging Information'] = '';
+    rawRow['UPC'] = '';
+    rawRow['EAN'] = '';
+    rawRow['GTIN'] = '';
+    rawRow['UNSPSC'] = '40151500';
+    rawRow['Warranty'] = sanitizeText(warrantyInfo.term || '');
+    rawRow['List Price'] = '';
+    rawRow['Selling Qty'] = '1';
+    rawRow['Selling UOM'] = 'EA';
+    rawRow['Standard Packaging Information'] = '';
 
     // 7. Assets & Images - Strict Schema Output Mapping
-    row['Product Image'] = images[0]?.url || '';
-    row['Alternate Image 1'] = images[1]?.url || '';
-    row['Alternate Image 2'] = images[2]?.url || '';
-    row['Alternate Image 3'] = images[3]?.url || '';
-    row['Alternate Image 4'] = images[4]?.url || '';
+    rawRow['Product Image'] = images[0]?.url || '';
+    rawRow['Alternate Image 1'] = images[1]?.url || '';
+    rawRow['Alternate Image 2'] = images[2]?.url || '';
+    rawRow['Alternate Image 3'] = images[3]?.url || '';
+    rawRow['Alternate Image 4'] = images[4]?.url || '';
 
     if (warrantyInfo.verifiedUrl) {
-      row['Warranty Information'] = warrantyInfo.verifiedUrl;
+      rawRow['Warranty Information'] = warrantyInfo.verifiedUrl;
     }
 
     for (const doc of documents) {
-      if (doc.assetType === 'spec_sheet' && !row['Specification Sheet']) {
-        row['Specification Sheet'] = doc.sourceUrl;
-      } else if (doc.assetType === 'manual' && !row['Instruction/Installation Manual']) {
-        row['Instruction/Installation Manual'] = doc.sourceUrl;
-      } else if (doc.assetType === 'sds' && !row['SDS']) {
-        row['SDS'] = doc.sourceUrl;
-      } else if (doc.assetType === 'catalog' && !row['Catalog']) {
-        row['Catalog'] = doc.sourceUrl;
+      if (doc.assetType === 'spec_sheet' && !rawRow['Specification Sheet']) {
+        rawRow['Specification Sheet'] = doc.sourceUrl;
+      } else if (doc.assetType === 'manual' && !rawRow['Instruction/Installation Manual']) {
+        rawRow['Instruction/Installation Manual'] = doc.sourceUrl;
+      } else if (doc.assetType === 'sds' && !rawRow['SDS']) {
+        rawRow['SDS'] = doc.sourceUrl;
+      } else if (doc.assetType === 'catalog' && !rawRow['Catalog']) {
+        rawRow['Catalog'] = doc.sourceUrl;
       }
     }
 
-    row['Country Of Origin'] = 'United States';
-    row['Discontinued'] = 'No';
-    row['Actual Image (Yes/No)'] = images.length > 0 ? 'Yes' : 'No';
+    rawRow['Country Of Origin'] = 'United States';
+    rawRow['Discontinued'] = 'No';
+    rawRow['Actual Image (Yes/No)'] = images.length > 0 ? 'Yes' : 'No';
+
+    // Sanitize all URL columns in the 252 delivery row
+    const row = await urlHealthVerifierService.sanitizeDeliveryRowUrls(rawRow);
 
     // Calculate non-empty column count
     let nonEmptyCount = 0;

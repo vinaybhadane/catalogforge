@@ -5,6 +5,8 @@
  * and Primary/Alternate Gallery Ranking.
  */
 
+import { urlHealthVerifierService } from './url-health-verifier.service';
+
 export interface ProductRelevanceContext {
   partNumber?: string;
   manufacturer?: string;
@@ -167,6 +169,35 @@ export class ImageExtractorService {
     }
 
     return this.rankAndOrganizeImages(candidateImages, context);
+  }
+
+  /**
+   * Performs asynchronous HTTP HEAD/GET health checks on candidate images,
+   * discarding dead links and HTML error pages, and returning strictly live verified image assets.
+   */
+  public async validateAndFilterLiveImagesAsync(
+    rawUrls: (string | { url: string; width?: number; height?: number; alt?: string })[],
+    baseUrl = '',
+    context?: ProductRelevanceContext
+  ): Promise<ImageExtractionResult> {
+    const preliminary = this.validateAndRankImages(rawUrls, baseUrl, context);
+    if (preliminary.allValidImages.length === 0) {
+      return preliminary;
+    }
+
+    const batch = preliminary.allValidImages.map((img) => ({
+      url: img.url,
+      expectedType: 'image' as const,
+    }));
+
+    const verifiedMap = await urlHealthVerifierService.verifyUrlsBatch(batch);
+
+    const liveCandidates = preliminary.allValidImages.filter((img) => {
+      const check = verifiedMap.get(img.url);
+      return check && check.isValid;
+    });
+
+    return this.rankAndOrganizeImages(liveCandidates, context);
   }
 
   // ─────────────────────────────────────────────────────────────

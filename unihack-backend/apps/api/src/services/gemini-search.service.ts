@@ -13,6 +13,7 @@ import { env } from '../config/env';
 import { imageExtractorService } from './image-extractor.service';
 import { sourceGovernor } from './source-governor.service';
 import { sanitizeText, resolveBrandAndManufacturer, resolveAuthoritativeClasspath } from '../utils/text-sanitizer';
+import { urlHealthVerifierService } from './url-health-verifier.service';
 
 export interface VerifiedAsset {
   assetType: AssetType;
@@ -409,7 +410,7 @@ Respond with ONLY valid JSON matching this schema:
       category: parsedAiData?.classpath || '',
     };
 
-    const imageExtraction = imageExtractorService.validateAndRankImages(
+    const imageExtraction = await imageExtractorService.validateAndFilterLiveImagesAsync(
       rawImageCandidates,
       defaultMfgDomain,
       relevanceContext
@@ -435,35 +436,53 @@ Respond with ONLY valid JSON matching this schema:
 
     // Process Verified Documents (from Tavily exploration or AI verified search)
     const rawDocs = parsedAiData?.verifiedDocuments || [];
+    const candidateDocs: Array<{ assetType: AssetType; fileName: string; sourceUrl: string; shortInfo: string }> = [];
+
     if (Array.isArray(rawDocs) && rawDocs.length > 0) {
       for (const d of rawDocs) {
         const docUrl = d.sourceUrl || d.url;
         if (docUrl && typeof docUrl === 'string' && docUrl.startsWith('http')) {
-          assets.push({
+          candidateDocs.push({
             assetType: (d.assetType as AssetType) || 'spec_sheet',
             fileName: d.fileName || `${cleanPart.replace(/[^a-zA-Z0-9_-]/g, '_')}-Specification-Sheet.pdf`,
             sourceUrl: docUrl,
-            sourceDomain: defaultMfgDomain,
-            isFromManufacturer: true,
-            status: 'verified_live',
             shortInfo: d.shortInfo || 'Official manufacturer technical specification and dimensional drawing PDF',
           });
         }
       }
     }
 
-    // Add any Tavily discovered PDF documents not already in assets
+    // Add any Tavily discovered PDF documents
     for (const pdf of verifiedPdfDocLinks) {
-      if (!assets.some((a) => a.sourceUrl === pdf.url)) {
-        assets.push({
+      if (!candidateDocs.some((a) => a.sourceUrl === pdf.url)) {
+        candidateDocs.push({
           assetType: 'spec_sheet',
           fileName: `${cleanPart.replace(/[^a-zA-Z0-9_-]/g, '_')}-Datasheet.pdf`,
           sourceUrl: pdf.url,
-          sourceDomain: defaultMfgDomain,
-          isFromManufacturer: true,
-          status: 'verified_live',
           shortInfo: pdf.snippet ? pdf.snippet.slice(0, 120) : `${cleanMfg} verified technical document & specification guide`,
         });
+      }
+    }
+
+    // Check all candidate documents with urlHealthVerifierService
+    if (candidateDocs.length > 0) {
+      const docVerifications = await urlHealthVerifierService.verifyUrlsBatch(
+        candidateDocs.map((d) => ({ url: d.sourceUrl, expectedType: 'pdf' as const }))
+      );
+
+      for (const doc of candidateDocs) {
+        const check = docVerifications.get(doc.sourceUrl);
+        if (check && check.isValid) {
+          assets.push({
+            assetType: doc.assetType,
+            fileName: doc.fileName,
+            sourceUrl: doc.sourceUrl,
+            sourceDomain: defaultMfgDomain,
+            isFromManufacturer: true,
+            status: 'verified_live',
+            shortInfo: doc.shortInfo,
+          });
+        }
       }
     }
 
@@ -473,9 +492,16 @@ Respond with ONLY valid JSON matching this schema:
     const warrantyShortInfo =
       rawWarranty?.shortInfo ||
       `${cleanMfg || 'Manufacturer'} standard warranty coverage for manufacturing defects and workmanship under normal commercial usage.`;
-    const finalWarrantyUrl =
+    let finalWarrantyUrl =
       verifiedWarrantyLink?.url ||
       (rawWarranty?.verifiedUrl && rawWarranty.verifiedUrl.startsWith('http') ? rawWarranty.verifiedUrl : null);
+
+    if (finalWarrantyUrl) {
+      const wCheck = await urlHealthVerifierService.verifyUrl(finalWarrantyUrl, { expectedType: 'any' });
+      if (!wCheck.isValid) {
+        finalWarrantyUrl = null;
+      }
+    }
 
     const warrantyInfo: WarrantyDetails = {
       term: warrantyTerm,

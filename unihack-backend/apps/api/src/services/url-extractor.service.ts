@@ -10,6 +10,7 @@ import { env } from '../config/env';
 import { imageExtractorService } from './image-extractor.service';
 import { deliveryExporterService, DELIVERY_HEADERS } from './delivery-exporter.service';
 import { aiPipelineService, EnrichedProductOutput } from './ai-pipeline.service';
+import { urlHealthVerifierService } from './url-health-verifier.service';
 
 export interface ExtractedUrlProduct {
   sourceUrl: string;
@@ -403,8 +404,8 @@ Return ONLY a valid JSON object matching this schema:
       }
     }
 
-    // Assemble verified images using hardened image extractor ranking
-    const imageExtraction = imageExtractorService.validateAndRankImages(
+    // Assemble verified images using hardened image extractor ranking with async live health verification
+    const imageExtraction = await imageExtractorService.validateAndFilterLiveImagesAsync(
       Array.isArray(extractedJson.images) && extractedJson.images.length > 0
         ? extractedJson.images
         : uniqueImages,
@@ -425,12 +426,12 @@ Return ONLY a valid JSON object matching this schema:
     }));
 
     // Assemble verified documents (datasheets, SDS, warranty)
-    const documents: ExtractedUrlProduct['documents'] = [];
+    const rawDocuments: ExtractedUrlProduct['documents'] = [];
     if (Array.isArray(extractedJson.documents)) {
       extractedJson.documents.forEach((d: any) => {
         const u = typeof d === 'string' ? d : d.sourceUrl;
         if (u && typeof u === 'string' && u.startsWith('http')) {
-          documents.push({
+          rawDocuments.push({
             assetType: (d.assetType as AssetType) || 'spec_sheet',
             fileName: d.fileName || `${partNum.replace(/[^a-zA-Z0-9_-]/g, '_')}_Spec.pdf`,
             sourceUrl: u,
@@ -438,15 +439,24 @@ Return ONLY a valid JSON object matching this schema:
         }
       });
     }
-    if (documents.length === 0 && uniqueDocs.length > 0) {
+    if (rawDocuments.length === 0 && uniqueDocs.length > 0) {
       uniqueDocs.forEach((u) => {
-        documents.push({
+        rawDocuments.push({
           assetType: 'spec_sheet',
           fileName: `${partNum.replace(/[^a-zA-Z0-9_-]/g, '_')}_Datasheet.pdf`,
           sourceUrl: u,
         });
       });
     }
+
+    // Verify document URLs asynchronously
+    const docVerifications = await urlHealthVerifierService.verifyUrlsBatch(
+      rawDocuments.map((d) => ({ url: d.sourceUrl, expectedType: 'pdf' as const }))
+    );
+    const documents = rawDocuments.filter((d) => {
+      const v = docVerifications.get(d.sourceUrl);
+      return v && v.isValid;
+    });
 
     // 4. Construct 252-Column Delivery Export Row Context
     const mockProductEntity: Product = {
@@ -526,7 +536,7 @@ Return ONLY a valid JSON object matching this schema:
       updatedAt: new Date().toISOString(),
     };
 
-    const deliveryRow = deliveryExporterService.buildDeliveryRow({
+    const rawDeliveryRow = deliveryExporterService.buildDeliveryRow({
       product: mockProductEntity,
       rawInput: {
         part_desc: shortDesc,
@@ -536,8 +546,12 @@ Return ONLY a valid JSON object matching this schema:
       },
     });
 
-    // Ensure MFR URL is explicitly set to the provided URL
-    deliveryRow['MFR URL'] = cleanUrl;
+    // Ensure MFR URL is explicitly set to the provided URL (if valid)
+    const mfrCheck = await urlHealthVerifierService.verifyUrl(cleanUrl, { expectedType: 'any' });
+    rawDeliveryRow['MFR URL'] = mfrCheck.isValid ? cleanUrl : '';
+
+    // Sanitize all URL columns in the 252 delivery row
+    const deliveryRow = await urlHealthVerifierService.sanitizeDeliveryRowUrls(rawDeliveryRow);
 
     // Count populated vs blank columns
     let nonEmptyCount = 0;

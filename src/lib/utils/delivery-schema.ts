@@ -434,10 +434,29 @@ export function buildDeliveryFields(product: Product): DeliveryFieldEntry[] {
     });
   }
 
+  // Clean and suppress any dead/invalid dummy URLs
+  const urlColumns = [
+    'MFR URL', 'Ref URL 1', 'Ref URL 2', 'Ref URL 3', 'Ref URL 4', 'Ref URL 5',
+    'Product Image', 'Alternate Image 1', 'Alternate Image 2', 'Alternate Image 3', 'Alternate Image 4',
+    'SDS', 'SDS_1', 'Warranty Information', 'Catalog', 'Specification Sheet',
+    'Instruction/Installation Manual', 'Line Drawing', 'Video Link', 'Video Link 1'
+  ];
+
+  for (const col of urlColumns) {
+    if (row[col]) {
+      const val = row[col].trim();
+      const isPlaceholder = ['n/a', 'none', 'null', 'undefined', 'placeholder', 'error'].some((p) => val.toLowerCase().includes(p));
+      if (isPlaceholder) {
+        row[col] = '';
+      }
+    }
+  }
+
   row['Country Of Origin'] = sanitizeText(product.countryOfOrigin);
   row['Discontinued'] = product.discontinued ? 'Yes' : 'No';
-  const hasRealImages = (product.assets || []).some((a: any) => a.assetType === 'image' && (a.sourceUrl || a.blobUrl || a.fileName));
-  row['Actual Image (Yes/No)'] = hasRealImages || Boolean(row['Product Image']) || product.actualImage ? 'Yes' : 'No';
+  const hasLiveProductImage = Boolean(row['Product Image'] && row['Product Image'].trim().length > 0);
+  const hasAnyLiveImage = hasLiveProductImage || ['Alternate Image 1', 'Alternate Image 2', 'Alternate Image 3', 'Alternate Image 4'].some((k) => Boolean(row[k] && row[k].trim().length > 0));
+  row['Actual Image (Yes/No)'] = hasAnyLiveImage ? 'Yes' : 'No';
 
 
 

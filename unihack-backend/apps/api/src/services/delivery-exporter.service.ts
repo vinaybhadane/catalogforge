@@ -7,6 +7,7 @@
 import * as xlsx from 'xlsx';
 import { Product } from '@unihack/contracts';
 import { sanitizeText, resolveBrandAndManufacturer, resolveAuthoritativeClasspath } from '../utils/text-sanitizer';
+import { urlHealthVerifierService } from './url-health-verifier.service';
 
 export const DELIVERY_HEADERS: readonly string[] = [
   'MFR URL',
@@ -385,7 +386,7 @@ export class DeliveryExporterService {
     // 7. Attributes (ATTRIBUTE_LABEL 1..50, ATTRIBUTE_VALUE 1..50, ATTRIBUTE_UOM 1..50)
     // Strict Zero-Hallucination: Only attributes with >= 60% confidence and non-empty valid values
     const validAttributes = (product.attributes || []).filter((a) => {
-      const conf = a.confidenceScore ?? a.confidence ?? (a as any).lovMatchConfidence ?? 0.95;
+      const conf = a.confidenceScore ?? (a as any).confidence ?? (a as any).lovMatchConfidence ?? 0.95;
       const val = a.attributeValue ? String(a.attributeValue).trim() : '';
       const isPlaceholder = ['n/a', 'unknown', 'null', 'none', 'tbd', 'undefined'].includes(val.toLowerCase());
       return conf >= 0.60 && val.length > 0 && !isPlaceholder;
@@ -477,8 +478,15 @@ export class DeliveryExporterService {
     row['Actual Image (Yes/No)'] = hasRealImages || Boolean(row['Product Image']) || product.actualImage ? 'Yes' : 'No';
 
     return row;
+  }
 
-
+  /**
+   * Transforms a single product entity + raw input context into the exact 252-column array
+   * with automated Head-Check URL health verification and dead-link suppression
+   */
+  async buildDeliveryRowAsync(ctx: DeliveryExportRowContext): Promise<Record<string, string>> {
+    const rawRow = this.buildDeliveryRow(ctx);
+    return await urlHealthVerifierService.sanitizeDeliveryRowUrls(rawRow);
   }
 
   /**
@@ -490,10 +498,26 @@ export class DeliveryExporterService {
   }
 
   /**
+   * Generates a binary Excel buffer with automated Head-Check URL verification
+   */
+  async exportToExcelAsync(contexts: DeliveryExportRowContext[]): Promise<Buffer> {
+    const rows = await Promise.all(contexts.map((ctx) => this.buildDeliveryRowAsync(ctx)));
+    return this.exportRowsToExcel(rows);
+  }
+
+  /**
    * Generates a CSV string buffer formatted with all 252 delivery headers
    */
   exportToCsv(contexts: DeliveryExportRowContext[]): Buffer {
     const rows = contexts.map((ctx) => this.buildDeliveryRow(ctx));
+    return this.exportRowsToCsv(rows);
+  }
+
+  /**
+   * Generates a CSV string buffer with automated Head-Check URL verification
+   */
+  async exportToCsvAsync(contexts: DeliveryExportRowContext[]): Promise<Buffer> {
+    const rows = await Promise.all(contexts.map((ctx) => this.buildDeliveryRowAsync(ctx)));
     return this.exportRowsToCsv(rows);
   }
 

@@ -529,8 +529,10 @@ function DimensionsTab({ product }: { product: Product }) {
 // ─────────────────────────────────────────────────────────────
 
 function AssetsTab({ assets }: { assets?: ProductAsset[] }) {
-  const safeAssets = assets ?? [];
-  if (safeAssets.length === 0) return <p className="text-sm text-slate-400 italic py-8 text-center">No assets available.</p>;
+  const [hiddenAssetIds, setHiddenAssetIds] = useState<Set<string | number>>(new Set());
+  const safeAssets = (assets ?? []).filter((a, idx) => !hiddenAssetIds.has(a.id ?? idx));
+
+  if (safeAssets.length === 0) return <p className="text-sm text-slate-400 italic py-8 text-center">No verified live assets available.</p>;
 
   const typeIcon = (type: string) => {
     if (type === "image" || type === "actualImage") return <ImageIcon className="w-4 h-4 text-blue-500" />;
@@ -543,12 +545,27 @@ function AssetsTab({ assets }: { assets?: ProductAsset[] }) {
         const url = asset.assetUrl || asset.blobUrl || asset.sourceUrl;
         const title = sanitizeText(asset.title || asset.fileName || asset.assetType || `Asset #${idx + 1}`);
         const assetType = asset.assetType || "asset";
+        const isImg = (assetType === "image" || assetType === "actualImage") && url && url.startsWith("http");
+
         return (
           <div key={asset.id ?? idx} className="bg-white border border-[#E2E8F0] rounded-xl p-4 flex items-center justify-between gap-3 shadow-sm">
-            <div className="flex items-center gap-3">
-              {typeIcon(assetType)}
-              <div>
-                <p className="text-xs font-semibold text-slate-800">{title}</p>
+            <div className="flex items-center gap-3 min-w-0">
+              {isImg ? (
+                <div className="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center">
+                  <img
+                    src={url}
+                    alt={title}
+                    className="w-full h-full object-cover"
+                    onError={() => {
+                      setHiddenAssetIds((prev) => new Set([...prev, asset.id ?? idx]));
+                    }}
+                  />
+                </div>
+              ) : (
+                typeIcon(assetType)
+              )}
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-slate-800 truncate">{title}</p>
                 <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">{String(assetType).replace(/_/g, " ")}</span>
               </div>
             </div>

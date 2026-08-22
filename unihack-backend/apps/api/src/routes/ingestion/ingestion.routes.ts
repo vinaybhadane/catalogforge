@@ -25,6 +25,7 @@ import {
 } from '../../schemas/ingestion.schemas';
 import { ingestionService } from '../../services/ingestion.service';
 import { ocrIngestionService } from '../../services/ocr-ingestion.service';
+import { urlHealthVerifierService } from '../../services/url-health-verifier.service';
 
 export const ingestionRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   /**
@@ -956,6 +957,62 @@ export const ingestionRoutes: FastifyPluginAsync = async (fastify: FastifyInstan
       );
 
       return reply.status(200).send(result);
+    }
+  );
+
+  /**
+   * POST /api/v1/ingestion/verify-urls
+   * Automated Head-Check URL Health Verification & Dead-Link Suppression Endpoint
+   */
+  fastify.post<{
+    Body: {
+      urls?: Array<{ url: string; expectedType?: 'any' | 'image' | 'pdf' }> | string[];
+      url?: string;
+      expectedType?: 'any' | 'image' | 'pdf';
+    };
+  }>(
+    '/verify-urls',
+    {
+      schema: {
+        description: 'Verify live HTTP status of URLs and suppress dead/broken links',
+        tags: ['Ingestion'],
+        summary: 'URL Health Verification & Dead-Link Filter',
+      },
+    },
+    async (request, reply) => {
+      const { urls, url, expectedType } = request.body || {};
+
+      if (url) {
+        const result = await urlHealthVerifierService.verifyUrl(url, { expectedType: expectedType || 'any' });
+        return reply.status(200).send({
+          success: true,
+          result,
+          verifiedLive: result.isValid,
+        });
+      }
+
+      if (Array.isArray(urls)) {
+        const normalizedBatch = urls.map((u) => {
+          if (typeof u === 'string') return { url: u, expectedType: expectedType || 'any' as const };
+          return { url: u.url, expectedType: u.expectedType || expectedType || 'any' as const };
+        });
+
+        const resultMap = await urlHealthVerifierService.verifyUrlsBatch(normalizedBatch);
+        const results = normalizedBatch.map((item) => resultMap.get(item.url)!);
+
+        return reply.status(200).send({
+          success: true,
+          totalChecked: results.length,
+          validCount: results.filter((r) => r.isValid).length,
+          deadCount: results.filter((r) => !r.isValid).length,
+          results,
+        });
+      }
+
+      return reply.status(400).send({
+        success: false,
+        error: 'Either "url" or "urls" array must be provided in request body.',
+      });
     }
   );
 };
