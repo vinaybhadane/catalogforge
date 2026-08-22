@@ -186,7 +186,7 @@ export default function UploadPage() {
     uploadState === "rejected";
 
   const TABS = [
-    { id: "ai-search" as ExtendedUploadMode, label: "AI Product Lookup", shortLabel: "AI Lookup", sublabel: "Gemini Sourcing", icon: Sparkles },
+    { id: "ai-search" as ExtendedUploadMode, label: "AI Product Lookup", shortLabel: "AI Lookup", sublabel: "Live AI Sourcing", icon: Sparkles },
     { id: "image-ocr" as ExtendedUploadMode, label: "Product Image / Label OCR", shortLabel: "Image / OCR", sublabel: "Nameplate / Vision", icon: Camera },
     { id: "url" as ExtendedUploadMode, label: "Manufacturer URL", shortLabel: "OEM URL", sublabel: "Datasheet / Product link", icon: Globe },
     { id: "file" as ExtendedUploadMode, label: "Manufacturer PDF & File Upload", shortLabel: "PDF & Batch", sublabel: "CSV / XLSX / PDF", icon: UploadCloud },
@@ -208,7 +208,7 @@ export default function UploadPage() {
       });
       setAiResult(res);
     } catch (err: any) {
-      setAiSearchError(err?.message || "Failed to retrieve product intelligence with Gemini API.");
+      setAiSearchError(err?.message || "Failed to retrieve product intelligence. Please try again.");
     } finally {
       setIsAiSearching(false);
     }
@@ -715,7 +715,7 @@ export default function UploadPage() {
         })}
       </div>
 
-      {/* ── TAB: SINGLE PRODUCT QUICK LOOKUP (GEMINI 3.5 FLASH-LITE) ─── */}
+      {/* ── TAB: SINGLE PRODUCT QUICK LOOKUP (AI INTELLIGENCE ENGINE) ─── */}
       {activeTabMode === "ai-search" && (
         <div className="space-y-4 sm:space-y-6">
           {/* Search Box */}
@@ -726,7 +726,7 @@ export default function UploadPage() {
                 Single Product AI Search &amp; Enrichment
               </h3>
               <p className="text-[11px] sm:text-xs text-[#64748B] mt-1 leading-relaxed">
-                Enter a product part number or name. Google Gemini 3.5 Flash-Lite extracts verified specs from the official manufacturer website.
+                Enter a product part number or name. The AI Intelligence Engine extracts verified specs from the official manufacturer website.
               </p>
             </div>
 
@@ -769,12 +769,12 @@ export default function UploadPage() {
                   {isAiSearching ? (
                     <>
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Extracting with Gemini 3.5…</span>
+                      <span>Extracting Data…</span>
                     </>
                   ) : (
                     <>
                       <Sparkles className="w-3.5 h-3.5" />
-                      <span>Extract with Gemini AI</span>
+                      <span>Extract Data</span>
                     </>
                   )}
                 </button>
@@ -2076,7 +2076,7 @@ export default function UploadPage() {
                   Extracting Product Intelligence from URL…
                 </h3>
                 <p className="text-xs text-[#64748B] max-w-md">
-                  Fetching live HTML content, scraping high-res OEM images, and parsing technical specifications with Google Gemini 3.5 Flash-Lite.
+                  Fetching live HTML content, scraping high-res OEM images, and parsing technical specifications with deep AI extraction.
                 </p>
               </div>
               <div className="w-full max-w-md space-y-2 text-left bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-[11px] text-slate-600">
@@ -2090,7 +2090,7 @@ export default function UploadPage() {
                 </div>
                 <div className="flex items-center gap-2 font-semibold text-blue-700 animate-pulse">
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>3. Map to 252-Column Unihack Schema with Gemini 3.5 AI</span>
+                  <span>3. Map to 252-Column Unihack Schema with AI Engine</span>
                 </div>
                 <div className="flex items-center gap-2 text-slate-400">
                   <div className="w-3.5 h-3.5 rounded-full border border-slate-300 flex items-center justify-center text-[9px] font-bold">4</div>
@@ -2488,7 +2488,7 @@ export default function UploadPage() {
                   Extracting Multi-Product Intelligence &amp; Generating 252-Column Delivery…
                 </h3>
                 <p className="text-xs text-[#64748B] max-w-lg">
-                  Parsing file rows, querying live Google Gemini 3.5 AI &amp; OEM CDN repositories, scraping authentic product photos, and compiling full 252-column specifications.
+                  Parsing file rows, querying live OEM CDN repositories, scraping authentic product photos, and compiling full 252-column specifications.
                 </p>
               </div>
               <div className="w-full max-w-md space-y-2 text-left bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-[11px] text-slate-600">
@@ -2665,7 +2665,7 @@ export default function UploadPage() {
                   <div className="bg-[#EFF6FF] border border-blue-200 p-3 rounded-xl">
                     <span className="text-[10px] font-bold text-blue-800 uppercase">Enriched Batch</span>
                     <p className="text-base font-black text-blue-950 mt-0.5">{batchResult.processedCount} Products</p>
-                    <p className="text-[10px] text-blue-700">Gemini 3.5 live AI specs</p>
+                    <p className="text-[10px] text-blue-700">Live AI verified specs</p>
                   </div>
                   <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl">
                     <span className="text-[10px] font-bold text-slate-800 uppercase">Scraped OEM Photos</span>
