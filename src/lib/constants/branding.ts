@@ -4,5 +4,5 @@ export const BRANDING = {
   url: "https://catalogforge.tech",
   description: "Enterprise Product Intelligence & Data Operations Platform",
   tagline: "Transform raw product data into validated, source-grounded commerce records.",
-  version: "1.0.0-phase1",
+  version: "1.0.0",
 } as const;

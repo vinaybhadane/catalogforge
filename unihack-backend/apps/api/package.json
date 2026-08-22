@@ -4,12 +4,17 @@
   "private": true,
   "description": "UniHack Core Fastify TypeScript REST API Server",
   "main": "dist/server.js",
+  "author": "Vinay S. Bhadane & Sakshi P. Patil (MET Institute of Engineering, Nashik - B.E Computer Engineering 2028)",
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "clean": "rimraf dist",
     "start": "node dist/server.js",
-    "test": "tsx src/test/api.spec.ts",
+    "test": "tsx src/test/api.spec.ts && tsx src/test/delivery-export.spec.ts && tsx src/test/image-extractor.spec.ts && tsx src/test/ocr-ingestion.spec.ts",
+    "test:api": "tsx src/test/api.spec.ts",
+    "test:export": "tsx src/test/delivery-export.spec.ts",
+    "test:image": "tsx src/test/image-extractor.spec.ts",
+    "test:ocr": "tsx src/test/ocr-ingestion.spec.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
