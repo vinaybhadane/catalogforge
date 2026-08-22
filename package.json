@@ -2,6 +2,12 @@
   "name": "catalog-forge",
   "version": "0.1.0",
   "private": true,
+  "description": "CatalogForge - Enterprise AI Product Intelligence & Automated Catalog Governance Platform",
+  "author": "Vinay S. Bhadane & Sakshi P. Patil (MET Institute of Engineering, Nashik - B.E Computer Engineering 2028)",
+  "contributors": [
+    "Vinay S. Bhadane <vinaybhadane06@gmail.com>",
+    "Sakshi P. Patil"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",

@@ -340,6 +340,13 @@ Respond with ONLY valid JSON matching this schema:
 
             const allSpecs = validProducts.flatMap((p) => p.detected_specs || []);
 
+            if (validProducts.length === 0) {
+              const fallback = this.heuristicFallback(fileName);
+              if (fallback.detectedProducts.length > 0) {
+                return fallback;
+              }
+            }
+
             console.log(`[OcrVision] Vision successfully extracted ${validProducts.length} product(s) using ${model}`);
 
             return {

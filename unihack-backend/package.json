@@ -14,6 +14,7 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
+    "db:seed": "tsx db/seeds/seed.ts",
     "clean": "npm run clean --workspaces --if-present"
   },
   "keywords": [
@@ -23,7 +24,11 @@
     "product-intelligence",
     "service-bus"
   ],
-  "author": "UniHack Engineering Team",
+  "author": "Vinay S. Bhadane & Sakshi P. Patil (MET Institute of Engineering, Nashik - B.E Computer Engineering 2028)",
+  "contributors": [
+    "Vinay S. Bhadane <vinaybhadane06@gmail.com>",
+    "Sakshi P. Patil"
+  ],
   "license": "UNLICENSED",
   "dependencies": {
     "@types/node": "^20.11.24",
