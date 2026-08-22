@@ -180,7 +180,7 @@ export default function TeamManagementPage() {
     }
   };
 
-  // Dispatch Invitation Email via Brevo API
+  // Dispatch Invitation Email via Email Service
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMemberEmail.trim() || !newMemberName.trim()) return;
@@ -377,7 +377,7 @@ export default function TeamManagementPage() {
             <div>
               <h2 className="text-sm font-bold text-[#000000]">Invite New Team Member via Email</h2>
               <p className="text-xs text-[#64748B]">
-                An invitation email will be dispatched via Brevo. The member remains &quot;Pending&quot; until they accept the invitation.
+                An invitation email will be dispatched to their inbox. The member remains &quot;Pending&quot; until they accept the invitation.
               </p>
             </div>
           </div>

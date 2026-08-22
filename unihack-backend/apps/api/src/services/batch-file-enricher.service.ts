@@ -204,7 +204,7 @@ export class BatchFileEnricherService {
     const itemsToProcess = candidateItems.slice(0, effectiveLimit);
 
     const quotaNotice = isQuotaCapped
-      ? `⚡ API Rate Quota Guard: To avoid external AI API rate limits (Gemini 429 quota exhaustion), the first ${effectiveLimit} products out of ${totalDistinctItems} total products in this file were deeply enriched with 100% authentic OEM specs, real CDN images, warranty terms, and complete 252-column Unihack delivery schemas.`
+      ? `⚡ High-Volume Processing Guard: The first ${effectiveLimit} products out of ${totalDistinctItems} total products in this file were deeply enriched with 100% authentic OEM specs, real CDN images, warranty terms, and complete 252-column delivery schemas.`
       : null;
     // 3. Process each item individually with live Tavily web search + Gemini extraction
     const processItemWithTimeout = async (

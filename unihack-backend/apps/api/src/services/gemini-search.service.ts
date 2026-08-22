@@ -169,7 +169,7 @@ export class GeminiSearchService {
             snippet: tavilyData.answer || preferredResult?.content || results[0]?.content,
             images: validImages,
           };
-          usedProvider = 'Tavily Live Web Sourcing';
+          usedProvider = 'Live Web Intelligence';
           isLiveSearch = true;
         }
       } catch (e) {
@@ -191,7 +191,7 @@ export class GeminiSearchService {
             snippet: organic?.snippet,
             images: (serpData.inline_images || []).map((img: any) => img.original || img.thumbnail).filter(Boolean),
           };
-          usedProvider = 'Google Search (via SerpAPI)';
+          usedProvider = 'Live Web Sourcing Engine';
           isLiveSearch = true;
         }
       } catch (e) {
@@ -300,7 +300,7 @@ Respond with ONLY valid JSON matching this schema:
             const rawText = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
             const cleanJson = rawText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
             parsedAiData = JSON.parse(cleanJson);
-            usedProvider = `Google Gemini (${model})`;
+            usedProvider = 'Enterprise AI Engine';
             break;
           } else if (res.status === 429) {
             console.warn(`[GeminiSearch] Model ${model} returned 429 quota exhausted. Trying next model...`);
@@ -338,7 +338,7 @@ Respond with ONLY valid JSON matching this schema:
         if (oaiRes.ok) {
           const oaiData = await oaiRes.json();
           parsedAiData = JSON.parse(oaiData.choices?.[0]?.message?.content || '{}');
-          usedProvider = 'OpenAI (GPT-4o-mini)';
+          usedProvider = 'Enterprise AI Engine';
         }
       } catch (e) {
         console.warn('[OpenAI] Fallback error:', e);

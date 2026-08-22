@@ -226,7 +226,7 @@ export default function SignUpPage() {
                     className="w-full px-3.5 py-2.5 text-sm bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl text-[#000000] placeholder:text-[#000000]/40 focus:outline-none focus:border-[#3386E7] transition-colors font-medium"
                   />
                   <p className="text-[10px] text-slate-400 mt-1">
-                    An OTP code will be sent to this email via Brevo for verification.
+                    An OTP code will be sent to this email for security verification.
                   </p>
                 </div>
 

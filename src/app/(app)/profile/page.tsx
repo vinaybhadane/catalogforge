@@ -95,7 +95,7 @@ export default function ProfilePage() {
   const [passwordSuccessMessage, setPasswordSuccessMessage] = useState<string | null>(null);
   const [passwordErrorMessage, setPasswordErrorMessage] = useState<string | null>(null);
 
-  // Step 1: Send Password Reset OTP via Brevo
+  // Step 1: Send Password Reset OTP via Email Service
   const handleInitiatePasswordReset = async () => {
     if (!user?.email || isSendingOtp) return;
 
@@ -322,7 +322,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Security & Password Management (Brevo 2FA) */}
+      {/* Security & Password Management (2FA Verification) */}
       <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -473,7 +473,7 @@ export default function ProfilePage() {
         <div className="flex items-center gap-2.5 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
           <span className="text-xs text-emerald-800 font-semibold">
-            Session active &amp; authenticated — access token verified with Azure SQL and Google AI pipeline.
+            Session active &amp; authenticated — access token verified with Enterprise Catalog Intelligence pipeline.
           </span>
         </div>
       </div>

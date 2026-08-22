@@ -57,7 +57,7 @@ function SettingsContent() {
   const [strictOemOnly, setStrictOemOnly] = useState<boolean>(true);
   const [blockEcommerce, setBlockEcommerce] = useState<boolean>(true);
 
-  // Notifications State (Removed Gemini AI extraction option)
+  // Notifications State
   const [notifyJobSuccess, setNotifyJobSuccess] = useState<boolean>(true);
   const [notifyJobFailure, setNotifyJobFailure] = useState<boolean>(true);
   const [notificationEmail, setNotificationEmail] = useState<string>(
@@ -174,7 +174,7 @@ function SettingsContent() {
       JSON.stringify(updatedList.filter((m) => !m.isCurrentSession))
     );
 
-    // Try dispatching Brevo invite email in background
+    // Try dispatching invite email in background
     try {
       const appBaseUrl = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
       await apiClient.post("/auth/invite", {

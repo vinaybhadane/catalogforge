@@ -140,7 +140,7 @@ export function OtpVerification({
     }
   };
 
-  // Resend OTP email via Brevo
+  // Resend OTP email via Email Service
   const handleResend = async () => {
     if (resendCountdown > 0 || isResending) return;
 

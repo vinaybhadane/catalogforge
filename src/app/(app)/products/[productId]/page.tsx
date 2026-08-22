@@ -731,7 +731,7 @@ export default function ProductDetailPage() {
             suppressHydrationWarning
           >
             <Sparkles className={cn("w-3.5 h-3.5", isSearching && "animate-spin")} />
-            <span>{isSearching ? "Searching Gemini API…" : "Gemini Flash Sourcing"}</span>
+            <span>{isSearching ? "Extracting Live Specs…" : "Live AI Sourcing"}</span>
           </button>
 
           <button

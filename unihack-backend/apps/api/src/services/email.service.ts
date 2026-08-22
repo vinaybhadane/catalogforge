@@ -38,7 +38,7 @@ class EmailService {
     return (
       process.env.RESEND_SENDER_EMAIL ||
       (env as any).RESEND_SENDER_EMAIL ||
-      'CatalogForge Security <onboarding@resend.dev>'
+      'CatalogForge Security <security@catalogforge.tech>'
     ).trim();
   }
 
@@ -240,7 +240,7 @@ class EmailService {
           <tr>
             <td style="background-color: #f8fafc; padding: 18px 30px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8;">
               Sent by CatalogForge Security Operations • Resend Cloud Infrastructure<br>
-              Authorized Sender: onboarding@resend.dev
+              Authorized Sender: security@catalogforge.tech
             </td>
           </tr>
         </table>

@@ -48,7 +48,7 @@ export default function LoginPage() {
       // First verify email & password with Firebase Auth
       await signIn(email.trim(), password);
 
-      // Now send 2FA OTP via Brevo API
+      // Now send 2FA OTP via Email Service
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
       const res = await fetch(`${baseUrl}/auth/otp/send`, {
         method: "POST",

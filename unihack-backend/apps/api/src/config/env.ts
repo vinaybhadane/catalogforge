@@ -51,7 +51,7 @@ const envSchema = z.object({
 
   // Resend Transactional Email & Security Service
   RESEND_API_KEY: z.string().optional(),
-  RESEND_SENDER_EMAIL: z.string().default('CatalogForge Security <onboarding@resend.dev>'),
+  RESEND_SENDER_EMAIL: z.string().default('CatalogForge Security <security@catalogforge.tech>'),
   APP_BASE_URL: z.string().default('http://localhost:3000'),
 
   // Legacy Brevo (Optional Fallback)
