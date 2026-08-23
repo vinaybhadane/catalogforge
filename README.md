@@ -38,12 +38,66 @@
 
 Distributor datasets routinely suffer from:
 - **Missing or corrupted Part Numbers (MPN) and SKUs**
-- **Placeholder values and uninformative tokens** (e.g. `-- Unbranded --`, `-- No DIB Brand --`, `N/A`, `TBD`, `-`)
+- **Placeholder values and uninformative tokens** (e.g. `-- Unbranded --`, `-- No Unilog Brand --`, `-- No DIB Brand --`, `N/A`, `TBD`, `-`)
 - **Chaotic, non-standardized Units of Measure (UOM)** (e.g. `INCHES`, `1/2"`, `0.5 in`, `1-3/4 in`)
 - **Unverified third-party marketplace data drift** (pollution from Amazon, eBay, AliExpress, and unvetted sellers)
 - **Time-consuming manual catalog reviews** costing distributors weeks per catalog update
 
 CatalogForge automates end-to-end catalog data operations through an **8-Stage Deterministic Pipeline**, **Multi-Modal Vision/OCR Ingestion**, **Zero-Hallucination Gatekeeper**, **Strict Tier-1 OEM Sourcing**, **Golden 252-Column Delivery Export**, and a **Human-in-the-Loop (HITL) Review Studio**.
+
+---
+
+## 🏆 Unilog Standards & Challenge Compliance
+
+CatalogForge is strictly engineered against the **7 Official Unilog Reference Master Documents**:
+
+```mermaid
+flowchart TD
+    subgraph MasterStandards["Unilog Master Standards & Rubrics"]
+        R1["1. Content Guidelines (5 Tiers)"]
+        R2["2. Master UOM Standards (89 Types)"]
+        R3["3. Decimal-Fraction (63 Steps)"]
+        R4["4. UniCat Brand & OEM Master"]
+        R5["5. Fittings & Faucets LOVs"]
+        R6["6. Zero-Hallucination & Provenance"]
+        R7["7. 252-Column Golden Delivery Format"]
+    end
+    
+    MasterStandards --> Engine["CatalogForge Deterministic Pipeline Engine"]
+    Engine --> Out1["5-Tier Standardized Descriptions"]
+    Engine --> Out2["Normalized LOVs & Canonical UOMs"]
+    Engine --> Out3["Golden 252-Column Excel Deliverable"]
+```
+
+### 1. 5-Tier Standardized Description System
+Matches Unilog's exact worked example (`PDSH4816AF Dishwasher`) across all 5 commercial lengths and casings:
+
+| Tier | Field & Destination | Formula / Format | Length Limit | Worked Example Output |
+|---|---|---|---|---|
+| **Tier 1** | **Till Receipt / Invoice** (`INVOICE_DESC`) | `ITEM_TYPE [KEY_SPECS] [ELEC] [DIM]` (ALL CAPS ERP shorthand) | $\le 40$ chars | `DISHWSHR LEG SST 120V 15A 50-1/4IN` |
+| **Tier 2** | **Mobile App** (`MOBILE_DESC`) | `Manufacturer Brand, Item Type, Series, MPN` | $60–80$ chars | `Rheem Manufacturing FRIGIDAIRE, Dishwasher, Professional Series, PDSH4816AF` |
+| **Tier 3** | **Search Results / Title** (`SHORT_DESC`) | `Brand + [Series] + MPN + Item Type + [Key Attributes]` | $\le 150$ chars | `FRIGIDAIRE Professional Series PDSH4816AF Dishwasher` |
+| **Tier 4** | **Product Page** (`LONG_DESC1`) | `Brand ItemType, Series, [Specs], [Volts/Amps], [Dims with Fractions]` | Text | `FRIGIDAIRE Dishwasher, Professional Series, 120 V, 15 A, Leg Mounting, 24 in W, 50-1/4 in D` |
+| **Tier 5** | **Marketing Copy** (`RETAIL_DESC`) | Standardized commercial narrative | Text | `{Mfg} {ShortDesc} — engineered for professional heavy-duty applications.` |
+
+### 2. Complete 64th-Inch Fraction Conversion (Bidirectional)
+- Implements all **63 exact fraction steps** from $1/64$ ($0.015625$) to $63/64$ ($0.984375$) per `Decimal_Fraction.xlsx`.
+- Supports bidirectional parsing: Converts fractional input to decimal for arithmetic validation, and decimal to canonical fraction strings for buyer search queries (e.g. `50.25 in` $\rightarrow$ `50-1/4 in`).
+
+### 3. Strict UOM Normalization & Mandatory Space Rule
+- Enforces the Unilog house style rule: **There must ALWAYS be a single space between the number and the approved UOM token** (`"24 in"`, NOT `"24in"`; `"120 V"`, NOT `"120V"`).
+- Covers **89 measurement categories** (Length, Area, Volume, Mass/Weight, Electrical, Pressure, Temperature, Speed/Flow, Torque, Force, Packaging, Angle, Thread/Pitch, Sound Level, Luminosity).
+
+### 4. Specialized LOV Normalizers (Fittings & Faucets)
+- **Fittings Connections:** Normalizes **1,472 supplier variants into 515 canonical connection types** (`comp x mip` $\rightarrow$ `Compression x MIP`, `c x c` $\rightarrow$ `Sweat x Sweat`, `push-fit` $\rightarrow$ `Push-Fit`).
+- **Fittings Materials:** Normalizes **464 raw material variants into 113 canonical values** (`304 ss` $\rightarrow$ `304 Stainless Steel`, `polycarb` $\rightarrow$ `Polycarbonate`, `dzr` $\rightarrow$ `DZR Brass`).
+- **Faucets LOV Sequence:** Implements the **36-attribute sequential build order** with controlled vocabulary for Faucet Types, Mounting, Finish, and regulatory compliance flags (ADA, Lead-Free, WaterSense).
+
+### 5. Automated Pre-Flight Placeholder Scrubbing
+- Detects and eliminates uninformative placeholders before processing: `-- Unbranded --`, `-- No Unilog Brand --`, `-- No DIB Brand --`, `-- No Brand --`, `N/A`, `TBD`, `---`, `none`, and repetitive punctuation.
+
+### 6. Golden 252-Column Delivery Exporter
+- Exports datasets into the exact 252-column schema of `Unihack_Expected_Output_Delivery_Format.xlsx` with **100% header ordering match**.
 
 ---
 
@@ -104,55 +158,32 @@ flowchart LR
     S7 --> S8["Stage 8<br/><b>252-Col Delivery Export</b>"]
 ```
 
-1. **Stage 1: Pre-flight File & Image Ingestion**
+1. **Stage 1: Pre-flight Ingestion & Placeholder Scrubbing**
    - Ingests CSV, XLSX, PDF datasheets, packaging photos, or nameplate images.
-   - Cleanses corrupted encoding, parses headers, and eliminates placeholder tokens (`N/A`, `TBD`, `-- Unbranded --`).
+   - Cleanses corrupted UTF-8 mojibake, parses headers, and scrubs placeholder tokens (`-- Unbranded --`, `N/A`, `TBD`).
 
-2. **Stage 2: Taxonomy & Classification**
-   - Deterministically classifies products into Department > Class > Fine categories and UNSPSC codes (e.g. `40151500`).
+2. **Stage 2: Taxonomy & Classpath Resolution**
+   - Deterministically maps products into authoritative 3-tier taxonomy (`Dept > Class > Fine`) and UNSPSC codes.
 
-3. **Stage 3: Source-Grounded Attribute Enrichment**
-   - Parses technical dimensions, electrical ratings (voltage, amperage, poles, interrupt rating), and materials.
-   - Normalizes fractions and units (`1/2"` $\rightarrow$ `0.5 in`, `1-3/4"` $\rightarrow$ `1.75 in`, `INCHES` $\rightarrow$ `in`).
+3. **Stage 3: Source-Grounded Attribute Enrichment & UOM Normalization**
+   - Extracts technical dimensions, electrical ratings (voltage, amperage, poles), and materials.
+   - Enforces the 63-step fraction table and mandatory `<number> <uom>` spacing (`"24 in"`, `"120 V"`).
 
 4. **Stage 4: Controlled Vocabulary (LOV) Resolution**
-   - Maps messy variations (e.g., `Polycarb`, `PC`, `Polycarbonate Resin`) into standardized Master Data terms.
+   - Normalizes raw supplier terms into canonical Master Data (Fittings connections & materials, Faucets LOVs).
 
-5. **Stage 5: Deterministic Validation Rules**
-   - Applies mathematical bounds checks (e.g. `Min Voltage <= Max Voltage`, `Poles >= 1`, string length constraints).
+5. **Stage 5: Deterministic Validation & Title/Description Synthesis**
+   - Generates all 5 standardized description tiers with strict character limit enforcement.
+   - Applies engineering bounds checks (`Min Voltage <= Max Voltage`, `Poles >= 1`).
 
 6. **Stage 6: Multi-Factor Confidence Scoring**
    - Calculates field-level and aggregate confidence scores ($0.00$ to $1.00$) backed by provenance evidence.
 
 7. **Stage 7: Human-in-the-Loop (HITL) Review Studio**
-   - Flags low-confidence records ($< 80\%$) into interactive reviewer queues with side-by-side visual diffs and keyboard shortcuts.
+   - Flags low-confidence records ($< 85\%$) into interactive reviewer queues with side-by-side visual diffs.
 
 8. **Stage 8: Auto-Publishing & 252-Column Enterprise Export**
    - Exports pristine, production-ready catalogs into the exact **252-Column Enterprise Delivery Format** (`.xlsx` or `.csv`).
-
----
-
-## 🚀 Key Platform Features
-
-### 📸 Multi-Modal Visual OCR & Zero-Hallucination Gatekeeper
-- Upload single packaging labels, nameplate stickers, or multi-row invoice photos.
-- Evaluated with **Google Gemini Vision** with a strict **80% Sufficiency Gatekeeper**.
-- If an image is blurry or lacks product identifiers, extraction immediately aborts with `ABORTED_INSUFFICIENT_DATA` to prevent hallucination.
-
-### 🛡️ Strict Tier-1 OEM Sourcing & Marketplace Blacklisting
-- Enforces that technical documents, PDF cut sheets, CAD models, and high-res photos originate exclusively from verified manufacturer domains.
-- Automatically discards consumer marketplace links (Amazon, eBay, Walmart, AliExpress, Temu, Flipkart).
-
-### 📊 Real-Time Analytics & Immutable Audit Trails
-- Track ingestion throughput, classification accuracy, LOV resolution rate ($> 96.8\%$), and review queue backlog.
-- Every attribute modification, AI enrichment, and manual override is permanently logged in `dbo.audit_log` with user stamps and ISO timestamps.
-
-### 👥 Enterprise Team Management & Role-Based Access Control
-- Manage team members across three clear permission tiers:
-  - **Administrator:** Full workspace configuration, policy governance, and member invitation management.
-  - **Catalog Manager:** Ingest datasets, trigger AI lookups, review pending items, and publish approved records.
-  - **Auditor (Read-Only):** Inspect product provenance, view audit logs, and download delivery files.
-- Email invitation workflow with real-time `Pending Acceptance` $\rightarrow$ `Accepted / Active` tracking.
 
 ---
 
@@ -169,8 +200,7 @@ CatalogForge/
 │
 ├── public/                                    # Public static brand assets & icons
 │   ├── logo-icon.png                          # CatalogForge brand icon
-│   ├── favicon.ico                            # Application favicon
-│   └── ...
+│   └── favicon.ico                            # Application favicon
 │
 ├── src/                                       # Frontend Next.js 15 Source Code
 │   ├── app/                                   # App Router routes
@@ -187,8 +217,7 @@ CatalogForge/
 │   │   │   ├── settings/page.tsx              # Sourcing policy & alert preferences
 │   │   │   └── profile/page.tsx               # User account details & 2FA security
 │   │   ├── layout.tsx                         # Root HTML layout
-│   │   ├── error.tsx                          # Global error boundary
-│   │   └── not-found.tsx                      # 404 handler
+│   │   └── error.tsx                          # Global error boundary
 │   ├── components/                            # Reusable UI component modules
 │   ├── hooks/                                 # Custom React hooks
 │   ├── lib/                                   # Core utilities, API client, Firebase auth
@@ -207,8 +236,18 @@ CatalogForge/
     │   │   │   ├── plugins/                   # CORS, Swagger, Azure SQL pool
     │   │   │   ├── repositories/              # Azure SQL data access layer
     │   │   │   ├── routes/                    # API route handlers (Ingestion, Products, etc.)
-    │   │   │   ├── services/                  # Business logic (AI Pipeline, OCR, Exporter)
-    │   │   │   └── test/                      # Comprehensive integration test suites
+    │   │   │   ├── services/                  # Business logic:
+    │   │   │   │   ├── ai-pipeline.service.ts # 8-Stage Pipeline & 5-tier descriptions
+    │   │   │   │   ├── uom-normalizer.service.ts # 63-step fraction & UOM engine
+    │   │   │   │   ├── lov-normalizer.service.ts # Fittings & Faucets LOVs
+    │   │   │   │   ├── placeholder-detector.service.ts # Pre-flight cleaner
+    │   │   │   │   ├── source-governor.service.ts # Tier-1 OEM verification
+    │   │   │   │   └── delivery-exporter.service.ts # 252-column golden exporter
+    │   │   │   └── test/                      # Comprehensive test suites:
+    │   │   │       ├── description-tiers.spec.ts # 5-tier description tests
+    │   │   │       ├── delivery-export.spec.ts   # 252-column header tests
+    │   │   │       ├── image-extractor.spec.ts   # Image CDN tests
+    │   │   │       └── ocr-ingestion.spec.ts     # Multi-modal OCR tests
     │   │   └── package.json
     │   └── workers/                           # Pipeline worker specifications
     ├── packages/
@@ -220,100 +259,36 @@ CatalogForge/
 
 ---
 
-## ⚙️ Environment Configuration
-
-### 1. Frontend Environment (`.env.local`)
-
-Copy `.env.example` in the root directory to `.env.local`:
-
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
-NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSy...
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.firebasestorage.app
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=1234567890
-NEXT_PUBLIC_FIREBASE_APP_ID=1:1234567890:web:...
-NEXT_PUBLIC_BREVO_SENDER_EMAIL=security@catalogforge.tech
-```
-
-### 2. Backend Environment (`unihack-backend/.env`)
-
-Copy `unihack-backend/.env.example` to `unihack-backend/.env`:
-
-```env
-PORT=8000
-HOST=0.0.0.0
-NODE_ENV=development
-LOG_LEVEL=info
-APP_BASE_URL=http://localhost:3000
-
-# Azure SQL Connection
-AZURE_SQL_CONNECTION_STRING=Server=tcp:your-server.database.windows.net,1433;Initial Catalog=catalogforge_db;User ID=your_user;Password=your_password;Encrypt=True;TrustServerCertificate=False;
-
-# Firebase Admin SDK
-FIREBASE_PROJECT_ID=your-firebase-project-id
-FIREBASE_CLIENT_EMAIL=firebase-adminsdk@your-project.iam.gserviceaccount.com
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
-
-# AI Vision & Sourcing
-GEMINI_API_KEY=AIzaSy...
-GEMINI_MODEL=gemini-2.5-flash
-BRAVE_SEARCH_API_KEY=BSA...
-
-# Email & Security Alerts
-RESEND_API_KEY=re_...
-RESEND_SENDER_EMAIL=CatalogForge Security <onboarding@resend.dev>
-
-# CORS
-CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,https://catalogforge.tech
-```
-
----
-
 ## 🛠️ Installation & Local Development
 
 ### 1. Clone Repository & Install Dependencies
 
 ```bash
-# Clone the repository
+# Clone repository
 git clone https://github.com/vinaybhadane/catalogforge.git
 cd catalogforge
 
 # Install frontend dependencies
 npm install
 
-# Install backend monorepo dependencies
+# Install backend dependencies
 cd unihack-backend
 npm install
 npm run build
 cd ..
 ```
 
-### 2. Run Database Migrations & Seeds
+### 2. Start Development Servers
 
-Execute the Azure SQL scripts in `unihack-backend/db/migrations/`:
-- `001_initial_schema.sql` — Creates tables (`dbo.product`, `dbo.attribute`, `dbo.job`, `dbo.audit_log`, `dbo.app_user`, etc.)
-- `002_master_data.sql` — Populates manufacturer rules, brands, and UOM standards
-- `003_completeness_and_telemetry.sql` — Schema enhancements
-
-Run the seed script:
-```bash
-cd unihack-backend
-npm run db:seed
-```
-
-### 3. Start Development Servers
-
-**Start Fastify Backend:**
+**Start Fastify Backend (Port 8000):**
 ```bash
 cd unihack-backend
 npm run dev
-# Server listening on http://localhost:8000
+# Fastify API listening on http://localhost:8000
 # Swagger API docs available at http://localhost:8000/api/docs
 ```
 
-**Start Next.js Frontend (in a new terminal):**
+**Start Next.js Frontend (Port 3000):**
 ```bash
 npm run dev
 # Web application available at http://localhost:3000
@@ -323,37 +298,21 @@ npm run dev
 
 ## 🧪 Automated Test Suite & Verification
 
-The codebase includes full unit, integration, and schema validation test suites.
-
 ```bash
-# Run all backend test suites
-cd unihack-backend
+# Run all automated test suites
+cd unihack-backend/apps/api
 npm run test
 
 # Run individual test suites
-npm run test:api      # Fastify REST endpoints & ingestion lifecycle
-npm run test:export   # Strict 252-column delivery format validation
+npm run test:desc     # 5-Tier description formulas & character limit tests (30/30 passed)
+npm run test:export   # 252-Column golden delivery format validation (100% match)
 npm run test:image    # Product image extraction & container isolation
 npm run test:ocr      # Multi-modal OCR & Zero-Hallucination Gatekeeper
 
 # Run Typecheck verification across all workspaces
-npm run typecheck     # Frontend typecheck
-cd unihack-backend && npm run typecheck  # Backend typecheck
-
-# Run Production Builds
-npm run build         # Next.js production build (20/20 routes)
-cd unihack-backend && npm run build      # Fastify TypeScript compilation
+npm run typecheck     # Frontend typecheck (0 errors)
+cd unihack-backend && npm run typecheck  # Backend typecheck (0 errors)
 ```
-
----
-
-## 🔒 Security & Compliance Architecture
-
-- **Zero-Trust Token Validation:** Every incoming API call validates Firebase Admin JWT claims.
-- **Role-Based Access Control (RBAC):** Strict role middleware prevents unauthorized data mutations.
-- **Request ID Tracing:** Distributed tracing with unique `x-request-id` headers.
-- **Input Sanitization & Injection Defense:** SQL parameterized queries, XSS sanitization, and strict Zod payload validation.
-- **Immutable Audit Logging:** All automated classification decisions, AI enrichment events, and human reviewer approvals are stored permanently.
 
 ---
 

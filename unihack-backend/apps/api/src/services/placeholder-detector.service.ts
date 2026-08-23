@@ -37,6 +37,7 @@ const EXACT_PLACEHOLDERS = new Set([
   '-',
   '--',
   '---',
+  '—',
   '/',
   '.',
   '..',
@@ -49,6 +50,17 @@ const EXACT_PLACEHOLDERS = new Set([
   '***',
   '#',
   '##',
+  '-- unbranded --',
+  '-- no unilog brand --',
+  '-- no dib brand --',
+  '-- no brand --',
+  '-- none --',
+  '-- n/a --',
+  '-- not applicable --',
+  'unbranded',
+  'no unilog brand',
+  'no dib brand',
+  'no brand',
 ]);
 
 export interface CleanedFieldResult {

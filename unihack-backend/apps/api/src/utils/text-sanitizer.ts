@@ -82,14 +82,24 @@ export function sanitizeText(val: any): string {
 
   // Strip literal corrupted placeholders
   const trimmed = str.trim();
+  const lowerTrimmed = trimmed.toLowerCase();
   if (
-    trimmed === '-- Unbranded --' ||
-    trimmed === 'Unbranded' ||
-    trimmed === '---' ||
-    trimmed === '—' ||
-    trimmed === 'N/A' ||
-    trimmed === 'null' ||
-    trimmed === 'undefined'
+    lowerTrimmed === '-- unbranded --' ||
+    lowerTrimmed === '-- no unilog brand --' ||
+    lowerTrimmed === '-- no dib brand --' ||
+    lowerTrimmed === '-- no brand --' ||
+    lowerTrimmed === '-- none --' ||
+    lowerTrimmed === '-- n/a --' ||
+    lowerTrimmed === 'unbranded' ||
+    lowerTrimmed === 'no unilog brand' ||
+    lowerTrimmed === 'no dib brand' ||
+    lowerTrimmed === 'no brand' ||
+    lowerTrimmed === '---' ||
+    lowerTrimmed === '—' ||
+    lowerTrimmed === 'n/a' ||
+    lowerTrimmed === 'null' ||
+    lowerTrimmed === 'undefined' ||
+    lowerTrimmed === 'none'
   ) {
     return '';
   }

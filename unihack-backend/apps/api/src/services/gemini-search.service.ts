@@ -14,6 +14,8 @@ import { imageExtractorService } from './image-extractor.service';
 import { sourceGovernor } from './source-governor.service';
 import { sanitizeText, resolveBrandAndManufacturer, resolveAuthoritativeClasspath } from '../utils/text-sanitizer';
 import { urlHealthVerifierService } from './url-health-verifier.service';
+import { uomNormalizer } from './uom-normalizer.service';
+import { lovNormalizer } from './lov-normalizer.service';
 
 export interface VerifiedAsset {
   assetType: AssetType;
@@ -224,9 +226,35 @@ ${verifiedWarrantyLink ? `- Verified Found Warranty URL: ${JSON.stringify(verifi
 TASK:
 1. Identify or auto-detect authentic Manufacturer, Brand Name, and official domain.
 2. Generate professional official product title and standard technical description.
-3. Categorize with a logical 3-tier classpath.
+   TITLE FORMAT (MANDATORY — per Unilog Internal Content Guidelines):
+   officialTitle = Brand + [Series] + MPN + Item Type + [Key Attributes]
+   Examples:
+     "3M Cubitron II 3MABR-7100075678 Film Disc P150 Grit"
+     "Freud Inc Diablo DCB518ASTS06G Sanding Belt 1/2 in x 18 in 6-Pack"
+     "Square D Homeline HOM120 Circuit Breaker 20 A 1-Pole"
+   officialTitle MUST NOT exceed 150 characters.
+3. Categorize with a logical 3-tier classpath (e.g. "Industrial > Abrasives > Sanding Belts").
 4. Extract 4 to 8 factual bullet features.
 5. Extract 4 to 12 accurate product attributes (Label, Value, UOM).
+   UOM RULES (MANDATORY — per Unilog Master UOM Standards):
+   - ALWAYS place exactly ONE SPACE between the numeric value and the UOM token.
+     CORRECT: "24 in", "120 V", "20 A", "10 lb", "3/4 in"
+     WRONG:   "24in", "120V", "20A", "10lb", "3/4in"
+   - Use ONLY these approved Unilog UOM tokens:
+     Length:    in, ft, yd, mm, cm, m
+     Weight:    lb, oz, kg, g
+     Electrical: V, VAC, VDC, A, mA, kA, W, kW, HP, Hz, kHz, VA, kVA, Ohm
+     Pressure:  psi, bar, Pa, kPa, MPa
+     Temp:      °F, °C
+     Speed:     RPM, fps, fpm, mph, CFM, GPM
+     Torque:    lb-ft, lb-in, N·m
+     Quantity:  EA, PC, PK, BX, CS, RL, KT, SET
+     Angle:     °
+     Thread:    TPI
+   - NEVER use: "INCHES", "IN.", "LBS", "AMPS" (use their canonical forms above)
+   - Fractions MUST be formatted for buyer search (Decimal_Fraction.xlsx standard):
+     0.5 → "1/2", 1.5 → "1-1/2", 0.25 → "1/4", 0.75 → "3/4"
+     50.25 in → "50-1/4 in"
 6. Warranty Extraction:
    - Extract the authentic warranty term (e.g. "1-Year Limited Manufacturer Warranty" or "Limited Lifetime Warranty").
    - Provide a concise short info summary of what is covered.
@@ -243,10 +271,10 @@ TASK:
 
 Respond with ONLY valid JSON matching this schema:
 {
-  "manufacturer": "Official manufacturer name",
+  "manufacturer": "Official manufacturer name with correct legal casing",
   "brand": "Brand name",
   "manufacturerDomain": "officialdomain.com",
-  "officialTitle": "Complete official product title",
+  "officialTitle": "Brand [Series] MPN Item Type [Key Attributes] — MAX 150 chars",
   "officialDescription": "Comprehensive technical description",
   "classpath": "Level 1 > Level 2 > Level 3",
   "features": [
@@ -255,7 +283,7 @@ Respond with ONLY valid JSON matching this schema:
     "Key feature 3"
   ],
   "attributes": [
-    { "label": "Specification Name", "value": "Value", "uom": "UOM or null", "confidence": 0.98 }
+    { "label": "Specification Name", "value": "24 in", "uom": "in", "confidence": 0.98 }
   ],
   "warranty": {
     "term": "1-Year Limited Manufacturer Warranty",
@@ -539,9 +567,8 @@ Respond with ONLY valid JSON matching this schema:
       this.extractDeterministicAttributes(cleanPart, cleanMfg, defaultMfgDomain, attributes);
     }
 
-    const officialTitle = sanitizeText(
-      rawLiveResults.title || parsedAiData?.officialTitle || (cleanMfg ? `${cleanMfg} ${cleanPart}` : cleanPart),
-    );
+    const rawAiTitle = rawLiveResults.title || parsedAiData?.officialTitle || (cleanMfg ? `${cleanMfg} ${cleanPart}` : cleanPart);
+    const officialTitle = sanitizeText(rawAiTitle).substring(0, 150);
     const officialDescription = sanitizeText(
       rawLiveResults.snippet ||
       parsedAiData?.officialDescription ||
@@ -566,21 +593,37 @@ Respond with ONLY valid JSON matching this schema:
       parsedAiData?.classpath,
     );
 
-    const sanitizedAttributes = attributes.map((a) => ({
-      label: sanitizeText(a.label),
-      value: sanitizeText(a.value),
-      uom: sanitizeText(a.uom) || null,
-      confidence: a.confidence || 0.98,
-      sourceEvidence: a.sourceEvidence || {
-        sourceUrl: officialProductPage,
-        sourceTitle: `${resolved.manufacturerName} Official Specification`,
-        sourceSnippet: `${a.label}: ${a.value}`,
-        sourceSpan: String(a.value),
-        manufacturer: resolved.manufacturerName,
-        partNumber: cleanPart,
-        retrievedAt: new Date().toISOString(),
-      },
-    }));
+    const sanitizedAttributes = attributes.map((a) => {
+      const rawLabel = sanitizeText(a.label);
+      const rawValue = sanitizeText(a.value);
+      const rawUom = sanitizeText(a.uom) || null;
+
+      // Enforce Unilog UOM spacing rule: normalize raw value (e.g. "24in" → "24 in", "120V" → "120 V")
+      const enforcedValue = uomNormalizer.normalizeAttributeValue(rawValue) || rawValue;
+
+      // Apply cross-category LOV normalization (e.g. "blk" → "Black", "3ph" → "Three Phase")
+      const lovResult = lovNormalizer.normalizeCrossCategory(rawLabel, enforcedValue);
+      const finalValue = lovResult.wasNormalized ? lovResult.normalized : enforcedValue;
+
+      // Normalize the UOM token itself to the canonical approved form
+      const finalUom = rawUom ? (uomNormalizer.normalizeUom(rawUom) || rawUom) : null;
+
+      return {
+        label: rawLabel,
+        value: finalValue,
+        uom: finalUom,
+        confidence: Math.max(a.confidence || 0.98, lovResult.wasNormalized ? lovResult.confidence : 0),
+        sourceEvidence: a.sourceEvidence || {
+          sourceUrl: officialProductPage,
+          sourceTitle: `${resolved.manufacturerName} Official Specification`,
+          sourceSnippet: `${rawLabel}: ${finalValue}`,
+          sourceSpan: String(finalValue),
+          manufacturer: resolved.manufacturerName,
+          partNumber: cleanPart,
+          retrievedAt: new Date().toISOString(),
+        },
+      };
+    });
 
     // Dynamic Completeness Score computation: (Populated Valid Attributes / Total Expected Category Attributes) * 100
     const populatedValidCount = sanitizedAttributes.filter(
