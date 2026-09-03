@@ -24,7 +24,7 @@
 > **Developed & Architected by:**
 >
 > - **Vinay S. Bhadane** — *Lead Full-Stack & AI Systems Architect* ([Email](mailto:vinaybhadane06@gmail.com))
-> - **Sakshi P. Patil** — *Lead Data Engineer & Systems Specialist*
+> - **Sakshi P. Patil** — *Lead Data Engineer & Systems Specialist* ([Email](mailto:patilsakshi18027@gmail.com))
 >
 > 🎓 **Institution:** **MET Institute of Engineering, Nashik**  
 > 🏛️ **Department:** **Department of Computer Engineering**  
