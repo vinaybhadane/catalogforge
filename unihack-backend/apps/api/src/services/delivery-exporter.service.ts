@@ -6,7 +6,7 @@
 
 import * as xlsx from 'xlsx';
 import { Product } from '@unihack/contracts';
-import { sanitizeText, resolveBrandAndManufacturer, resolveAuthoritativeClasspath } from '../utils/text-sanitizer';
+import { sanitizeText, resolveBrandAndManufacturer, resolveAuthoritativeClasspath, resolveTaxonomyHierarchy } from '../utils/text-sanitizer';
 import { urlHealthVerifierService } from './url-health-verifier.service';
 
 export const DELIVERY_HEADERS: readonly string[] = [
@@ -320,10 +320,21 @@ export class DeliveryExporterService {
       product.descriptions?.shortDescription || product.descriptions?.longDescription || '',
     );
 
+    // 2b. Resolve Taxonomy Hierarchy (Dept, Class, Fine)
+    const taxonomy = resolveTaxonomyHierarchy(
+      resolved.manufacturerName,
+      product.partNumber,
+      rawInput?.part_desc || product.descriptions?.shortDescription || product.descriptions?.longDescription || '',
+      product.classpath,
+      rawInput?.dept,
+      rawInput?.class,
+      rawInput?.fine,
+    );
+
     row['PART_NUMBER'] = sanitizeText(product.partNumber);
-    row['Dept'] = sanitizeText(rawInput?.dept);
-    row['Class'] = sanitizeText(rawInput?.class);
-    row['Fine'] = sanitizeText(rawInput?.fine);
+    row['Dept'] = sanitizeText(taxonomy.dept);
+    row['Class'] = sanitizeText(taxonomy.class);
+    row['Fine'] = sanitizeText(taxonomy.fine);
     row['SKU - MY_PART_NUMBER'] = sanitizeText(rawInput?.sku_my_part_number || product.partNumber.toUpperCase());
     row['Mfg_Part_Num'] = sanitizeText(product.manufacturerPartNumber || rawInput?.mfg_part_num || product.partNumber);
     row['Part_Desc'] = sanitizeText(rawInput?.part_desc || product.descriptions?.shortDescription || '');
@@ -338,7 +349,7 @@ export class DeliveryExporterService {
     row['ALTERNATE_PART_NUMBER'] = '';
 
     // 3. Classpath Resolution
-    const resolvedClasspath = resolveAuthoritativeClasspath(
+    const resolvedClasspath = taxonomy.classpath || resolveAuthoritativeClasspath(
       resolved.manufacturerName,
       product.partNumber,
       product.descriptions?.shortDescription || product.descriptions?.longDescription || '',
@@ -522,16 +533,71 @@ export class DeliveryExporterService {
   }
 
   /**
-   * Generates a binary Excel buffer formatted exactly with the 252 delivery headers from row records
+   * Sorts and standardizes delivery rows:
+   * 1. Dynamically resolves Dept, Class, Fine if missing/blank
+   * 2. Sorts rows according to department (Dept), then Class, Fine, and PART_NUMBER
    */
-  exportRowsToExcel(rows: Array<Record<string, string>>): Buffer {
-    const orderedRows = rows.map((r) => {
+  private prepareAndSortRows(rows: Array<Record<string, string>>): Array<Record<string, string>> {
+    const processedRows = rows.map((r) => {
+      const copy = { ...r };
+      const currentDept = (copy['Dept'] || '').trim();
+      const currentClass = (copy['Class'] || '').trim();
+      const currentFine = (copy['Fine'] || '').trim();
+
+      if (!currentDept || !currentClass || !currentFine) {
+        const tax = resolveTaxonomyHierarchy(
+          copy['MANUFACTURER_NAME'] || copy['Part_Manuf'],
+          copy['PART_NUMBER'] || copy['Mfg_Part_Num'] || copy['SKU - MY_PART_NUMBER'],
+          copy['Part_Desc'] || copy['SHORT_DESC'] || copy['Product Name'] || copy['LONG_DESC1'] || '',
+          copy['Classpath'],
+          currentDept,
+          currentClass,
+          currentFine,
+        );
+        copy['Dept'] = sanitizeText(tax.dept);
+        copy['Class'] = sanitizeText(tax.class);
+        copy['Fine'] = sanitizeText(tax.fine);
+        if (!copy['Classpath'] || !copy['Classpath'].trim()) {
+          copy['Classpath'] = sanitizeText(tax.classpath);
+        }
+      }
+      return copy;
+    });
+
+    // Sort according to Department (Dept), then Class, Fine, and PART_NUMBER
+    processedRows.sort((a, b) => {
+      const deptA = (a['Dept'] || '').toLowerCase().trim();
+      const deptB = (b['Dept'] || '').toLowerCase().trim();
+      if (deptA !== deptB) return deptA.localeCompare(deptB);
+
+      const classA = (a['Class'] || '').toLowerCase().trim();
+      const classB = (b['Class'] || '').toLowerCase().trim();
+      if (classA !== classB) return classA.localeCompare(classB);
+
+      const fineA = (a['Fine'] || '').toLowerCase().trim();
+      const fineB = (b['Fine'] || '').toLowerCase().trim();
+      if (fineA !== fineB) return fineA.localeCompare(fineB);
+
+      const partA = (a['PART_NUMBER'] || '').toLowerCase().trim();
+      const partB = (b['PART_NUMBER'] || '').toLowerCase().trim();
+      return partA.localeCompare(partB);
+    });
+
+    return processedRows.map((r) => {
       const ordered: Record<string, string> = {};
       for (const h of DELIVERY_HEADERS) {
         ordered[h] = r[h] || '';
       }
       return ordered;
     });
+  }
+
+  /**
+   * Generates a binary Excel buffer formatted exactly with the 252 delivery headers from row records
+   * Sorted according to the product department
+   */
+  exportRowsToExcel(rows: Array<Record<string, string>>): Buffer {
+    const orderedRows = this.prepareAndSortRows(rows);
 
     const worksheet = xlsx.utils.json_to_sheet(orderedRows, {
       header: [...DELIVERY_HEADERS],
@@ -545,15 +611,10 @@ export class DeliveryExporterService {
 
   /**
    * Generates a CSV string buffer formatted with all 252 delivery headers from row records
+   * Sorted according to the product department
    */
   exportRowsToCsv(rows: Array<Record<string, string>>): Buffer {
-    const orderedRows = rows.map((r) => {
-      const ordered: Record<string, string> = {};
-      for (const h of DELIVERY_HEADERS) {
-        ordered[h] = r[h] || '';
-      }
-      return ordered;
-    });
+    const orderedRows = this.prepareAndSortRows(rows);
 
     const worksheet = xlsx.utils.json_to_sheet(orderedRows, {
       header: [...DELIVERY_HEADERS],

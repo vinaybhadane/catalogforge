@@ -3,7 +3,7 @@
  */
 
 import { Product } from "@/types";
-import { sanitizeText, getCleanBrandName, getCleanManufacturerName } from "./sanitizer";
+import { sanitizeText, getCleanBrandName, getCleanManufacturerName, resolveTaxonomyHierarchy } from "./sanitizer";
 
 export const DELIVERY_HEADERS_252: readonly string[] = [
   'MFR URL',
@@ -297,11 +297,18 @@ export function buildDeliveryFields(product: Product): DeliveryFieldEntry[] {
     if (allUrls[i]) row[`Ref URL ${i}`] = sanitizeText(allUrls[i]);
   }
 
-  // 2. Identifiers
+  // 2. Identifiers & Taxonomy
+  const taxonomy = resolveTaxonomyHierarchy(
+    mfg,
+    product.partNumber,
+    desc.shortDescription || desc.longDescription || '',
+    product.classpath,
+  );
+
   row['PART_NUMBER'] = sanitizeText(product.partNumber);
-  row['Dept'] = '';
-  row['Class'] = '';
-  row['Fine'] = '';
+  row['Dept'] = sanitizeText(taxonomy.dept);
+  row['Class'] = sanitizeText(taxonomy.class);
+  row['Fine'] = sanitizeText(taxonomy.fine);
   row['SKU - MY_PART_NUMBER'] = sanitizeText(product.partNumber.toUpperCase());
   row['Mfg_Part_Num'] = sanitizeText(product.manufacturerPartNumber || product.partNumber);
   row['Part_Desc'] = sanitizeText(desc.shortDescription || '');

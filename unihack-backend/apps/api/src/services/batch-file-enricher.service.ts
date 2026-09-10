@@ -15,7 +15,7 @@ import { AssetType } from '@unihack/contracts';
 import { fileParser, ParsedRawRow } from './file-parser.service';
 import { geminiSearchService, ExtractedProductIntelligence, WarrantyDetails } from './gemini-search.service';
 import { DELIVERY_HEADERS } from './delivery-exporter.service';
-import { resolveBrandAndManufacturer, resolveAuthoritativeClasspath, sanitizeText } from '../utils/text-sanitizer';
+import { resolveBrandAndManufacturer, resolveAuthoritativeClasspath, resolveTaxonomyHierarchy, sanitizeText } from '../utils/text-sanitizer';
 import { imageExtractorService } from './image-extractor.service';
 import { urlHealthVerifierService } from './url-health-verifier.service';
 
@@ -26,6 +26,9 @@ export interface EnrichedBatchProduct {
   sku: string;
   manufacturerName: string;
   brandName: string | null;
+  dept?: string;
+  class?: string;
+  fine?: string;
   classpath: string;
   officialTitle: string;
   shortDesc: string;
@@ -400,10 +403,20 @@ export class BatchFileEnricherService {
     }
 
     // 2. Identifiers & Taxonomy
+    const taxonomy = resolveTaxonomyHierarchy(
+      mfgName,
+      partNum,
+      raw.part_desc || shortDesc || longDesc || '',
+      classpath,
+      item.dept || raw.dept,
+      item.class || raw.class,
+      item.fine || raw.fine,
+    );
+
     rawRow['PART_NUMBER'] = sanitizeText(partNum);
-    rawRow['Dept'] = sanitizeText(item.dept || raw.dept);
-    rawRow['Class'] = sanitizeText(item.class || raw.class);
-    rawRow['Fine'] = sanitizeText(item.fine || raw.fine);
+    rawRow['Dept'] = sanitizeText(taxonomy.dept);
+    rawRow['Class'] = sanitizeText(taxonomy.class);
+    rawRow['Fine'] = sanitizeText(taxonomy.fine);
     rawRow['SKU - MY_PART_NUMBER'] = sanitizeText(raw.sku_my_part_number || partNum.toUpperCase());
     rawRow['Mfg_Part_Num'] = sanitizeText(raw.mfg_part_num || partNum);
     rawRow['Part_Desc'] = sanitizeText(raw.part_desc || shortDesc);
@@ -524,6 +537,9 @@ export class BatchFileEnricherService {
       sku: raw.sku_my_part_number || partNum,
       manufacturerName: mfgName,
       brandName,
+      dept: taxonomy.dept,
+      class: taxonomy.class,
+      fine: taxonomy.fine,
       classpath,
       officialTitle: intel.officialTitle || shortDesc,
       shortDesc,
@@ -609,10 +625,20 @@ export class BatchFileEnricherService {
       row[h] = '';
     }
 
+    const taxonomy = resolveTaxonomyHierarchy(
+      mfgName,
+      partNum,
+      raw.part_desc || shortDesc || '',
+      classpath,
+      item.dept || raw.dept,
+      item.class || raw.class,
+      item.fine || raw.fine,
+    );
+
     row['PART_NUMBER'] = sanitizeText(partNum);
-    row['Dept'] = sanitizeText(item.dept || raw.dept);
-    row['Class'] = sanitizeText(item.class || raw.class);
-    row['Fine'] = sanitizeText(item.fine || raw.fine);
+    row['Dept'] = sanitizeText(taxonomy.dept);
+    row['Class'] = sanitizeText(taxonomy.class);
+    row['Fine'] = sanitizeText(taxonomy.fine);
     row['SKU - MY_PART_NUMBER'] = sanitizeText(raw.sku_my_part_number || partNum.toUpperCase());
     row['Mfg_Part_Num'] = sanitizeText(raw.mfg_part_num || partNum);
     row['Part_Desc'] = sanitizeText(raw.part_desc || shortDesc);
@@ -650,6 +676,9 @@ export class BatchFileEnricherService {
       sku: raw.sku_my_part_number || partNum,
       manufacturerName: mfgName,
       brandName,
+      dept: taxonomy.dept,
+      class: taxonomy.class,
+      fine: taxonomy.fine,
       classpath,
       officialTitle: shortDesc,
       shortDesc,

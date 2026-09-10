@@ -500,8 +500,7 @@ export const ingestionRoutes: FastifyPluginAsync = async (fastify: FastifyInstan
     },
     async (request, reply) => {
       const { url, deliveryRow } = request.body;
-      const xlsx = await import('xlsx');
-      const { DELIVERY_HEADERS } = await import('../../services/delivery-exporter.service');
+      const { deliveryExporterService } = await import('../../services/delivery-exporter.service');
 
       let rowToExport: Record<string, string> = {};
 
@@ -515,18 +514,7 @@ export const ingestionRoutes: FastifyPluginAsync = async (fastify: FastifyInstan
         throw new ValidationError('Either `url` or `deliveryRow` must be provided.');
       }
 
-      // Ensure all 252 headers exist in proper order
-      const orderedRow: Record<string, string> = {};
-      for (const h of DELIVERY_HEADERS) {
-        orderedRow[h] = rowToExport[h] || '';
-      }
-
-      const worksheet = xlsx.utils.json_to_sheet([orderedRow], {
-        header: [...DELIVERY_HEADERS],
-      });
-      const workbook = xlsx.utils.book_new();
-      xlsx.utils.book_append_sheet(workbook, worksheet, 'Unilog Delivery');
-      const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+      const buffer = deliveryExporterService.exportRowsToExcel([rowToExport]);
 
       return reply
         .header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -539,9 +527,7 @@ export const ingestionRoutes: FastifyPluginAsync = async (fastify: FastifyInstan
    * POST /api/v1/ingestion/extract-url/export-csv
    * Exports a single extracted product URL into the exact 252-column CSV format
    */
-  fastify.post<{
-    Body: { url: string; deliveryRow?: Record<string, string> };
-  }>(
+  fastify.post<{ Body: { url?: string; deliveryRow?: Record<string, string> } }>(
     '/extract-url/export-csv',
     {
       schema: {
@@ -552,8 +538,7 @@ export const ingestionRoutes: FastifyPluginAsync = async (fastify: FastifyInstan
     },
     async (request, reply) => {
       const { url, deliveryRow } = request.body;
-      const xlsx = await import('xlsx');
-      const { DELIVERY_HEADERS } = await import('../../services/delivery-exporter.service');
+      const { deliveryExporterService } = await import('../../services/delivery-exporter.service');
 
       let rowToExport: Record<string, string> = {};
 
@@ -567,16 +552,7 @@ export const ingestionRoutes: FastifyPluginAsync = async (fastify: FastifyInstan
         throw new ValidationError('Either `url` or `deliveryRow` must be provided.');
       }
 
-      const orderedRow: Record<string, string> = {};
-      for (const h of DELIVERY_HEADERS) {
-        orderedRow[h] = rowToExport[h] || '';
-      }
-
-      const worksheet = xlsx.utils.json_to_sheet([orderedRow], {
-        header: [...DELIVERY_HEADERS],
-      });
-      const csvContent = xlsx.utils.sheet_to_csv(worksheet);
-      const buffer = Buffer.from(csvContent, 'utf-8');
+      const buffer = deliveryExporterService.exportRowsToCsv([rowToExport]);
 
       return reply
         .header('Content-Type', 'text/csv; charset=utf-8')

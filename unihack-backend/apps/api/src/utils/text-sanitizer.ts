@@ -181,30 +181,184 @@ export function resolveBrandAndManufacturer(
   };
 }
 
+export interface ResolvedTaxonomy {
+  dept: string;
+  class: string;
+  fine: string;
+  classpath: string;
+}
+
 /**
- * Resolves authoritative leaf category classpath conforming strictly to ~14k definitions
+ * Resolves authoritative 3-tier taxonomy hierarchy (Dept, Class, Fine) conforming to
+ * catalog delivery standards and merchandise hierarchy.
+ *
+ * Example:
+ * Dishwasher ->
+ *   dept: 'appliances'
+ *   class: 'large appliances'
+ *   fine: 'dishwasher'
  */
-export function resolveAuthoritativeClasspath(
+export function resolveTaxonomyHierarchy(
   mfg?: string | null,
   partNumber?: string | null,
   titleOrDesc?: string | null,
   existingClasspath?: string | null,
-): string {
-  const cleanExisting = sanitizeText(existingClasspath);
-  const text = `${sanitizeText(mfg)} ${sanitizeText(partNumber)} ${sanitizeText(titleOrDesc)}`.toLowerCase();
+  rawDept?: string | null,
+  rawClass?: string | null,
+  rawFine?: string | null,
+): ResolvedTaxonomy {
+  const cleanRawDept = sanitizeText(rawDept).toLowerCase().trim();
+  const cleanRawClass = sanitizeText(rawClass).toLowerCase().trim();
+  const cleanRawFine = sanitizeText(rawFine).toLowerCase().trim();
 
-  // 1. Abrasives & Mechanical Belts (Strict resolution priority)
+  // If raw input already provided explicit Dept, Class, Fine, preserve them
+  if (cleanRawDept && cleanRawClass && cleanRawFine) {
+    return {
+      dept: cleanRawDept,
+      class: cleanRawClass,
+      fine: cleanRawFine,
+      classpath: `${cleanRawDept} > ${cleanRawClass} > ${cleanRawFine}`,
+    };
+  }
+
+  const cleanPart = sanitizeText(partNumber);
+  const cleanMfg = sanitizeText(mfg);
+  const cleanTitleOrDesc = sanitizeText(titleOrDesc);
+  const text = `${cleanMfg} ${cleanPart} ${cleanTitleOrDesc}`.toLowerCase();
+  const lowerMfg = cleanMfg.toLowerCase();
+
+  // 1. APPLIANCES
+  // Dishwashers
+  if (
+    text.includes('dishwasher') ||
+    text.includes('dish washer') ||
+    /^(?:kdfm|pdsh|pdt\d|ldph|wdts|pdd\d|kdts|kdps)/i.test(cleanPart)
+  ) {
+    return {
+      dept: 'appliances',
+      class: 'large appliances',
+      fine: 'dishwasher',
+      classpath: 'appliances > large appliances > dishwasher',
+    };
+  }
+
+  // Refrigerators, Freezers & Beverage Centers
+  if (
+    text.includes('refrigerator') ||
+    text.includes('fridge') ||
+    text.includes('freezer') ||
+    text.includes('beverage center') ||
+    /^(?:gde|fcm|gne|cve|prfs|pad\d|pge\d|erfd|lt18|euf\d|xou)/i.test(cleanPart)
+  ) {
+    const fine = text.includes('freezer')
+      ? 'freezer'
+      : text.includes('beverage center')
+        ? 'beverage center'
+        : 'refrigerator';
+    return {
+      dept: 'appliances',
+      class: 'large appliances',
+      fine,
+      classpath: `appliances > large appliances > ${fine}`,
+    };
+  }
+
+  // Washers & Dryers
+  if (
+    text.includes('washer') ||
+    text.includes('washing machine') ||
+    text.includes('dryer') ||
+    /^(?:tc50|tr70|tr50)/i.test(cleanPart)
+  ) {
+    const fine = text.includes('dryer') ? 'dryer' : 'washer';
+    return {
+      dept: 'appliances',
+      class: 'large appliances',
+      fine,
+      classpath: `appliances > large appliances > ${fine}`,
+    };
+  }
+
+  // Ranges, Ovens & Cooktops
+  if (
+    text.includes('range') ||
+    text.includes('cooktop') ||
+    text.includes('wall oven') ||
+    text.includes('stove') ||
+    /^(?:wosp|pep\d|ces\d|ps96|pb90|pcfe|sler|lsel|kses|gcfg|wsgs|chp\d)/i.test(cleanPart)
+  ) {
+    const fine = text.includes('cooktop')
+      ? 'cooktop'
+      : text.includes('oven')
+        ? 'wall oven'
+        : 'range';
+    return {
+      dept: 'appliances',
+      class: 'large appliances',
+      fine,
+      classpath: `appliances > large appliances > ${fine}`,
+    };
+  }
+
+  // Microwaves
+  if (
+    text.includes('microwave') ||
+    /^(?:mser|gcst|pcwk|smc22|smd24|cvm5|pmos|wmms|kmmf)/i.test(cleanPart)
+  ) {
+    return {
+      dept: 'appliances',
+      class: 'large appliances',
+      fine: 'microwave',
+      classpath: 'appliances > large appliances > microwave',
+    };
+  }
+
+  // Small Appliances (Coffee Maker, Espresso Machine, Toaster)
+  if (
+    text.includes('toaster') ||
+    text.includes('coffee maker') ||
+    text.includes('espresso') ||
+    text.includes('toast oven') ||
+    /^(?:c7cda|c7cdb|c7ceb|c7ces|c9tma|c90aa)/i.test(cleanPart)
+  ) {
+    const fine = text.includes('espresso')
+      ? 'espresso machine'
+      : text.includes('coffee')
+        ? 'coffee maker'
+        : 'toaster';
+    return {
+      dept: 'appliances',
+      class: 'small appliances',
+      fine,
+      classpath: `appliances > small appliances > ${fine}`,
+    };
+  }
+
+  // General Appliance Cooperative / Parts
+  if (lowerMfg.includes('appliance') || text.includes('appliance dealers')) {
+    return {
+      dept: 'appliances',
+      class: 'appliance parts & accessories',
+      fine: 'replacement parts',
+      classpath: 'appliances > appliance parts & accessories > replacement parts',
+    };
+  }
+
+  // 2. ABRASIVES
   if (
     text.includes('sanding belt') ||
     text.includes('abrasive belt') ||
     text.includes('cloth belt') ||
     text.includes('file sander belt') ||
     text.includes('dcb518') ||
-    text.includes('784f') ||
-    text.includes('3mabr') ||
-    text.includes('cubitron')
+    text.includes('784f')
   ) {
-    return 'Industrial > Abrasives > Sanding Belts';
+    return {
+      dept: 'abrasives',
+      class: 'sanding belts & discs',
+      fine: 'sanding belts',
+      classpath: 'abrasives > sanding belts & discs > sanding belts',
+    };
   }
 
   if (
@@ -215,7 +369,12 @@ export function resolveAuthoritativeClasspath(
     text.includes('depressed center wheel') ||
     text.includes('abrasive wheel')
   ) {
-    return 'Industrial > Abrasives > Cutting & Grinding Wheels > Cut-Off Discs';
+    return {
+      dept: 'abrasives',
+      class: 'cutting & grinding wheels',
+      fine: 'cut-off discs',
+      classpath: 'abrasives > cutting & grinding wheels > cut-off discs',
+    };
   }
 
   if (
@@ -225,21 +384,50 @@ export function resolveAuthoritativeClasspath(
     text.includes('hookit') ||
     text.includes('film disc') ||
     text.includes('mesh disc') ||
-    text.includes('paper disc')
+    text.includes('paper disc') ||
+    text.includes('775l') ||
+    text.includes('5b-332') ||
+    text.includes('9a-570')
   ) {
-    return 'Industrial > Abrasives > Sanding Discs';
+    return {
+      dept: 'abrasives',
+      class: 'sanding belts & discs',
+      fine: 'sanding discs',
+      classpath: 'abrasives > sanding belts & discs > sanding discs',
+    };
   }
 
-  // 2. Electrical Distribution Equipment
+  if (
+    text.includes('3mabr') ||
+    text.includes('cubitron') ||
+    text.includes('hiolit') ||
+    text.includes('mirka') ||
+    text.includes('abrasive')
+  ) {
+    return {
+      dept: 'abrasives',
+      class: 'surface preparation & finishing',
+      fine: 'abrasives',
+      classpath: 'abrasives > surface preparation & finishing > abrasives',
+    };
+  }
+
+  // 3. ELECTRICAL
   if (
     text.includes('circuit breaker') ||
     text.includes('hom120') ||
     text.includes('qo120') ||
+    /^(?:hom\d|qo\d|br\d|ch\d|qob\d)/i.test(cleanPart) ||
     text.includes('miniature circuit breaker') ||
     text.includes('moulded case breaker') ||
     text.includes('pole breaker')
   ) {
-    return 'Electrical > Distribution Equipment > Circuit Breakers';
+    return {
+      dept: 'electrical',
+      class: 'distribution equipment',
+      fine: 'circuit breakers',
+      classpath: 'electrical > distribution equipment > circuit breakers',
+    };
   }
 
   if (
@@ -249,10 +437,67 @@ export function resolveAuthoritativeClasspath(
     text.includes('junction box') ||
     text.includes('conduit fitting')
   ) {
-    return 'Electrical > Distribution Equipment > Enclosures & Boxes';
+    return {
+      dept: 'electrical',
+      class: 'distribution equipment',
+      fine: 'panelboards & load centers',
+      classpath: 'electrical > distribution equipment > panelboards & load centers',
+    };
   }
 
-  // 3. Hardware & Industrial Fasteners
+  if (
+    text.includes('wire') ||
+    text.includes('cable') ||
+    text.includes('conduit') ||
+    text.includes('southwire') ||
+    text.includes('prime wire') ||
+    text.includes('woods wire')
+  ) {
+    return {
+      dept: 'electrical',
+      class: 'wire, cable & conduit',
+      fine: 'electrical wire & cable',
+      classpath: 'electrical > wire, cable & conduit > electrical wire & cable',
+    };
+  }
+
+  if (
+    text.includes('receptacle') ||
+    text.includes('dimmer') ||
+    text.includes('wall plate') ||
+    text.includes('leviton') ||
+    text.includes('cooper wiring') ||
+    text.includes('pass & seymour')
+  ) {
+    return {
+      dept: 'electrical',
+      class: 'wiring devices',
+      fine: 'switches & receptacles',
+      classpath: 'electrical > wiring devices > switches & receptacles',
+    };
+  }
+
+  // 4. LIGHTING
+  if (
+    text.includes('lighting') ||
+    text.includes('lamp') ||
+    text.includes('floodlight') ||
+    text.includes('bulb') ||
+    text.includes('kichler') ||
+    text.includes('lithonia') ||
+    text.includes('feit electric') ||
+    text.includes('satco') ||
+    text.includes('keystone')
+  ) {
+    return {
+      dept: 'lighting',
+      class: 'fixtures & lamps',
+      fine: 'led lighting & fixtures',
+      classpath: 'lighting > fixtures & lamps > led lighting & fixtures',
+    };
+  }
+
+  // 5. HARDWARE & FASTENERS
   if (
     text.includes('hex bolt') ||
     text.includes('socket screw') ||
@@ -261,31 +506,168 @@ export function resolveAuthoritativeClasspath(
     text.includes('anchor bolt') ||
     text.includes('flat washer') ||
     text.includes('lock washer') ||
-    text.includes('hex nut')
+    text.includes('hex nut') ||
+    text.includes('national nail') ||
+    text.includes('senco') ||
+    text.includes('prebena') ||
+    text.includes('fastener')
   ) {
-    return 'Hardware > Industrial Fasteners > Bolts & Screws';
+    return {
+      dept: 'hardware',
+      class: 'fasteners',
+      fine: 'bolts, screws & nails',
+      classpath: 'hardware > fasteners > bolts, screws & nails',
+    };
   }
 
-  // 4. Power Tool Accessories
+  if (text.includes('hinge') || text.includes('hager hinge')) {
+    return {
+      dept: 'hardware',
+      class: 'door & window hardware',
+      fine: 'hinges & hardware',
+      classpath: 'hardware > door & window hardware > hinges & hardware',
+    };
+  }
+
+  // 6. TOOLS
   if (
     text.includes('drill bit') ||
     text.includes('hole saw') ||
     text.includes('saw blade') ||
     text.includes('carbide blade') ||
-    text.includes('router bit')
+    text.includes('router bit') ||
+    text.includes('sawstop') ||
+    text.includes('wera') ||
+    text.includes('vessel tools') ||
+    text.includes('irwin') ||
+    text.includes('kreg') ||
+    text.includes('festool') ||
+    text.includes('amana tool') ||
+    text.includes('whiteside')
   ) {
-    return 'Hardware > Power Tool Accessories > Cutting Tools';
+    return {
+      dept: 'tools',
+      class: 'power tools & accessories',
+      fine: 'blades, bits & cutting tools',
+      classpath: 'tools > power tools & accessories > blades, bits & cutting tools',
+    };
   }
 
-  // 5. Valves & Fluid Power
-  if (text.includes('ball valve') || text.includes('gate valve') || text.includes('check valve') || text.includes('solenoid valve')) {
-    return 'Plumbing & Fluid Power > Valves > Ball & Check Valves';
+  // 7. SAFETY & SECURITY
+  if (
+    text.includes('eyewear') ||
+    text.includes('safety glasses') ||
+    text.includes('smoke alarm') ||
+    text.includes('smoke detector') ||
+    text.includes('firewatch') ||
+    text.includes('first alert') ||
+    text.includes('radians')
+  ) {
+    return {
+      dept: 'safety & security',
+      class: 'personal protective equipment',
+      fine: 'safety glasses & alarms',
+      classpath: 'safety & security > personal protective equipment > safety glasses & alarms',
+    };
   }
 
-  // If existing classpath was already clean and not default fallback, retain it
-  if (cleanExisting && cleanExisting.includes('>') && !cleanExisting.includes('General Industrial')) {
-    return cleanExisting;
+  // 8. BUILDING MATERIALS
+  if (
+    text.includes('lumber') ||
+    text.includes('wood') ||
+    text.includes('gypsum') ||
+    text.includes('window') ||
+    text.includes('skylight') ||
+    text.includes('boise cascade') ||
+    text.includes('certainteed') ||
+    text.includes('provia') ||
+    text.includes('velux') ||
+    text.includes('united window')
+  ) {
+    return {
+      dept: 'building materials',
+      class: 'lumber, doors & windows',
+      fine: 'building supplies & lumber',
+      classpath: 'building materials > lumber, doors & windows > building supplies & lumber',
+    };
   }
 
-  return 'Industrial Supplies > General Industrial > Components';
+  // 9. PLUMBING & FLUID POWER
+  if (
+    text.includes('ball valve') ||
+    text.includes('gate valve') ||
+    text.includes('check valve') ||
+    text.includes('solenoid valve') ||
+    text.includes('pipe fitting') ||
+    text.includes('faucet')
+  ) {
+    return {
+      dept: 'plumbing & fluid power',
+      class: 'valves & fittings',
+      fine: 'valves & pipe fittings',
+      classpath: 'plumbing & fluid power > valves & fittings > valves & pipe fittings',
+    };
+  }
+
+  // 10. Existing Classpath Fallback
+  const cleanExisting = sanitizeText(existingClasspath);
+  if (cleanExisting && cleanExisting.includes('>')) {
+    const parts = cleanExisting.split('>').map((s) => s.trim().toLowerCase()).filter(Boolean);
+    if (parts.length >= 3) {
+      return {
+        dept: parts[0]!,
+        class: parts[1]!,
+        fine: parts[2]!,
+        classpath: `${parts[0]} > ${parts[1]} > ${parts[2]}`,
+      };
+    } else if (parts.length === 2) {
+      return {
+        dept: parts[0]!,
+        class: parts[1]!,
+        fine: parts[1]!,
+        classpath: `${parts[0]} > ${parts[1]} > ${parts[1]}`,
+      };
+    } else if (parts.length === 1) {
+      return {
+        dept: parts[0]!,
+        class: parts[0]!,
+        fine: parts[0]!,
+        classpath: `${parts[0]} > ${parts[0]} > ${parts[0]}`,
+      };
+    }
+  }
+
+  // If existing individual raw fields are partially available
+  if (cleanRawDept || cleanRawClass || cleanRawFine) {
+    const dept = cleanRawDept || 'industrial supplies';
+    const cls = cleanRawClass || 'general industrial';
+    const fine = cleanRawFine || 'components';
+    return {
+      dept,
+      class: cls,
+      fine,
+      classpath: `${dept} > ${cls} > ${fine}`,
+    };
+  }
+
+  // 11. Default General Industrial Fallback
+  return {
+    dept: 'industrial supplies',
+    class: 'general industrial',
+    fine: 'components',
+    classpath: 'industrial supplies > general industrial > components',
+  };
+}
+
+/**
+ * Resolves authoritative leaf category classpath conforming strictly to taxonomy hierarchy
+ */
+export function resolveAuthoritativeClasspath(
+  mfg?: string | null,
+  partNumber?: string | null,
+  titleOrDesc?: string | null,
+  existingClasspath?: string | null,
+): string {
+  const taxonomy = resolveTaxonomyHierarchy(mfg, partNumber, titleOrDesc, existingClasspath);
+  return taxonomy.classpath;
 }
