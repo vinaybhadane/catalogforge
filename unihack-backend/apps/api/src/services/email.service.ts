@@ -32,14 +32,23 @@ class EmailService {
   }
 
   /**
-   * Retrieves the configured Resend sender address
+   * Retrieves the configured Resend sender address.
+   * Automatically overrides any restricted sandbox domain (resend.dev) with
+   * the verified custom domain (security@catalogforge.tech) to allow unrestricted delivery
+   * to any recipient in the world.
    */
   private getSender(): string {
-    return (
+    const raw = (
       process.env.RESEND_SENDER_EMAIL ||
       (env as any).RESEND_SENDER_EMAIL ||
       'CatalogForge Security <security@catalogforge.tech>'
     ).trim();
+
+    if (!raw || raw.toLowerCase().includes('resend.dev')) {
+      return 'CatalogForge Security <security@catalogforge.tech>';
+    }
+
+    return raw;
   }
 
   /**

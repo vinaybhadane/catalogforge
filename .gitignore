@@ -21,9 +21,10 @@ build/
 .DS_Store
 Thumbs.db
 
-# Editor
+# Editor & Temporary Files
 .vscode/
 .idea/
+~$*
 
 # Logs
 *.log
