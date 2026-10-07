@@ -21,6 +21,7 @@ import {
   LogOut,
   Plus,
   ChevronDown,
+  Database,
 } from "lucide-react";
 import { BRANDING } from "@/lib/constants/branding";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -53,6 +54,7 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { label: "Catalog Analytics", href: "/analytics", icon: BarChart3 },
       { label: "Audit & Governance", href: "/audit", icon: FileText },
+      { label: "User Data Retrieval", href: "/user-data", icon: Database, badge: "TEMP" },
     ],
   },
   {
@@ -157,8 +159,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       return pathname === "/settings" && (!currentTab || currentTab === "general");
     }
     if (href === "/upload") {
-      const currentTab = searchParams?.get("tab");
-      return pathname === "/upload" && currentTab !== "ai-search";
+      return pathname === "/upload";
     }
     if (href === "/products") {
       const currentStatus = searchParams?.get("status");

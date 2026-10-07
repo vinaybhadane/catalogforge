@@ -643,7 +643,7 @@ export default function TeamManagementPage() {
           <div className="p-4 rounded-xl bg-purple-50/50 border border-purple-100 space-y-1.5">
             <p className="font-bold text-purple-700">Catalog Manager</p>
             <p className="text-slate-600 leading-relaxed">
-              Can ingest datasets, run live AI Lookups, review flagged products, edit attribute fields, and export 252-column schemas.
+              Can ingest datasets, review flagged products, edit attribute fields, and export 252-column schemas.
             </p>
           </div>
 

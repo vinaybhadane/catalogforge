@@ -119,6 +119,24 @@ export class BatchFileEnricherService {
   }
 
   /**
+   * Retrieves all stored batch datasets across all sessions
+   */
+  public getAllBatches(): BatchEnrichmentResponse[] {
+    return Array.from(BatchFileEnricherService.storedBatches.values());
+  }
+
+  /**
+   * Retrieves stored batch datasets matching a specific user's email
+   */
+  public getBatchesByEmail(email: string): BatchEnrichmentResponse[] {
+    if (!email) return [];
+    const normalized = email.trim().toLowerCase();
+    return Array.from(BatchFileEnricherService.storedBatches.values()).filter(
+      (b) => b.emailRecipient && b.emailRecipient.trim().toLowerCase() === normalized
+    );
+  }
+
+  /**
    * Main entry point: Parses uploaded file, caps to 7 items, extracts live AI data, builds 252-col delivery JSON
    */
   async processBatchFile(

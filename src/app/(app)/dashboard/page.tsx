@@ -11,7 +11,6 @@ import {
   AlertCircle,
   UploadCloud,
   ArrowRight,
-  FileSpreadsheet,
   Sparkles,
   ShieldCheck,
   Zap,
@@ -20,7 +19,6 @@ import {
   BarChart3,
   Globe,
   FileText,
-  Search,
   Download,
   CheckCircle2,
   Clock,
@@ -126,15 +124,6 @@ const DETERMINISTIC_STAGES: PipelineStageDef[] = [
 export default function DashboardPage() {
   const { summary, hookState, errorMessage, refresh } = useDashboard();
 
-  // Multi-Modal Ingestion Tab State
-  const [activeIngestionMode, setActiveIngestionMode] = useState<"lookup" | "file" | "pdf" | "url">("lookup");
-
-  // Inline AI Lookup State
-  const [lookupMpn, setLookupMpn] = useState("DCB518ASTS06G");
-  const [lookupBrand, setLookupBrand] = useState("Diablo");
-  const [isEnriching, setIsEnriching] = useState(false);
-  const [enrichError, setEnrichError] = useState<string | null>(null);
-
   // Active Stage Execution Simulation / Telemetry Stream State
   const [activeSimStage, setActiveSimStage] = useState<number>(8);
   const [isStreamingPipeline, setIsStreamingPipeline] = useState<boolean>(false);
@@ -155,80 +144,6 @@ export default function DashboardPage() {
       setSelectedProduct(summary.featuredProducts[0]);
     }
   }, [summary?.featuredProducts, selectedProduct]);
-
-  // Handle Instant Inline SKU Enrichment
-  const handleEnrichSku = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!lookupMpn.trim()) return;
-
-    setIsEnriching(true);
-    setEnrichError(null);
-    setIsStreamingPipeline(true);
-    setActiveSimStage(1);
-
-    // Stream stage progression visually
-    const stageInterval = setInterval(() => {
-      setActiveSimStage((prev) => {
-        if (prev < 8) return prev + 1;
-        clearInterval(stageInterval);
-        return 8;
-      });
-    }, 320);
-
-    try {
-      const res = await apiClient.post<any>("/products/search-live", {
-        partNumber: lookupMpn.trim(),
-        manufacturer: lookupBrand.trim() || undefined,
-      });
-
-      // Format response to fit inspection workspace
-      const enrichedProduct = {
-        productId: "live-" + Date.now(),
-        partNumber: res.partNumber,
-        manufacturerName: res.manufacturer,
-        brandName: res.brand || lookupBrand,
-        manufacturerPartNumber: res.partNumber,
-        classpath: res.classpath || "Industrial Supplies > Abrasives > Sanding Belts",
-        unspsc: "40151500",
-        descriptions: {
-          shortDescription: res.officialDescription ? res.officialDescription.substring(0, 148) : `${res.manufacturer} ${res.partNumber} Industrial Spec`,
-          longDescription: res.officialDescription,
-          mobileDescription: `${res.manufacturer} ${res.partNumber}`,
-          invoiceDescription: `${res.manufacturer} ${res.partNumber}`.toUpperCase(),
-          retailDescription: res.officialTitle || `${res.manufacturer} ${res.partNumber}`,
-          marketingDescription: res.officialDescription,
-          bulletPoints: res.features || [],
-        },
-        attributes: (res.attributes || []).map((a: any, idx: number) => ({
-          id: idx + 1,
-          attributeLabel: a.label,
-          attributeValue: a.value,
-          attributeUom: a.uom,
-          confidenceScore: a.confidence ?? 0.96,
-          sourceUrl: a.sourceEvidence?.sourceUrl || res.citations?.[0]?.sourceUrl,
-        })),
-        features: (res.features || []).map((f: string, idx: number) => ({
-          id: idx + 1,
-          featureText: f,
-        })),
-        assets: res.assets || [],
-        warrantyInfo: res.warrantyInfo,
-        citations: res.citations || [],
-        rowConfidence: 0.98,
-        status: "published",
-      };
-
-      setSelectedProduct(enrichedProduct);
-      setInspectedImageIdx(0);
-    } catch (err: any) {
-      setEnrichError(err?.message || "Failed to complete live AI enrichment pipeline.");
-    } finally {
-      clearInterval(stageInterval);
-      setActiveSimStage(8);
-      setIsEnriching(false);
-      setIsStreamingPipeline(false);
-    }
-  };
 
   // Instant 252-Column Export for a Job
   const handleExportJob = async (job: ProcessingJob, format: "xlsx" | "csv") => {
@@ -318,7 +233,7 @@ export default function DashboardPage() {
               Welcome to Your CatalogForge Workspace
             </h2>
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-medium">
-              Your workspace is ready. Any dataset you ingest, single SKU you lookup with AI, or PDF you parse will be securely stored and isolated in your private catalog.
+              Your workspace is ready. Any dataset you ingest or PDF you parse will be securely stored and isolated in your private catalog.
             </p>
           </div>
 
@@ -329,13 +244,6 @@ export default function DashboardPage() {
             >
               <UploadCloud className="w-4 h-4" />
               <span>Ingest First Dataset</span>
-            </Link>
-            <Link
-              href="/upload?tab=ai-search"
-              className="px-5 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition border border-white/20 inline-flex items-center gap-2"
-            >
-              <Search className="w-4 h-4 text-blue-300" />
-              <span>AI Single SKU Lookup</span>
             </Link>
           </div>
         </div>
@@ -416,211 +324,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ── 3. Multi-Modal Ingestion Hub ──────────────────────────────── */}
-      <div className="bg-white border border-[#E2E8F0] rounded-3xl p-6 lg:p-7 space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
-          <div>
-            <h2 className="text-lg font-black text-[#000000] tracking-tight flex items-center gap-2">
-              <UploadCloud className="w-5 h-5 text-[#2563EB]" />
-              Multi-Modal Ingestion Operations Hub
-            </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Execute live single SKU enrichment, batch catalog uploads, PDF spec sheet parsing, or direct OEM crawling.
-            </p>
-          </div>
-
-          {/* Trigger Mode Switcher */}
-          <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-1 rounded-xl flex gap-1 overflow-x-auto">
-            <button
-              type="button"
-              onClick={() => setActiveIngestionMode("lookup")}
-              className={cn(
-                "px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap",
-                activeIngestionMode === "lookup" ? "bg-[#2563EB] text-white shadow-sm" : "text-slate-600 hover:text-slate-900"
-              )}
-            >
-              <Search className="w-3.5 h-3.5" /> Single SKU Lookup
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveIngestionMode("file")}
-              className={cn(
-                "px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap",
-                activeIngestionMode === "file" ? "bg-[#2563EB] text-white shadow-sm" : "text-slate-600 hover:text-slate-900"
-              )}
-            >
-              <FileSpreadsheet className="w-3.5 h-3.5" /> Batch Excel/CSV
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveIngestionMode("pdf")}
-              className={cn(
-                "px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap",
-                activeIngestionMode === "pdf" ? "bg-[#2563EB] text-white shadow-sm" : "text-slate-600 hover:text-slate-900"
-              )}
-            >
-              <FileText className="w-3.5 h-3.5" /> PDF Spec Sheet
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveIngestionMode("url")}
-              className={cn(
-                "px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap",
-                activeIngestionMode === "url" ? "bg-[#2563EB] text-white shadow-sm" : "text-slate-600 hover:text-slate-900"
-              )}
-            >
-              <Globe className="w-3.5 h-3.5" /> OEM Crawler
-            </button>
-          </div>
-        </div>
-
-        {/* Trigger 1: Single SKU Lookup Bar */}
-        {activeIngestionMode === "lookup" && (
-          <form onSubmit={handleEnrichSku} className="space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-              <div className="sm:col-span-6 relative">
-                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  value={lookupMpn}
-                  onChange={(e) => setLookupMpn(e.target.value)}
-                  placeholder="Enter MPN / Part Number (e.g. DCB518ASTS06G, 7100075678, QO120)..."
-                  className="w-full pl-10 pr-4 py-2.5 bg-[#FAFAFA] border border-[#E2E8F0] rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#2563EB]"
-                  required
-                />
-              </div>
-
-              <div className="sm:col-span-4">
-                <input
-                  type="text"
-                  value={lookupBrand}
-                  onChange={(e) => setLookupBrand(e.target.value)}
-                  placeholder="Brand / Manufacturer (Optional e.g. Diablo, 3M, Schneider)"
-                  className="w-full px-4 py-2.5 bg-[#FAFAFA] border border-[#E2E8F0] rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#2563EB]"
-                />
-              </div>
-
-              <div className="sm:col-span-2">
-                <button
-                  type="submit"
-                  disabled={isEnriching || !lookupMpn.trim()}
-                  className="w-full py-2.5 px-4 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition disabled:opacity-50 shadow-sm"
-                >
-                  {isEnriching ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Enriching…</span>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4" />
-                      <span>Enrich SKU</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Quick Samples */}
-            <div className="flex items-center gap-2 flex-wrap text-[11px] text-slate-500 pt-1">
-              <span className="font-bold text-slate-700">Quick Samples:</span>
-              <button
-                type="button"
-                onClick={() => { setLookupMpn("DCB518ASTS06G"); setLookupBrand("Diablo"); }}
-                className="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-800 font-mono"
-              >
-                DCB518ASTS06G (Diablo)
-              </button>
-              <button
-                type="button"
-                onClick={() => { setLookupMpn("7100075678"); setLookupBrand("3M"); }}
-                className="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-800 font-mono"
-              >
-                7100075678 (3M Cubitron)
-              </button>
-              <button
-                type="button"
-                onClick={() => { setLookupMpn("QO120"); setLookupBrand("Schneider Electric"); }}
-                className="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-800 font-mono"
-              >
-                QO120 (Square D)
-              </button>
-            </div>
-          </form>
-        )}
-
-        {/* Trigger 2: Batch File Upload Dropzone */}
-        {activeIngestionMode === "file" && (
-          <div className="border-2 border-dashed border-[#CBD5E1] hover:border-[#2563EB] rounded-2xl p-8 text-center bg-[#FAFAFA] transition space-y-3">
-            <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-200 text-[#2563EB] flex items-center justify-center mx-auto">
-              <FileSpreadsheet className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-slate-900">Drag &amp; drop CSV or XLSX Dataset</h3>
-              <p className="text-xs text-slate-500 mt-0.5">Supports arbitrary column schemas with automatic header mapping to 252 delivery specs.</p>
-            </div>
-            <Link
-              href="/upload"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-[#2563EB] text-white text-xs font-bold rounded-xl hover:bg-[#1D4ED8] transition"
-            >
-              <UploadCloud className="w-4 h-4" /> Open Full Upload Center
-            </Link>
-          </div>
-        )}
-
-        {/* Trigger 3: PDF Spec Sheet Parser */}
-        {activeIngestionMode === "pdf" && (
-          <div className="border-2 border-dashed border-[#CBD5E1] hover:border-[#2563EB] rounded-2xl p-8 text-center bg-[#FAFAFA] transition space-y-3">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center mx-auto">
-              <FileText className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-slate-900">Upload OEM Technical Spec Sheet / Datasheet PDF</h3>
-              <p className="text-xs text-slate-500 mt-0.5">Multi-page dimensional extraction, electrical ratings, and compliance tables (up to 50MB).</p>
-            </div>
-            <Link
-              href="/upload"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-[#2563EB] text-white text-xs font-bold rounded-xl hover:bg-[#1D4ED8] transition"
-            >
-              <UploadCloud className="w-4 h-4" /> Launch PDF Parser
-            </Link>
-          </div>
-        )}
-
-        {/* Trigger 4: Direct OEM URL Crawler */}
-        {activeIngestionMode === "url" && (
-          <div className="border border-[#CBD5E1] rounded-2xl p-6 bg-[#FAFAFA] space-y-3">
-            <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
-              <Globe className="w-4 h-4 text-[#2563EB]" />
-              <span>Direct Manufacturer Product URL Crawler</span>
-            </div>
-            <p className="text-xs text-slate-500">Paste official product URL for 100% direct OEM image scraping and 252-column Excel mapping.</p>
-            <div className="flex gap-2">
-              <input
-                type="url"
-                placeholder="https://www.diablotools.com/products/DCB518ASTS06G"
-                className="flex-1 px-3.5 py-2.5 bg-white border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#2563EB]"
-              />
-              <Link
-                href="/upload"
-                className="px-4 py-2.5 bg-[#2563EB] text-white text-xs font-bold rounded-xl hover:bg-[#1D4ED8] flex items-center gap-1.5 shrink-0"
-              >
-                <span>Crawl URL</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-          </div>
-        )}
-
-        {enrichError && (
-          <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{enrichError}</span>
-          </div>
-        )}
-      </div>
-
-      {/* ── 4. Live Pipeline Governance & Telemetry Stream (8 Stages) ─── */}
+      {/* ── 3. Live Pipeline Governance & Telemetry Stream (8 Stages) ─── */}
       <div className="bg-white border border-[#E2E8F0] rounded-3xl p-6 lg:p-7 space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>

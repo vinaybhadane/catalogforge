@@ -369,11 +369,81 @@ export class JobRepository {
       setClauses.push('completed_at = SYSUTCDATETIME()');
     }
 
-    await request.query(`
-      UPDATE dbo.ingestion_job
-      SET ${setClauses.join(', ')}
-      WHERE job_id = @job_id
-    `);
+    try {
+      await request.query(`
+        UPDATE dbo.ingestion_job
+        SET ${setClauses.join(', ')}
+        WHERE job_id = @job_id
+      `);
+    } catch {
+      // Ignore DB error in fallback
+    }
+  }
+
+  /**
+   * Retrieves all jobs submitted by a specific user email or partial match
+   */
+  async getJobsByEmail(email?: string): Promise<ProcessingJob[]> {
+    const inMem = Array.from(inMemoryJobs.values());
+    if (!email || email === 'all') {
+      return inMem;
+    }
+
+    const normalized = email.trim().toLowerCase();
+    const filteredInMem = inMem.filter((j) => {
+      if (!j.submittedBy) return false;
+      const sub = j.submittedBy.trim().toLowerCase();
+      return sub === normalized || sub.includes(normalized) || normalized.includes(sub);
+    });
+
+    const pool = getSqlPool();
+    if (!pool || !pool.connected) {
+      return filteredInMem;
+    }
+
+    try {
+      const request = pool.request();
+      request.input('email', sql.VarChar(255), `%${normalized}%`);
+      const result = await request.query(`
+        SELECT
+          job_id AS [jobId],
+          file_name AS [fileName],
+          source_type AS [sourceType],
+          row_count AS [rowCount],
+          processed_rows AS [processedRows],
+          published_rows AS [publishedRows],
+          review_rows AS [reviewRows],
+          failed_rows AS [failedRows],
+          status,
+          stage,
+          submitted_by AS [submittedBy],
+          submitted_at AS [submittedAt],
+          completed_at AS [completedAt],
+          updated_at AS [updatedAt]
+        FROM dbo.ingestion_job
+        WHERE LOWER(submitted_by) LIKE @email
+        ORDER BY submitted_at DESC
+      `);
+
+      const dbJobs: ProcessingJob[] = result.recordset.map((row) => {
+        const rowCount = row.rowCount || 0;
+        const processed = row.processedRows || 0;
+        const progress = rowCount > 0 ? Math.round((processed / rowCount) * 100) : 0;
+        return { ...row, progress };
+      });
+
+      const seen = new Set<string>();
+      const combined: ProcessingJob[] = [];
+      for (const j of [...dbJobs, ...filteredInMem]) {
+        if (!seen.has(j.jobId)) {
+          seen.add(j.jobId);
+          combined.push(j);
+        }
+      }
+      return combined;
+    } catch {
+      return filteredInMem;
+    }
   }
 }
 

@@ -30,18 +30,26 @@ function initializeFirebase(): void {
       return;
     }
 
-    if (env.FIREBASE_PROJECT_ID && env.FIREBASE_CLIENT_EMAIL && env.FIREBASE_PRIVATE_KEY) {
-      const privateKey = env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
+    const projectId = (env.FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID || '').trim();
+    const clientEmail = (env.FIREBASE_CLIENT_EMAIL || process.env.FIREBASE_CLIENT_EMAIL || '').trim();
+    let privateKey = (env.FIREBASE_PRIVATE_KEY || process.env.FIREBASE_PRIVATE_KEY || '').trim();
+
+    if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+      privateKey = privateKey.slice(1, -1);
+    }
+    privateKey = privateKey.replace(/\\n/g, '\n');
+
+    if (projectId && clientEmail && privateKey) {
       admin.initializeApp({
         credential: admin.credential.cert({
-          projectId: env.FIREBASE_PROJECT_ID,
-          clientEmail: env.FIREBASE_CLIENT_EMAIL,
+          projectId,
+          clientEmail,
           privateKey,
         }),
-        projectId: env.FIREBASE_PROJECT_ID,
+        projectId,
       });
       firebaseInitialized = true;
-      console.log('[Auth] Firebase Admin initialized with environment credentials.');
+      console.log('[Auth] Firebase Admin initialized with environment credentials for project:', projectId);
       return;
     }
 
@@ -55,6 +63,40 @@ function initializeFirebase(): void {
 initializeFirebase();
 
 export class AuthService {
+  /**
+   * Retrieves all registered user accounts from Firebase Auth
+   */
+  async getAllFirebaseUsers(): Promise<Array<{
+    uid: string;
+    email: string;
+    displayName: string | null;
+    photoURL?: string | null;
+    creationTime?: string;
+    lastSignInTime?: string;
+    disabled?: boolean;
+  }>> {
+    initializeFirebase();
+    if (!firebaseInitialized) {
+      return [];
+    }
+
+    try {
+      const listUsersResult = await admin.auth().listUsers(1000);
+      return listUsersResult.users.map((u) => ({
+        uid: u.uid,
+        email: u.email || '',
+        displayName: u.displayName || (u.email ? u.email.split('@')[0] : 'User'),
+        photoURL: u.photoURL || null,
+        creationTime: u.metadata.creationTime,
+        lastSignInTime: u.metadata.lastSignInTime,
+        disabled: u.disabled,
+      }));
+    } catch (err: any) {
+      console.warn('[Auth] Failed to list Firebase users:', err.message);
+      return [];
+    }
+  }
+
   /**
    * Verify Bearer token and return normalized UserClaims
    */

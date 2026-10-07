@@ -660,6 +660,355 @@ export const ingestionRoutes: FastifyPluginAsync = async (fastify: FastifyInstan
   );
 
   /**
+   * GET /api/v1/ingestion/user-uploads
+   * Retrieves all Firebase user accounts and all data (batches, jobs, products) uploaded/processed
+   */
+  fastify.get<{
+    Querystring: { email?: string };
+  }>(
+    '/user-uploads',
+    {
+      schema: {
+        description: 'Retrieve all Firebase user accounts, batches, jobs, and products uploaded/processed',
+        tags: ['Ingestion'],
+        summary: 'Retrieve User Uploaded Data By Email',
+        querystring: {
+          type: 'object',
+          properties: {
+            email: { type: 'string' },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const queryEmail = (request.query as any)?.email?.trim();
+      const { batchFileEnricherService } = await import('../../services/batch-file-enricher.service');
+      const { jobRepository } = await import('../../repositories/job.repository');
+      const { authService } = await import('../../services/auth.service');
+      const { getSqlPool } = await import('../../plugins/db.plugin');
+      const sql = (await import('mssql')).default;
+
+      // 1. Fetch all registered Firebase Accounts
+      const firebaseUsers = await authService.getAllFirebaseUsers();
+
+      // 2. Fetch distinct submitters and activity stats from Azure SQL
+      const pool = getSqlPool();
+      let dbSubmitterStats: Record<string, { jobsCount: number; totalRows: number }> = {};
+      let appUsersList: Array<{ uid: string; email: string; displayName: string; role: string }> = [];
+
+      if (pool && pool.connected) {
+        try {
+          const statsRes = await pool.request().query(`
+            SELECT
+              submitted_by,
+              COUNT(*) AS jobs_count,
+              SUM(ISNULL(row_count, 0)) AS total_rows
+            FROM dbo.ingestion_job
+            GROUP BY submitted_by
+          `);
+          statsRes.recordset.forEach((r: any) => {
+            if (r.submitted_by) {
+              dbSubmitterStats[r.submitted_by.toLowerCase()] = {
+                jobsCount: r.jobs_count || 0,
+                totalRows: r.total_rows || 0,
+              };
+            }
+          });
+
+          const usersRes = await pool.request().query(`
+            SELECT uid, email, display_name AS displayName, role
+            FROM dbo.app_user
+          `);
+          appUsersList = usersRes.recordset || [];
+        } catch (dbErr) {
+          console.warn('[UserUploads] DB stats query warning:', dbErr);
+        }
+      }
+
+      // 3. Assemble unified Accounts List (Firebase + Azure SQL + In-Memory)
+      const accountMap = new Map<string, {
+        email: string;
+        displayName: string;
+        uid?: string;
+        creationTime?: string;
+        lastSignInTime?: string;
+        jobsCount: number;
+        totalRows: number;
+        source: string;
+      }>();
+
+      // Add Firebase users
+      firebaseUsers.forEach((fu) => {
+        if (!fu.email) return;
+        const norm = fu.email.toLowerCase();
+        const stats = dbSubmitterStats[norm] || { jobsCount: 0, totalRows: 0 };
+        accountMap.set(norm, {
+          email: fu.email,
+          displayName: fu.displayName || fu.email.split('@')[0],
+          uid: fu.uid,
+          creationTime: fu.creationTime,
+          lastSignInTime: fu.lastSignInTime,
+          jobsCount: stats.jobsCount,
+          totalRows: stats.totalRows,
+          source: 'Firebase Auth',
+        });
+      });
+
+      // Add Azure SQL app_user entries
+      appUsersList.forEach((au) => {
+        if (!au.email) return;
+        const norm = au.email.toLowerCase();
+        if (!accountMap.has(norm)) {
+          const stats = dbSubmitterStats[norm] || { jobsCount: 0, totalRows: 0 };
+          accountMap.set(norm, {
+            email: au.email,
+            displayName: au.displayName || au.email.split('@')[0],
+            uid: au.uid,
+            jobsCount: stats.jobsCount,
+            totalRows: stats.totalRows,
+            source: 'Database User',
+          });
+        }
+      });
+
+      // Add submitters found in jobs if not yet in map
+      Object.keys(dbSubmitterStats).forEach((subEmail) => {
+        if (!accountMap.has(subEmail)) {
+          const stats = dbSubmitterStats[subEmail];
+          accountMap.set(subEmail, {
+            email: subEmail,
+            displayName: subEmail.split('@')[0],
+            jobsCount: stats.jobsCount,
+            totalRows: stats.totalRows,
+            source: 'Upload Activity',
+          });
+        }
+      });
+
+      // Also ensure default admins exist
+      ['vinaybhadane06@gmail.com', 'admin@catalogforge.tech'].forEach((adm) => {
+        if (!accountMap.has(adm.toLowerCase())) {
+          accountMap.set(adm.toLowerCase(), {
+            email: adm,
+            displayName: adm.split('@')[0],
+            jobsCount: 0,
+            totalRows: 0,
+            source: 'System Admin',
+          });
+        }
+      });
+
+      const accounts = Array.from(accountMap.values()).sort((a, b) => b.jobsCount - a.jobsCount);
+
+      // 4. Retrieve Batches (from BatchFileEnricher in-memory)
+      const allBatches = batchFileEnricherService.getAllBatches();
+      const batches = queryEmail && queryEmail !== 'all'
+        ? allBatches.filter((b) => b.emailRecipient && b.emailRecipient.trim().toLowerCase() === queryEmail.toLowerCase())
+        : allBatches;
+
+      // 5. Retrieve Jobs (from Azure SQL and In-Memory)
+      let jobs: any[] = [];
+      if (pool && pool.connected) {
+        try {
+          const jobReq = pool.request();
+          let jobSql = `
+            SELECT
+              job_id AS [jobId],
+              file_name AS [fileName],
+              source_type AS [sourceType],
+              row_count AS [rowCount],
+              processed_rows AS [processedRows],
+              published_rows AS [publishedRows],
+              review_rows AS [reviewRows],
+              failed_rows AS [failedRows],
+              status,
+              stage,
+              submitted_by AS [submittedBy],
+              submitted_at AS [submittedAt],
+              completed_at AS [completedAt],
+              updated_at AS [updatedAt]
+            FROM dbo.ingestion_job
+          `;
+          if (queryEmail && queryEmail !== 'all') {
+            jobSql += ` WHERE LOWER(submitted_by) = @email OR submitted_by LIKE '%' + @email + '%'`;
+            jobReq.input('email', sql.VarChar(255), queryEmail.toLowerCase());
+          }
+          jobSql += ` ORDER BY submitted_at DESC`;
+          const jobRes = await jobReq.query(jobSql);
+          jobs = jobRes.recordset.map((row: any) => {
+            const rowCount = row.rowCount || 0;
+            const processed = row.processedRows || 0;
+            const progress = rowCount > 0 ? Math.round((processed / rowCount) * 100) : (row.status === 'completed' ? 100 : 0);
+            return { ...row, progress };
+          });
+        } catch (jErr) {
+          console.warn('[UserUploads] Failed to query SQL jobs:', jErr);
+        }
+      }
+
+      if (jobs.length === 0) {
+        jobs = await jobRepository.getJobsByEmail(queryEmail || undefined);
+      }
+
+      // 6. Retrieve Products (from Azure SQL DB product + assets + attributes)
+      let dbProducts: any[] = [];
+      if (pool && pool.connected) {
+        try {
+          const prodReq = pool.request();
+          let prodSql = `
+            SELECT TOP 150
+              p.product_id AS id,
+              p.product_id AS productId,
+              p.part_number AS partNumber,
+              p.manufacturer_name AS manufacturerName,
+              p.brand_name AS brandName,
+              p.manufacturer_part_number AS mfgPartNum,
+              p.classpath,
+              p.unspsc,
+              p.short_desc AS officialTitle,
+              p.short_desc AS shortDesc,
+              p.long_desc1 AS longDesc1,
+              p.retail_desc AS retailDesc,
+              p.row_confidence AS confidenceScore,
+              p.status,
+              p.created_at AS createdAt,
+              p.updated_at AS updatedAt,
+              j.submitted_by AS submittedBy,
+              j.file_name AS batchFileName,
+              j.job_id AS jobId
+            FROM dbo.product p
+          `;
+
+          if (queryEmail && queryEmail !== 'all') {
+            prodSql += `
+              JOIN dbo.raw_input r ON p.raw_input_id = r.id
+              JOIN dbo.ingestion_job j ON r.job_id = j.job_id
+              WHERE LOWER(j.submitted_by) = @email OR j.submitted_by LIKE '%' + @email + '%'
+            `;
+            prodReq.input('email', sql.VarChar(255), queryEmail.toLowerCase());
+          } else {
+            prodSql += `
+              LEFT JOIN dbo.raw_input r ON p.raw_input_id = r.id
+              LEFT JOIN dbo.ingestion_job j ON r.job_id = j.job_id
+            `;
+          }
+
+          prodSql += ` ORDER BY p.product_id DESC`;
+          const prodRes = await prodReq.query(prodSql);
+          const rawProds = prodRes.recordset || [];
+
+          if (rawProds.length > 0) {
+            const pIds = rawProds.map((p: any) => p.id).filter(Boolean);
+            // Fetch assets
+            const assetRes = await pool.request().query(`
+              SELECT product_id, asset_type, file_name, blob_url, source_url
+              FROM dbo.product_asset
+              WHERE product_id IN (${pIds.join(',')})
+            `);
+            const assetMap = new Map<string, any[]>();
+            (assetRes.recordset || []).forEach((a: any) => {
+              const pid = String(a.product_id);
+              if (!assetMap.has(pid)) assetMap.set(pid, []);
+              assetMap.get(pid)!.push(a);
+            });
+
+            // Fetch attributes
+            const attrRes = await pool.request().query(`
+              SELECT product_id, attribute_label, attribute_value, attribute_uom, confidence_score
+              FROM dbo.product_attribute
+              WHERE product_id IN (${pIds.join(',')})
+            `);
+            const attrMap = new Map<string, any[]>();
+            (attrRes.recordset || []).forEach((at: any) => {
+              const pid = String(at.product_id);
+              if (!attrMap.has(pid)) attrMap.set(pid, []);
+              attrMap.get(pid)!.push(at);
+            });
+
+            dbProducts = rawProds.map((p: any) => {
+              const pid = String(p.id);
+              const pAssets = assetMap.get(pid) || [];
+              const pAttrs = attrMap.get(pid) || [];
+
+              const images = pAssets
+                .filter((a) => a.asset_type === 'image' || a.file_name?.match(/\.(jpg|png|webp|jpeg)$/i))
+                .map((a) => ({ url: a.blob_url || a.source_url, alt: a.file_name, isPrimary: true }));
+
+              const documents = pAssets
+                .filter((a) => a.asset_type !== 'image')
+                .map((a) => ({ assetType: a.asset_type || 'PDF', fileName: a.file_name, sourceUrl: a.source_url || a.blob_url }));
+
+              const attributes = pAttrs.map((a) => ({
+                label: a.attribute_label,
+                value: a.attribute_value,
+                uom: a.attribute_uom,
+                confidence: a.confidence_score,
+              }));
+
+              // Build synthetic 252 delivery row
+              const deliveryRow: Record<string, string> = {
+                'SKU - MY_PART_NUMBER': p.partNumber,
+                'Mfg_Part_Num': p.mfgPartNum || p.partNumber,
+                'Part_Desc': p.officialTitle || p.partNumber,
+                'MANUFACTURER_NAME': p.manufacturerName || 'OEM',
+                'BRAND_NAME': p.brandName || p.manufacturerName || 'OEM',
+                'Classpath': p.classpath || 'Industrial Supplies',
+                'UNSPSC': p.unspsc || '40151500',
+                'SHORT_DESC': p.shortDesc || p.officialTitle || '',
+                'LONG_DESC1': p.longDesc1 || '',
+                'Status': p.status || 'published',
+              };
+              attributes.forEach((attr: any) => {
+                if (attr.label) {
+                  deliveryRow[attr.label] = attr.uom ? `${attr.value} ${attr.uom}` : attr.value;
+                }
+              });
+
+              return {
+                ...p,
+                images,
+                documents,
+                attributes,
+                deliveryRow,
+                nonEmptyColumnsCount: Object.keys(deliveryRow).length,
+                sourceLocation: 'database_sql',
+              };
+            });
+          }
+        } catch (pErr) {
+          console.warn('[UserUploads] Failed to query SQL products:', pErr);
+        }
+      }
+
+      // Also merge in-memory batch products
+      const batchProducts = batches.flatMap((b) =>
+        (b.products || []).map((p) => ({
+          ...p,
+          batchId: b.batchId,
+          batchFileName: b.fileName,
+          emailRecipient: b.emailRecipient,
+          sourceLocation: 'backend_batch',
+        }))
+      );
+
+      const allProducts = [...dbProducts, ...batchProducts];
+
+      return reply.status(200).send({
+        email: queryEmail || 'all',
+        accounts,
+        totalAccounts: accounts.length,
+        totalBatches: batches.length,
+        totalJobs: jobs.length,
+        totalProducts: allProducts.length,
+        batches,
+        jobs,
+        products: allProducts,
+        retrievedAt: new Date().toISOString(),
+      });
+    },
+  );
+
+  /**
    * POST /api/v1/ingestion/send-batch-email
    * Manually dispatch completion email with shareable link to any custom email
    */

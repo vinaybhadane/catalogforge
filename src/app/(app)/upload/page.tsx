@@ -45,7 +45,7 @@ import { PreflightSummary } from "@/components/upload/PreflightSummary";
 import { apiClient } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 
-type ExtendedUploadMode = UploadMode | "ai-search" | "image-ocr";
+type ExtendedUploadMode = UploadMode | "image-ocr";
 
 export default function UploadPage() {
   const { user } = useAuth();
@@ -64,16 +64,7 @@ export default function UploadPage() {
     proceedToJobDetail,
   } = useUpload();
 
-  const [activeTabMode, setActiveTabMode] = useState<ExtendedUploadMode>("ai-search");
-
-  // Single Product AI Search state
-  const [productSearchInput, setProductSearchInput] = useState("");
-  const [mfgSearchInput, setMfgSearchInput] = useState("");
-  const [isAiSearching, setIsAiSearching] = useState(false);
-  const [aiResult, setAiResult] = useState<any>(null);
-  const [aiSearchError, setAiSearchError] = useState<string | null>(null);
-  const [isSavingProduct, setIsSavingProduct] = useState(false);
-  const [savedProductSuccess, setSavedProductSuccess] = useState<{ productId: string | number; partNumber: string } | null>(null);
+  const [activeTabMode, setActiveTabMode] = useState<ExtendedUploadMode>("file");
 
   // Image / Nameplate OCR Ingestion State
   const [selectedOcrFile, setSelectedOcrFile] = useState<File | null>(null);
@@ -134,7 +125,7 @@ export default function UploadPage() {
       const batchIdParam = params.get("batchId");
 
       if (tabParam) {
-        if (tabParam === "ai-search" || tabParam === "url" || tabParam === "image-ocr") {
+        if (tabParam === "url" || tabParam === "image-ocr") {
           setActiveTabMode(tabParam as ExtendedUploadMode);
         } else if (tabParam === "file" || tabParam === "pdf") {
           setActiveTabMode("file");
@@ -188,117 +179,10 @@ export default function UploadPage() {
     uploadState === "rejected";
 
   const TABS = [
-    { id: "ai-search" as ExtendedUploadMode, label: "AI Product Lookup", shortLabel: "AI Lookup", sublabel: "Live AI Sourcing", icon: Sparkles },
-    { id: "image-ocr" as ExtendedUploadMode, label: "Product Image / Label OCR", shortLabel: "Image / OCR", sublabel: "Nameplate / Vision", icon: Camera },
-    { id: "url" as ExtendedUploadMode, label: "Manufacturer URL", shortLabel: "OEM URL", sublabel: "Datasheet / Product link", icon: Globe },
     { id: "file" as ExtendedUploadMode, label: "Manufacturer PDF & File Upload", shortLabel: "PDF & Batch", sublabel: "CSV / XLSX / PDF", icon: UploadCloud },
+    { id: "url" as ExtendedUploadMode, label: "Manufacturer URL", shortLabel: "OEM URL", sublabel: "Datasheet / Product link", icon: Globe },
+    { id: "image-ocr" as ExtendedUploadMode, label: "Product Image / Label OCR", shortLabel: "Image / OCR", sublabel: "Nameplate / Vision", icon: Camera },
   ];
-
-  const handleRunAiLookup = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    let part = productSearchInput.trim();
-    let mfg = mfgSearchInput.trim();
-
-    // Support combined format like "DCB518ASTS06G (Freud Inc)" or default sample
-    if (!part && !mfg) {
-      part = "DCB518ASTS06G";
-      mfg = "Freud Inc";
-      setProductSearchInput("DCB518ASTS06G (Freud Inc)");
-    } else if (part.includes("(") && part.includes(")")) {
-      const match = part.match(/^(.*?)\s*\((.*?)\)$/);
-      if (match) {
-        part = match[1].trim();
-        mfg = mfg || match[2].trim();
-      }
-    }
-
-    setIsAiSearching(true);
-    setAiSearchError(null);
-    setAiResult(null);
-    setSavedProductSuccess(null);
-
-    try {
-      const res = await apiClient.post<any>("/products/search-live", {
-        partNumber: part,
-        manufacturer: mfg || undefined,
-      });
-      setAiResult(res);
-    } catch (err: any) {
-      setAiSearchError(err?.message || "Failed to retrieve product intelligence. Please try again.");
-    } finally {
-      setIsAiSearching(false);
-    }
-  };
-
-  const handleExport252Delivery = () => {
-    if (!aiResult) return;
-    const exportPayload = {
-      partNumber: aiResult.partNumber || "DCB518ASTS06G",
-      manufacturer: aiResult.manufacturer || "Freud Tools Inc",
-      officialTitle: aiResult.officialTitle || "Industrial Thin Kerf Saw Blade",
-      category: aiResult.category || "Industrial Cutting Tools",
-      auditScore: "100% Verified (Zero-Hallucination)",
-      schemaStandard: "252-Column Unihack Delivery Schema",
-      timestamp: new Date().toISOString(),
-      attributes: aiResult.attributes || [],
-      assets: aiResult.assets || [],
-      warranty: aiResult.warrantyInfo || null,
-      searchSummary: aiResult.searchSummary || null,
-    };
-    const blob = new Blob([JSON.stringify(exportPayload, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `252_delivery_${(aiResult.partNumber || "product").replace(/[^a-zA-Z0-9_-]/g, "_")}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const handleSaveToCatalog = async () => {
-    if (!aiResult) return;
-    setIsSavingProduct(true);
-    try {
-      const saveRes = await apiClient.post<any>("/ingestion/single-product", {
-        partNumber: aiResult.partNumber,
-        manufacturer: aiResult.manufacturer,
-        officialTitle: aiResult.officialTitle,
-        officialDescription: aiResult.officialDescription,
-        features: aiResult.features,
-        attributes: aiResult.attributes,
-        assets: aiResult.assets,
-      });
-
-      const userKey = user?.uid || user?.email || "";
-      if (userKey) {
-        saveUserWorkspaceProduct(userKey, {
-          id: saveRes.productId || `prod-${Date.now()}`,
-          partNumber: aiResult.partNumber,
-          manufacturerName: aiResult.manufacturer,
-          brandName: aiResult.manufacturer,
-          shortDesc: aiResult.officialTitle || aiResult.partNumber,
-          longDesc: aiResult.officialDescription || "",
-          status: "published",
-          confidence: 0.98,
-          rowConfidence: 0.98,
-          classpath: aiResult.classpath || "Industrial > General Supplies > Components",
-          unspsc: aiResult.unspsc || "40151500",
-          attributes: aiResult.attributes || [],
-          assets: aiResult.assets || [],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        });
-      }
-
-      setSavedProductSuccess({
-        productId: saveRes.productId,
-        partNumber: aiResult.partNumber,
-      });
-    } catch (err: any) {
-      setAiSearchError(err?.message || "Failed to save product to catalog.");
-    } finally {
-      setIsSavingProduct(false);
-    }
-  };
 
   // Manufacturer URL Live Extraction
   const handleExtractFromUrl = async (e?: React.FormEvent) => {
@@ -715,7 +599,7 @@ export default function UploadPage() {
               Dataset Upload &amp; Ingestion
             </h1>
             <p className="text-xs sm:text-sm text-[#64748B] mt-0.5 leading-snug">
-              Extract verified specifications via AI Product Lookup, Manufacturer URLs, or Manufacturer PDF &amp; batch file uploads.
+              Extract verified specifications via Manufacturer PDF &amp; batch file uploads, Manufacturer URLs, or Product Image / Label OCR.
             </p>
           </div>
         </div>
@@ -732,7 +616,7 @@ export default function UploadPage() {
               type="button"
               onClick={() => {
                 setActiveTabMode(tab.id);
-                if (tab.id !== "ai-search" && tab.id !== "url" && tab.id !== "image-ocr") {
+                if (tab.id !== "url" && tab.id !== "image-ocr") {
                   setUploadMode(tab.id as UploadMode);
                   reset();
                 }
@@ -755,315 +639,6 @@ export default function UploadPage() {
         })}
       </div>
 
-      {/* ── TAB: SINGLE PRODUCT QUICK LOOKUP (AI INTELLIGENCE ENGINE) ─── */}
-      {activeTabMode === "ai-search" && (
-        <div className="space-y-4 sm:space-y-6">
-          {/* Search Box */}
-          <div className="bg-white border border-[#E2E8F0] rounded-2xl p-4 sm:p-5 shadow-sm">
-            <form onSubmit={handleRunAiLookup} className="flex items-center gap-3">
-              <div className="flex-1 relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input
-                  type="text"
-                  value={productSearchInput}
-                  onChange={(e) => setProductSearchInput(e.target.value)}
-                  placeholder="DCB518ASTS06G (Freud Inc)"
-                  className="w-full pl-11 pr-4 py-3 text-sm font-semibold text-slate-900 border border-[#CBD5E1] rounded-xl focus:outline-none focus:border-[#2563EB] bg-[#FAFAFA]"
-                  suppressHydrationWarning
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={isAiSearching}
-                className="px-6 py-3 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl font-bold flex items-center gap-2 text-sm shadow-md transition-all shrink-0 cursor-pointer disabled:opacity-50"
-                suppressHydrationWarning
-              >
-                {isAiSearching ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Extracting Data…</span>
-                  </>
-                ) : (
-                  <>
-                    <Zap className="w-4 h-4 fill-white" />
-                    <span>Extract Data</span>
-                  </>
-                )}
-              </button>
-            </form>
-          </div>
-
-          {/* Error state */}
-          {aiSearchError && (
-            <div className="bg-white border border-rose-200 rounded-2xl p-4 flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-xs font-bold text-rose-900">Extraction Error</p>
-                <p className="text-xs text-rose-700 mt-0.5">{aiSearchError}</p>
-              </div>
-            </div>
-          )}
-
-          {/* Success Banner when Saved */}
-          {savedProductSuccess && (
-            <div className="bg-[#F0FDF4] border border-emerald-200 rounded-2xl p-5 flex items-center justify-between flex-wrap gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-700">
-                  <CheckCircle2 className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-emerald-900">
-                    Product Successfully Ingested &amp; Published!
-                  </h4>
-                  <p className="text-xs text-emerald-700 mt-0.5">
-                    Part #{savedProductSuccess.partNumber} is now live in the central product catalog with full AI specifications.
-                  </p>
-                </div>
-              </div>
-              <Link
-                href={`/products/${savedProductSuccess.productId}`}
-                className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors"
-              >
-                <span>View Product Detail</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-          )}
-
-          {/* AI Result Presentation Card - Exact Match to Uploaded Mockup */}
-          {aiResult && (() => {
-            const primaryImgUrl = aiResult.verifiedImageUrl ||
-              (aiResult.assets && aiResult.assets.find((a: any) => a.assetType === 'image')?.sourceUrl) ||
-              "https://images.thdstatic.com/productImages/5b8f6dc1-66d4-42b7-8ceb-eb06198f8045/svn/freud-circular-saw-blades-d1260x-64_600.jpg";
-
-            const defaultSpecs = [
-              { label: "Blade Diameter", value: "12", uom: "in" },
-              { label: "Teeth", value: "60T", uom: "Count" },
-              { label: "Kerf", value: "0.118", uom: "in" },
-              { label: "Max RPM", value: "6000", uom: "RPM" },
-            ];
-
-            const populatedAttrs = (aiResult.attributes || []).filter((a: any) =>
-              a.value && a.value !== "—" && !["n/a", "unknown", "null"].includes(String(a.value).toLowerCase())
-            );
-
-            const displaySpecs = populatedAttrs.length > 0 ? populatedAttrs.slice(0, 8) : defaultSpecs;
-
-            const docAsset = (aiResult.assets || []).find((a: any) => a.assetType !== 'image');
-            const docUrl = docAsset?.sourceUrl || (aiResult.citations && aiResult.citations[0]?.sourceUrl) || "https://freudtools.com/datasheets/DCB518A.pdf";
-            const docSourceText = (aiResult.citations && aiResult.citations[0]?.domain) || (aiResult.manufacturerDomain ? `${aiResult.manufacturerDomain}/datasheets/${aiResult.partNumber || "DCB518A"}.pdf` : "freudtools.com/datasheets/DCB518A.pdf");
-
-            return (
-              <div className="space-y-4 sm:space-y-6">
-                {/* 3-Column Product Intelligence Container */}
-                <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-sm">
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-
-                    {/* ── COLUMN 1: OEM Product Image (lg:col-span-4) ── */}
-                    <div className="lg:col-span-4 space-y-3">
-                      <h4 className="text-xs font-bold text-slate-800 tracking-tight">OEM Product Image</h4>
-                      <div className="rounded-2xl border border-slate-200 bg-white p-4 flex flex-col items-center justify-center min-h-[240px] relative overflow-hidden group">
-                        <img
-                          src={primaryImgUrl}
-                          alt={aiResult.officialTitle || "OEM Product Image"}
-                          className="max-h-[200px] max-w-full object-contain mx-auto transition-transform group-hover:scale-105"
-                          onError={(e: any) => {
-                            e.target.src = "https://images.unsplash.com/photo-1504148455328-c376907d081c?auto=format&fit=crop&w=600&q=80";
-                          }}
-                        />
-                      </div>
-                      {/* Green 100% Authentic OEM Photo Badge */}
-                      <div className="bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl p-2.5 flex items-center gap-2 text-emerald-800 font-bold text-xs">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <span>✓ 100% Authentic OEM Photo (Carousels Filtered)</span>
-                      </div>
-                    </div>
-
-                    {/* ── COLUMN 2: Product Intelligence & Technical Specs Table (lg:col-span-4) ── */}
-                    <div className="lg:col-span-4 space-y-3">
-                      <h4 className="text-xs font-bold text-slate-800 tracking-tight">Product Intelligence</h4>
-
-                      <div className="space-y-0.5">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Product Title</p>
-                        <h3 className="text-sm sm:text-base font-black text-slate-900 leading-snug">
-                          {aiResult.officialTitle || "Industrial Thin Kerf Saw Blade"}
-                        </h3>
-                      </div>
-
-                      <div className="space-y-0.5 pt-1">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Manufacturer</p>
-                        <p className="text-xs font-bold text-[#2563EB]">
-                          {aiResult.manufacturer || "Freud Tools Inc"}
-                        </p>
-                      </div>
-
-                      <div className="space-y-0.5 pt-1">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Category</p>
-                        <p className="text-xs font-bold text-slate-900">
-                          {aiResult.category || "Industrial Cutting Tools"}
-                        </p>
-                      </div>
-
-                      {/* Specification Table */}
-                      <div className="border border-slate-200 rounded-xl overflow-hidden mt-3">
-                        <table className="w-full text-xs text-left">
-                          <thead className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase">
-                            <tr>
-                              <th className="py-2.5 px-3">Specification</th>
-                              <th className="py-2.5 px-3">Value</th>
-                              <th className="py-2.5 px-3">UoM (Normalized)</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100 font-medium">
-                            {displaySpecs.map((spec: any, idx: number) => (
-                              <tr key={idx} className="hover:bg-slate-50/60 transition-colors">
-                                <td className="py-2 px-3 font-semibold text-slate-800">{spec.label}</td>
-                                <td className="py-2 px-3 text-slate-900 font-mono font-bold">{spec.value}</td>
-                                <td className="py-2 px-3 text-slate-600 font-mono">{spec.uom || "—"}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-
-                    {/* ── COLUMN 3: Zero-Hallucination Audit, Documentation & Export (lg:col-span-4) ── */}
-                    <div className="lg:col-span-4 space-y-4">
-
-                      {/* Card 1: Zero-Hallucination Audit Score */}
-                      <div className="bg-[#F0FDF4] border border-[#86EFAC] rounded-2xl p-4 flex items-center justify-between shadow-sm">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center shrink-0">
-                            <ShieldCheck className="w-6 h-6 text-emerald-700" />
-                          </div>
-                          <div>
-                            <p className="text-xs font-bold text-emerald-950 leading-tight">
-                              Zero-Hallucination<br />Audit Score
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-2xl font-black text-emerald-800 leading-none block">
-                            100%
-                          </span>
-                          <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">
-                            Verified
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Card 2: Verified OEM Documentation */}
-                      <div className="bg-white border border-[#E2E8F0] rounded-2xl p-4 space-y-2 shadow-sm">
-                        <p className="text-xs font-bold text-slate-800">Verified OEM Documentation</p>
-                        <div className="flex items-start gap-2.5 pt-1">
-                          <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center shrink-0">
-                            <FileText className="w-4 h-4 text-[#2563EB]" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <a
-                              href={docUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs font-bold text-[#2563EB] hover:underline block leading-tight"
-                            >
-                              Download Official MSDS / Spec Sheet PDF (200 OK)
-                            </a>
-                            <p className="text-[10px] text-slate-500 font-mono truncate mt-1 flex items-center gap-1">
-                              <span>Source: {docSourceText}</span>
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 inline" />
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Card 3: Export 252-Column Delivery */}
-                      <button
-                        type="button"
-                        onClick={handleExport252Delivery}
-                        className="w-full p-4 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-2xl shadow-md flex items-center justify-between transition-all group cursor-pointer"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-blue-700/60 border border-blue-400/40 flex items-center justify-center">
-                            <FileSpreadsheet className="w-5 h-5 text-white" />
-                          </div>
-                          <div className="text-left">
-                            <p className="text-xs font-black tracking-tight leading-tight">
-                              Export 252-Column Delivery
-                            </p>
-                            <p className="text-[10px] text-blue-200 font-medium">(Excel / JSON)</p>
-                          </div>
-                        </div>
-                        <Download className="w-5 h-5 text-white group-hover:translate-y-0.5 transition-transform" />
-                      </button>
-
-                    </div>
-                  </div>
-
-                  {/* Add to Catalog Footer Action */}
-                  <div className="flex items-center justify-between pt-4 border-t border-slate-100 mt-4 flex-wrap gap-2">
-                    <span className="text-xs text-slate-500 font-mono">
-                      Part Number: <strong>{aiResult.partNumber || "DCB518ASTS06G"}</strong> • 252-Column Schema Formatted
-                    </span>
-                    {!savedProductSuccess && (
-                      <button
-                        type="button"
-                        onClick={handleSaveToCatalog}
-                        disabled={isSavingProduct}
-                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center gap-2 transition-colors disabled:opacity-50 cursor-pointer"
-                      >
-                        {isSavingProduct ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            <span>Saving to Catalog…</span>
-                          </>
-                        ) : (
-                          <>
-                            <PlusCircle className="w-4 h-4" />
-                            <span>Add Directly to Catalog</span>
-                          </>
-                        )}
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* ── Bottom Batch Activity Bar ── */}
-                <div className="bg-white border border-[#BFDBFE] rounded-2xl p-3.5 shadow-sm flex items-center justify-between flex-wrap gap-3 relative overflow-hidden">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-[#2563EB] text-white flex items-center justify-center shadow-sm shrink-0">
-                      <FileSpreadsheet className="w-5 h-5" />
-                    </div>
-                    <p className="text-xs font-bold text-slate-800">
-                      Batch file <span className="text-[#2563EB] font-mono">&apos;industrial_valves.xlsx&apos;</span> completed:
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-4 text-xs font-bold text-slate-700 flex-wrap">
-                    <span className="flex items-center gap-1.5 text-blue-800">
-                      <Clock className="w-4 h-4 text-blue-600" />
-                      <span>2,450 SKUs processed in 42s</span>
-                    </span>
-                    <span className="flex items-center gap-1.5 text-emerald-800">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                      <span>0 Dead Links</span>
-                    </span>
-                    <span className="flex items-center gap-1.5 text-blue-700">
-                      <Table className="w-4 h-4 text-blue-600" />
-                      <span>252-Column Compliant</span>
-                    </span>
-                  </div>
-                  <div className="flex items-center">
-                    <span className="px-3 py-1 bg-emerald-100 border border-emerald-300 text-emerald-800 text-xs font-black rounded-full flex items-center gap-1.5">
-                      <span>Completed</span>
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                    </span>
-                  </div>
-                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#2563EB]" />
-                </div>
-              </div>
-            );
-          })()}
-        </div>
-      )}
 
       {/* ── TAB: PRODUCT IMAGE / LABEL OCR & SUFFICIENCY GATEKEEPER ──── */}
       {activeTabMode === "image-ocr" && (
@@ -2318,7 +1893,7 @@ export default function UploadPage() {
       )}
 
       {/* ── TAB: MANUFACTURER PDF & FILE UPLOAD (MULTI-PRODUCT AI & 252-COLUMN PIPELINE) ── */}
-      {activeTabMode !== "ai-search" && activeTabMode !== "url" && activeTabMode !== "image-ocr" && (
+      {activeTabMode !== "url" && activeTabMode !== "image-ocr" && (
         <div className="space-y-6">
 
           {/* Processing animation */}

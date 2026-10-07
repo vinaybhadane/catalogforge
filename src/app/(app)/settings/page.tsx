@@ -535,7 +535,7 @@ function SettingsContent() {
                   Catalog Manager
                 </span>
                 <p className="text-xs text-slate-600">
-                  Can upload CSV/XLSX datasets, review pending items, trigger AI lookups, and publish approved product records.
+                  Can upload CSV/XLSX datasets, review pending items, and publish approved product records.
                 </p>
               </div>
 

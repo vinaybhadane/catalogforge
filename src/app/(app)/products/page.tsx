@@ -12,7 +12,6 @@ import {
   Filter,
   FileSpreadsheet,
   Loader2,
-  Sparkles,
   PlusCircle,
 } from "lucide-react";
 import { apiClient, ApiClientError } from "@/lib/api/client";
@@ -354,7 +353,7 @@ export default function ProductsPage() {
             <div className="max-w-md mx-auto space-y-1.5">
               <h3 className="text-base font-bold text-[#000000]">Your Catalog is Empty</h3>
               <p className="text-xs text-[#64748B] leading-relaxed">
-                No products have been ingested or sourced in your workspace yet. Start by uploading a dataset file or use our AI Single Product Lookup.
+                No products have been ingested or sourced in your workspace yet. Start by uploading a dataset file or manufacturer PDF.
               </p>
             </div>
             <div className="flex items-center justify-center gap-3 pt-2">
@@ -363,16 +362,9 @@ export default function ProductsPage() {
                 className="px-4 py-2.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl text-xs font-bold inline-flex items-center gap-2 shadow-sm transition"
               >
                 <UploadCloud className="w-4 h-4" />
-                <span>Upload CSV / XLSX</span>
+                <span>Upload CSV / XLSX / PDF</span>
               </Link>
-              <Link
-                href="/upload?tab=ai-search"
-                className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold inline-flex items-center gap-2 transition"
-              >
-                <Sparkles className="w-4 h-4 text-purple-600" />
-                <span>AI Single Lookup</span>
-              </Link>
-            </div>
+              </div>
           </div>
         ) : (
           <div className="overflow-x-auto">
