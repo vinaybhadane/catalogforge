@@ -195,32 +195,32 @@ export function OtpVerification({
     <div className="space-y-5 select-none">
       {/* Top Header Badge */}
       <div className="text-center space-y-2">
-        <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-200 text-[#2563EB] flex items-center justify-center mx-auto shadow-sm">
+        <div className="w-12 h-12 rounded-2xl bg-[#171717] border border-neutral-800 text-[#C8FF00] flex items-center justify-center mx-auto shadow-sm">
           {purpose === "login_2fa" ? (
             <ShieldCheck className="w-6 h-6" />
           ) : (
             <Mail className="w-6 h-6" />
           )}
         </div>
-        <h2 className="text-xl font-black text-[#0F172A] tracking-tight">
+        <h2 className="text-[20px] sm:text-[22px] font-medium text-[#171717] tracking-tight">
           {title || defaultTitle}
         </h2>
-        <p className="text-xs text-[#475569] font-medium max-w-xs mx-auto leading-relaxed">
+        <p className="text-[13px] text-[#686868] font-normal max-w-xs mx-auto leading-relaxed">
           {subtitle || defaultSubtitle}
         </p>
       </div>
 
       {/* Error Alert */}
       {error && (
-        <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800">
-          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-          <span>{error}</span>
+        <div className="flex items-start gap-2.5 p-3 rounded-2xl bg-rose-50/90 border border-rose-200/90 text-xs text-rose-800 animate-in fade-in duration-200">
+          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+          <span className="leading-snug">{error}</span>
         </div>
       )}
 
       {/* Resend Success Notice */}
       {resendSuccessNotice && !error && (
-        <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800">
+        <div className="flex items-center gap-2 p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 animate-in fade-in duration-200">
           <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
           <span>{resendSuccessNotice}</span>
         </div>
@@ -242,7 +242,7 @@ export function OtpVerification({
               onChange={(e) => handleDigitChange(idx, e.target.value)}
               onKeyDown={(e) => handleKeyDown(idx, e)}
               onPaste={handlePaste}
-              className="w-11 h-13 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-black text-[#0F172A] bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl focus:outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-blue-100 transition-all font-mono"
+              className="w-11 h-13 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-bold text-[#171717] bg-[#FBFBFB] hover:bg-white focus:bg-white border border-[#E5E7EB] rounded-2xl focus:outline-none focus:border-[#171717] focus:ring-1 focus:ring-[#171717] transition-all font-mono"
             />
           ))}
         </div>
@@ -251,16 +251,16 @@ export function OtpVerification({
         <button
           type="submit"
           disabled={!isComplete || isVerifying}
-          className="w-full py-3 px-4 bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-50 text-white font-bold text-sm rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
+          className="w-full h-12 px-5 bg-[#171717] hover:bg-black disabled:opacity-50 text-white font-semibold text-[14px] rounded-full transition-all active:scale-[0.99] shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
         >
           {isVerifying ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin text-[#C8FF00]" />
               <span>Verifying Code...</span>
             </>
           ) : (
             <>
-              <ShieldCheck className="w-4 h-4" />
+              <ShieldCheck className="w-4 h-4 text-[#C8FF00]" />
               <span>{purpose === "signup_verification" ? "Verify & Activate Account" : "Verify & Access Workspace"}</span>
             </>
           )}
@@ -268,17 +268,17 @@ export function OtpVerification({
       </form>
 
       {/* Footer: Resend Code + Cancel/Back Trigger */}
-      <div className="flex flex-col items-center gap-2 pt-2 border-t border-slate-100 text-xs">
-        <div className="text-slate-500 font-medium">
+      <div className="flex flex-col items-center gap-2 pt-2 border-t border-[#EAEAEA] text-xs">
+        <div className="text-[#686868] font-normal">
           Didn't receive the email?{" "}
           {resendCountdown > 0 ? (
-            <span className="font-bold text-[#2563EB]">Resend in {resendCountdown}s</span>
+            <span className="font-semibold text-[#171717]">Resend in {resendCountdown}s</span>
           ) : (
             <button
               type="button"
               onClick={handleResend}
               disabled={isResending}
-              className="font-bold text-[#2563EB] hover:underline inline-flex items-center gap-1"
+              className="font-semibold text-[#171717] hover:underline underline-offset-2 inline-flex items-center gap-1 cursor-pointer"
             >
               {isResending && <RefreshCw className="w-3 h-3 animate-spin" />}
               <span>Resend Code</span>
@@ -290,7 +290,7 @@ export function OtpVerification({
           <button
             type="button"
             onClick={onCancel}
-            className="text-slate-400 hover:text-slate-600 font-bold inline-flex items-center gap-1 mt-1 transition-colors"
+            className="text-[#8A8A8A] hover:text-[#171717] font-medium inline-flex items-center gap-1.5 mt-1 transition-colors cursor-pointer"
           >
             <ArrowLeft className="w-3 h-3" />
             <span>Use a different email / Go back</span>
