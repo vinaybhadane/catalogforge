@@ -62,44 +62,44 @@ function StageNode({ stage, state, isLast }: StageNodeProps) {
     switch (state) {
       case "complete":
         return (
-          <CheckCircle2 className="w-5 h-5 text-[#047857]" aria-hidden="true" />
+          <CheckCircle2 className="w-5 h-5 text-emerald-600" aria-hidden="true" />
         );
       case "in_progress":
         return (
-          <Loader2 className="w-5 h-5 text-[#1D4ED8] animate-spin" aria-hidden="true" />
+          <Loader2 className="w-5 h-5 text-[#C8FF00] animate-spin" aria-hidden="true" />
         );
       case "needs_attention":
         return (
-          <AlertTriangle className="w-5 h-5 text-[#B45309]" aria-hidden="true" />
+          <AlertTriangle className="w-5 h-5 text-amber-600" aria-hidden="true" />
         );
       case "failed":
         return (
-          <XCircle className="w-5 h-5 text-[#B91C1C]" aria-hidden="true" />
+          <XCircle className="w-5 h-5 text-rose-600" aria-hidden="true" />
         );
       default:
         return (
-          <Circle className="w-5 h-5 text-slate-300" aria-hidden="true" />
+          <Circle className="w-5 h-5 text-[#DBDBDB]" aria-hidden="true" />
         );
     }
   })();
 
   const labelColor = (() => {
     switch (state) {
-      case "complete":       return "text-[#047857] font-semibold";
-      case "in_progress":    return "text-[#1D4ED8] font-bold";
-      case "needs_attention":return "text-[#B45309] font-semibold";
-      case "failed":         return "text-[#B91C1C] font-semibold";
-      default:               return "text-slate-400";
+      case "complete":       return "text-[#171717] font-bold";
+      case "in_progress":    return "text-white font-extrabold";
+      case "needs_attention":return "text-amber-800 font-bold";
+      case "failed":         return "text-rose-700 font-bold";
+      default:               return "text-[#8E8E8E]";
     }
   })();
 
   const bgColor = (() => {
     switch (state) {
-      case "complete":       return "bg-[#ECFDF5] border-[#047857]";
-      case "in_progress":    return "bg-[#EFF6FF] border-[#1D4ED8]";
-      case "needs_attention":return "bg-[#FFFBEB] border-[#B45309]";
-      case "failed":         return "bg-[#FEF2F2] border-[#B91C1C]";
-      default:               return "bg-slate-50 border-slate-200";
+      case "complete":       return "bg-white border-[#EAEAEA] shadow-sm";
+      case "in_progress":    return "bg-[#111111] border-[#C8FF00] shadow-md ring-1 ring-[#C8FF00]";
+      case "needs_attention":return "bg-amber-50 border-amber-300 shadow-sm";
+      case "failed":         return "bg-rose-50 border-rose-300 shadow-sm";
+      default:               return "bg-[#F7F7F7] border-[#EAEAEA] opacity-60";
     }
   })();
 
@@ -124,11 +124,11 @@ function StageNode({ stage, state, isLast }: StageNodeProps) {
   })();
 
   return (
-    <li className="flex flex-col items-center">
+    <li className="flex flex-col items-center w-full font-sans">
       {/* Stage Card */}
       <div
         className={cn(
-          "w-full flex items-center gap-3 p-3 rounded-lg border transition-all",
+          "w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all",
           bgColor
         )}
         role="listitem"
@@ -136,22 +136,25 @@ function StageNode({ stage, state, isLast }: StageNodeProps) {
       >
         <div className="shrink-0">{icon}</div>
         <div className="flex-1 min-w-0">
-          <div className={cn("text-sm leading-tight", labelColor)}>
+          <div className={cn("text-xs sm:text-sm leading-tight", labelColor)}>
             <span className="mr-1.5 font-mono text-xs opacity-70">{stateSymbol}</span>
             {stage.label}
           </div>
-          <div className="text-[11px] text-slate-500 mt-0.5 truncate">
+          <div className={cn(
+            "text-[11px] mt-0.5 truncate",
+            state === "in_progress" ? "text-[#8E8E8E]" : "text-[#686868]"
+          )}>
             {stage.description}
           </div>
         </div>
         <span
           className={cn(
-            "text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full shrink-0",
-            state === "complete"       && "bg-emerald-100 text-emerald-700",
-            state === "in_progress"    && "bg-blue-100 text-blue-700",
-            state === "needs_attention"&& "bg-amber-100 text-amber-700",
-            state === "failed"         && "bg-red-100 text-red-700",
-            state === "pending"        && "bg-slate-100 text-slate-500"
+            "text-[10px] uppercase tracking-wider font-bold px-2.5 py-0.5 rounded-full shrink-0",
+            state === "complete"       && "bg-[#C8FF00]/20 text-[#171717]",
+            state === "in_progress"    && "bg-[#C8FF00] text-[#111111]",
+            state === "needs_attention"&& "bg-amber-100 text-amber-900 border border-amber-200",
+            state === "failed"         && "bg-rose-100 text-rose-800 border border-rose-200",
+            state === "pending"        && "bg-[#EAEAEA] text-[#686868]"
           )}
         >
           {stateLabel}
@@ -160,8 +163,8 @@ function StageNode({ stage, state, isLast }: StageNodeProps) {
 
       {/* Connector arrow between stages */}
       {!isLast && (
-        <div className="flex items-center justify-center h-6 text-slate-300" aria-hidden="true">
-          <ArrowDown className="w-4 h-4" />
+        <div className="flex items-center justify-center h-5 text-[#DBDBDB]" aria-hidden="true">
+          <ArrowDown className="w-3.5 h-3.5" />
         </div>
       )}
     </li>

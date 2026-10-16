@@ -49,15 +49,15 @@ function ChartPanel({
   emptyMessage: string;
 }) {
   return (
-    <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 space-y-3">
+    <div className="bg-white border border-[#EAEAEA] rounded-3xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.02)] space-y-4">
       <div>
-        <h3 className="text-sm font-bold text-[#000000]">{title}</h3>
-        <p className="text-[11px] text-[#64748B] mt-0.5">{description}</p>
+        <h3 className="text-sm font-extrabold text-[#111111]">{title}</h3>
+        <p className="text-[11px] text-[#686868] font-medium mt-0.5">{description}</p>
       </div>
       {isEmpty ? (
         <div
-          className="flex items-center justify-center rounded-lg bg-slate-50 border border-dashed border-slate-200 text-xs text-slate-400 italic"
-          style={{ height: 180 }}
+          className="flex items-center justify-center rounded-2xl bg-[#FAFAFA] border border-dashed border-[#EAEAEA] text-xs text-[#929292] italic"
+          style={{ height: 200 }}
         >
           {emptyMessage}
         </div>
@@ -82,34 +82,34 @@ function AccuracyLineChart({ data }: { data: AccuracyDataPoint[] }) {
   return (
     <ResponsiveContainer width="100%" height={220}>
       <LineChart data={formatted} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-        <XAxis dataKey="ts" tick={{ fontSize: 10, fill: "#64748B" }} />
+        <CartesianGrid strokeDasharray="3 3" stroke="#EAEAEA" />
+        <XAxis dataKey="ts" tick={{ fontSize: 10, fill: "#929292" }} />
         <YAxis
-          tick={{ fontSize: 10, fill: "#64748B" }}
+          tick={{ fontSize: 10, fill: "#929292" }}
           unit="%"
           domain={[0, 100]}
         />
         <Tooltip
           formatter={(value) => [value != null ? `${value}%` : "—"]}
-          contentStyle={{ fontSize: 11, borderRadius: 8, border: "1px solid #E2E8F0" }}
+          contentStyle={{ fontSize: 11, borderRadius: 12, border: "1px solid #EAEAEA", backgroundColor: "#FFFFFF", boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}
         />
-        <Legend wrapperStyle={{ fontSize: 11 }} />
+        <Legend wrapperStyle={{ fontSize: 11, paddingTop: 10 }} />
         <Line
           type="monotone"
           dataKey="accuracy"
           name="AI Confidence Rate"
-          stroke="#2563EB"
+          stroke="#111111"
           strokeWidth={2.5}
-          dot={{ r: 4 }}
+          dot={{ r: 4, fill: "#111111" }}
           connectNulls={true}
         />
         <Line
           type="monotone"
           dataKey="lovResolution"
           name="LOV Taxonomies"
-          stroke="#059669"
-          strokeWidth={2}
-          dot={{ r: 3 }}
+          stroke="#C8FF00"
+          strokeWidth={2.5}
+          dot={{ r: 3, fill: "#111111", stroke: "#C8FF00", strokeWidth: 2 }}
           connectNulls={true}
         />
       </LineChart>
@@ -131,16 +131,16 @@ function TopManufacturersChart({ data }: { data: Array<{ manufacturer: string; c
   return (
     <ResponsiveContainer width="100%" height={220}>
       <BarChart data={formatted} margin={{ top: 10, right: 10, bottom: 20, left: -10 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-        <XAxis dataKey="name" tick={{ fontSize: 9, fill: "#64748B" }} interval={0} angle={-15} textAnchor="end" />
-        <YAxis tick={{ fontSize: 10, fill: "#64748B" }} />
+        <CartesianGrid strokeDasharray="3 3" stroke="#EAEAEA" />
+        <XAxis dataKey="name" tick={{ fontSize: 9, fill: "#929292" }} interval={0} angle={-15} textAnchor="end" />
+        <YAxis tick={{ fontSize: 10, fill: "#929292" }} />
         <Tooltip
-          contentStyle={{ fontSize: 11, borderRadius: 8, border: "1px solid #E2E8F0" }}
+          contentStyle={{ fontSize: 11, borderRadius: 12, border: "1px solid #EAEAEA", backgroundColor: "#FFFFFF", boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}
           formatter={(val, name) => [val, name === "count" ? "Total Products" : "Avg Confidence"]}
         />
-        <Bar dataKey="count" fill="#2563EB" radius={[4, 4, 0, 0]}>
+        <Bar dataKey="count" fill="#111111" radius={[6, 6, 0, 0]}>
           {formatted.map((_, index) => (
-            <Cell key={`cell-${index}`} fill={index === 0 ? "#1D4ED8" : index === 1 ? "#2563EB" : "#3B82F6"} />
+            <Cell key={`cell-${index}`} fill={index === 0 ? "#111111" : index === 1 ? "#191919" : index === 2 ? "#333333" : "#555555"} />
           ))}
         </Bar>
       </BarChart>
@@ -165,12 +165,12 @@ function RateProgressBar({
   return (
     <div className="space-y-1.5">
       <div className="flex justify-between text-xs">
-        <span className="text-[#0F172A] font-semibold">{label}</span>
-        <span className={cn("font-mono font-bold", pct === null ? "text-slate-400 italic" : "text-[#000000]")}>
+        <span className="text-[#171717] font-semibold">{label}</span>
+        <span className={cn("font-mono font-bold", pct === null ? "text-[#929292] italic" : "text-[#111111]")}>
           {pct !== null ? `${pct}%` : "Not available"}
         </span>
       </div>
-      <div className="h-2.5 w-full rounded-full bg-slate-100 overflow-hidden">
+      <div className="h-2 w-full rounded-full bg-[#F7F7F7] border border-[#EAEAEA] overflow-hidden">
         {pct !== null ? (
           <div
             className="h-full rounded-full transition-all duration-700"
@@ -252,22 +252,22 @@ export function AnalyticsCharts({ analytics, isLoading }: AnalyticsChartsProps) 
               <RateProgressBar
                 label="LOV Taxonomy Resolution Rate"
                 value={analytics.lovResolutionRate}
-                color="#2563EB"
+                color="#111111"
               />
               <RateProgressBar
                 label="Character-Limit Compliance (≤150 chars)"
                 value={analytics.characterComplianceRate}
-                color="#059669"
+                color="#10B981"
               />
               <RateProgressBar
                 label="Manufacturer Name Match Rate"
                 value={analytics.manufacturerMatchRate}
-                color="#7C3AED"
+                color="#191919"
               />
               <RateProgressBar
                 label="Critical Field Completeness Rate"
                 value={analytics.fieldLevelAccuracy}
-                color="#D97706"
+                color="#111111"
               />
             </div>
           ) : null}

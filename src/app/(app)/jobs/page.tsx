@@ -66,16 +66,16 @@ function StageBadge({ stage }: { stage: string | null }) {
 }
 
 function ProgressBar({ value }: { value: number | null }) {
-  if (value === null) return <span className="text-xs text-[#000000]/50">Not reported</span>;
+  if (value === null) return <span className="text-xs text-[#8E8E8E]">Not reported</span>;
   return (
     <div className="flex items-center gap-2.5">
-      <div className="flex-1 bg-[#F1F5F9] h-2.5 rounded-full w-24 overflow-hidden p-0.5">
+      <div className="flex-1 bg-[#F2F2F2] h-2 rounded-full w-24 overflow-hidden p-0.5">
         <div
-          className="bg-gradient-to-r from-[#2563EB] to-indigo-500 h-full rounded-full transition-all duration-500"
+          className="bg-emerald-500 h-full rounded-full transition-all duration-500"
           style={{ width: `${Math.min(value, 100)}%` }}
         />
       </div>
-      <span className="text-xs font-mono font-bold text-[#000000] shrink-0">
+      <span className="text-xs font-mono font-bold text-[#171717] shrink-0">
         {value.toFixed(0)}%
       </span>
     </div>
@@ -85,9 +85,9 @@ function ProgressBar({ value }: { value: number | null }) {
 function SkeletonRow() {
   return (
     <tr className="animate-pulse">
-      {Array.from({ length: 9 }).map((_, i) => (
+      {Array.from({ length: 8 }).map((_, i) => (
         <td key={i} className="px-4 py-3.5">
-          <div className="h-3.5 bg-[#CBCBCB]/40 rounded w-full max-w-[90%]" />
+          <div className="h-3.5 bg-[#EAEAEA] rounded-full w-full max-w-[90%]" />
         </td>
       ))}
     </tr>
@@ -153,19 +153,19 @@ export default function JobsPage() {
   }, [page, loadJobs]);
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-10">
+    <div className="space-y-6 max-w-7xl mx-auto pb-10 font-sans">
       {/* Top Header Card */}
-      <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6">
+      <div className="bg-white border border-[#EAEAEA] rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-sm">
         <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-[#2563EB] text-white flex items-center justify-center shadow-sm">
-              <Activity className="w-6 h-6" />
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-11 h-11 rounded-xl bg-[#111111] text-[#C8FF00] flex items-center justify-center shrink-0 shadow-sm">
+              <Activity className="w-5 h-5 stroke-[2.2]" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-[#000000] tracking-tight">
+              <h1 className="text-xl sm:text-2xl font-extrabold text-[#171717] tracking-tight">
                 Pipeline Processing Jobs
               </h1>
-              <p className="text-xs text-[#64748B] font-semibold mt-0.5">
+              <p className="text-xs sm:text-sm text-[#686868] mt-0.5 font-normal">
                 Track row-level pipeline stage progression from ingestion to publish.
               </p>
             </div>
@@ -174,16 +174,16 @@ export default function JobsPage() {
             <button
               type="button"
               onClick={() => loadJobs(page)}
-              className="bg-white border border-[#E2E8F0] rounded-xl hover:bg-[#F8FAFC] transition-colors flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-[#000000]"
+              className="bg-white border border-[#EAEAEA] rounded-full hover:bg-[#F7F7F7] transition-all flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-[#171717] shadow-sm active:scale-95"
             >
-              <RefreshCw className={cn("w-4 h-4 text-[#2563EB]", fetchState === "loading" && "animate-spin")} />
+              <RefreshCw className={cn("w-3.5 h-3.5 text-[#171717]", fetchState === "loading" && "animate-spin")} />
               <span>Refresh</span>
             </button>
             <Link
               href="/upload"
-              className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl flex items-center gap-2 px-5 py-2.5 text-xs font-bold shadow-sm transition"
+              className="bg-[#C8FF00] hover:bg-[#B7EF00] text-[#111111] rounded-full flex items-center gap-2 px-5 py-2.5 text-xs font-bold shadow-sm transition-all active:scale-95"
             >
-              <UploadCloud className="w-4 h-4" />
+              <UploadCloud className="w-4 h-4 stroke-[2.2]" />
               <span>New Upload</span>
             </Link>
           </div>
@@ -192,7 +192,7 @@ export default function JobsPage() {
 
       {/* Error Banner */}
       {fetchState === "error" && errorMessage && (
-        <div className="bg-white border border-[#E2E8F0] rounded-2xl p-4 border-l-4 border-l-rose-500 flex items-start gap-3">
+        <div className="bg-white border border-rose-200 rounded-2xl p-4 border-l-4 border-l-rose-500 flex items-start gap-3 shadow-sm">
           <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
           <div className="flex-1">
             <p className="text-xs font-bold text-rose-900">Unable to load processing jobs.</p>
@@ -202,11 +202,11 @@ export default function JobsPage() {
       )}
 
       {/* Main Table or Empty State */}
-      <div className="bg-white border border-[#E2E8F0] rounded-2xl overflow-hidden shadow-sm">
+      <div className="bg-white border border-[#EAEAEA] rounded-2xl sm:rounded-3xl overflow-hidden shadow-sm">
         {fetchState === "loading" ? (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-[#F8FAFC] border-b border-[#E2E8F0] text-[10px] font-black uppercase text-slate-500 tracking-wider">
+              <thead className="bg-[#FBFBFB] border-b border-[#EAEAEA] text-[10px] font-bold uppercase text-[#686868] tracking-wider">
                 <tr>
                   <th className="px-4 py-3.5">Job ID</th>
                   <th className="px-4 py-3.5">Source File</th>
@@ -218,7 +218,7 @@ export default function JobsPage() {
                   <th className="px-4 py-3.5 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#F1F5F9]">
+              <tbody className="divide-y divide-[#EAEAEA]">
                 {Array.from({ length: 5 }).map((_, i) => (
                   <SkeletonRow key={i} />
                 ))}
@@ -228,21 +228,21 @@ export default function JobsPage() {
         ) : jobs.length === 0 ? (
           /* Clean Initial State for New Users */
           <div className="p-12 text-center space-y-4">
-            <div className="w-16 h-16 rounded-2xl bg-blue-50 border border-blue-200 text-[#2563EB] flex items-center justify-center mx-auto shadow-sm">
-              <Activity className="w-8 h-8" />
+            <div className="w-14 h-14 rounded-2xl bg-[#111111] text-[#C8FF00] flex items-center justify-center mx-auto shadow-sm">
+              <Activity className="w-7 h-7 stroke-[2.2]" />
             </div>
             <div className="max-w-md mx-auto space-y-1.5">
-              <h3 className="text-base font-bold text-[#000000]">No Ingestion Jobs Yet</h3>
-              <p className="text-xs text-[#64748B] leading-relaxed">
+              <h3 className="text-base font-extrabold text-[#171717]">No Ingestion Jobs Yet</h3>
+              <p className="text-xs text-[#686868] leading-relaxed">
                 You have not submitted any dataset files or batch enrichment jobs in your workspace. Upload your first CSV or XLSX file to trigger the 8-stage pipeline.
               </p>
             </div>
             <div className="pt-2">
               <Link
                 href="/upload"
-                className="px-4 py-2.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl text-xs font-bold inline-flex items-center gap-2 shadow-sm transition"
+                className="px-5 py-2.5 bg-[#C8FF00] hover:bg-[#B7EF00] text-[#111111] rounded-full text-xs font-bold inline-flex items-center gap-2 shadow-sm transition-all active:scale-95"
               >
-                <UploadCloud className="w-4 h-4" />
+                <UploadCloud className="w-4 h-4 stroke-[2.2]" />
                 <span>Upload Dataset File</span>
               </Link>
             </div>
@@ -250,7 +250,7 @@ export default function JobsPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-[#F8FAFC] border-b border-[#E2E8F0] text-[10px] font-black uppercase text-slate-500 tracking-wider">
+              <thead className="bg-[#FBFBFB] border-b border-[#EAEAEA] text-[10px] font-bold uppercase text-[#686868] tracking-wider">
                 <tr>
                   <th className="px-4 py-3.5">Job ID</th>
                   <th className="px-4 py-3.5">Source File</th>
@@ -262,7 +262,7 @@ export default function JobsPage() {
                   <th className="px-4 py-3.5 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#F1F5F9]">
+              <tbody className="divide-y divide-[#EAEAEA]">
                 {jobs.map((job) => {
                   const jobId = job.jobId || (job as any).id || "job";
                   const stage = job.stage || (job as any).currentStage || "ingested";
@@ -271,23 +271,28 @@ export default function JobsPage() {
                   const createdAt = job.submittedAt || (job as any).createdAt || null;
 
                   return (
-                    <tr key={jobId} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="px-4 py-3.5 font-mono font-bold text-[#000000]">
+                    <tr key={jobId} className="hover:bg-[#F9F9F9] transition-colors">
+                      <td className="px-4 py-3.5 font-mono font-bold text-[#171717]">
                         <Link
                           href={`/jobs/${jobId}`}
-                          className="hover:text-[#2563EB] transition-colors"
+                          className="hover:text-black hover:underline transition-colors"
                         >
                           {truncateJobId(jobId)}
                         </Link>
                       </td>
-                      <td className="px-4 py-3.5 font-medium text-slate-800">
+                      <td className="px-4 py-3.5 font-medium text-[#171717]">
                         {job.fileName || "Raw Ingest File"}
                       </td>
-                      <td className="px-4 py-3.5 font-mono text-slate-700">
+                      <td className="px-4 py-3.5 font-mono text-[#171717]">
                         {rowCount}
                       </td>
                       <td className="px-4 py-3.5">
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-blue-50 text-blue-700 border border-blue-200">
+                        <span className={cn(
+                          "px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider",
+                          job.status === "completed"
+                            ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                            : "bg-[#F2F2F2] text-[#171717] border border-[#EAEAEA]"
+                        )}>
                           {job.status}
                         </span>
                       </td>
@@ -297,16 +302,16 @@ export default function JobsPage() {
                       <td className="px-4 py-3.5">
                         <ProgressBar value={progress} />
                       </td>
-                      <td className="px-4 py-3.5 text-slate-500 font-mono text-[11px]">
+                      <td className="px-4 py-3.5 text-[#8E8E8E] font-mono text-[11px]">
                         {formatDate(createdAt)}
                       </td>
                       <td className="px-4 py-3.5 text-right">
                         <Link
                           href={`/jobs/${jobId}`}
-                          className="inline-flex items-center gap-1 text-xs font-bold text-[#2563EB] hover:text-[#1D4ED8]"
+                          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#111111] hover:bg-black text-white text-[11px] font-bold transition-all shadow-sm active:scale-95"
                         >
                           <span>View</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
+                          <ArrowRight className="w-3 h-3" />
                         </Link>
                       </td>
                     </tr>

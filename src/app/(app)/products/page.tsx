@@ -54,22 +54,24 @@ function ConfidenceCell({ product }: { product: Product }) {
     <div className="flex flex-col gap-0.5">
       <span
         className={cn(
-          "text-[11px] font-mono font-bold px-2 py-0.5 rounded-full border shadow-sm inline-flex items-center gap-1 w-fit",
+          "text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full border shadow-sm inline-flex items-center gap-1.5 w-fit",
           badgeColor
         )}
       >
-        <span>{pct >= 85 ? "🟢" : pct >= 60 ? "🟡" : "🔴"}</span>
+        <span className={cn(
+          "w-1.5 h-1.5 rounded-full",
+          pct >= 85 ? "bg-emerald-500" : pct >= 60 ? "bg-amber-500" : "bg-rose-500"
+        )} />
         <span>{pct}% Conf</span>
       </span>
       {completeness !== undefined && completeness !== null && (
-        <span className="text-[10px] text-slate-500 font-mono font-medium">
+        <span className="text-[10px] text-[#686868] font-mono font-medium pl-0.5">
           {Math.round(completeness)}% verified
         </span>
       )}
     </div>
   );
 }
-
 
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, { dot: string; text: string; bg: string; border: string }> = {
@@ -78,15 +80,15 @@ function StatusBadge({ status }: { status: string }) {
     enriched: { dot: "bg-purple-500", text: "text-purple-800", bg: "bg-purple-50", border: "border-purple-200" },
     needs_review: { dot: "bg-orange-500", text: "text-orange-800", bg: "bg-orange-50", border: "border-orange-200" },
     failed: { dot: "bg-rose-500", text: "text-rose-800", bg: "bg-rose-50", border: "border-rose-200" },
-    ingested: { dot: "bg-[#6D8196]", text: "text-[#64748B]", bg: "bg-slate-50", border: "border-slate-200" },
-    classified: { dot: "bg-indigo-500", text: "text-indigo-800", bg: "bg-indigo-50", border: "border-indigo-200" },
+    ingested: { dot: "bg-[#929292]", text: "text-[#171717]", bg: "bg-[#F7F7F7]", border: "border-[#EAEAEA]" },
+    classified: { dot: "bg-blue-500", text: "text-blue-800", bg: "bg-blue-50", border: "border-blue-200" },
   };
 
-  const current = colors[status] || { dot: "bg-[#6D8196]", text: "text-[#000000]", bg: "bg-slate-50", border: "border-slate-200" };
+  const current = colors[status] || { dot: "bg-[#929292]", text: "text-[#171717]", bg: "bg-[#F7F7F7]", border: "border-[#EAEAEA]" };
 
   return (
-    <span className={cn("border inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider", current.bg, current.border)}>
-      <span className={cn("w-2 h-2 rounded-full", current.dot)} />
+    <span className={cn("border inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider", current.bg, current.border)}>
+      <span className={cn("w-1.5 h-1.5 rounded-full", current.dot)} />
       <span className={current.text}>{status.replace(/_/g, " ")}</span>
     </span>
   );
@@ -95,9 +97,9 @@ function StatusBadge({ status }: { status: string }) {
 function SkeletonRow() {
   return (
     <tr className="animate-pulse">
-      {Array.from({ length: 8 }).map((_, i) => (
-        <td key={i} className="px-4 py-3.5">
-          <div className="h-3.5 bg-[#CBCBCB]/40 rounded w-4/5" />
+      {Array.from({ length: 7 }).map((_, i) => (
+        <td key={i} className="px-5 py-4">
+          <div className="h-3.5 bg-slate-100 rounded-md w-4/5" />
         </td>
       ))}
     </tr>
@@ -225,20 +227,25 @@ export default function ProductsPage() {
   };
 
   return (
-    <div className="space-y-6 pb-10">
+    <div className="space-y-6 pb-10 max-w-7xl mx-auto">
       {/* Top Header Card */}
-      <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6">
+      <div className="bg-white border border-[#EAEAEA] rounded-3xl p-6 md:p-8 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
         <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-[#2563EB] text-white flex items-center justify-center shadow-sm">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-[#111111] text-[#C8FF00] flex items-center justify-center shadow-sm shrink-0">
               <Package className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-[#000000] tracking-tight">
-                Product Master Catalog
-              </h1>
-              <p className="text-xs text-[#64748B] font-semibold mt-0.5">
-                Authoritative multi-modal product intelligence repository.
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl md:text-3xl font-extrabold text-[#111111] tracking-tight">
+                  Product Master
+                </h1>
+                <span className="bg-[#F7F7F7] border border-[#EAEAEA] text-[#111111] text-[11px] font-bold px-2.5 py-0.5 rounded-full font-mono">
+                  {products.length} {products.length === 1 ? "SKU" : "SKUs"}
+                </span>
+              </div>
+              <p className="text-xs text-[#686868] font-medium mt-1">
+                Authoritative multi-modal industrial catalog repository and standardized SKU registry.
               </p>
             </div>
           </div>
@@ -248,13 +255,13 @@ export default function ProductsPage() {
               type="button"
               onClick={() => handleExportDelivery("xlsx")}
               disabled={isExporting !== null || products.length === 0}
-              className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition shadow-sm"
+              className="flex items-center gap-2 px-4 py-2 bg-[#111111] hover:bg-[#191919] disabled:opacity-40 text-white rounded-full text-xs font-bold transition shadow-sm"
               title="Export 252-Column Unihack Delivery Excel Workbook"
             >
               {isExporting === "xlsx" ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#C8FF00]" />
               ) : (
-                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <FileSpreadsheet className="w-3.5 h-3.5 text-[#C8FF00]" />
               )}
               <span>Export 252-Col Excel</span>
             </button>
@@ -262,15 +269,15 @@ export default function ProductsPage() {
             <button
               type="button"
               onClick={() => loadProducts(page, search, statusFilter)}
-              className="bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#000000] px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition"
+              className="bg-white border border-[#EAEAEA] hover:bg-[#F7F7F7] hover:border-[#111111]/20 text-[#171717] px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 transition shadow-sm"
             >
-              <RefreshCw className={cn("w-3.5 h-3.5 text-[#2563EB]", fetchState === "loading" && "animate-spin")} />
+              <RefreshCw className={cn("w-3.5 h-3.5 text-[#111111]", fetchState === "loading" && "animate-spin")} />
               <span>Refresh</span>
             </button>
 
             <Link
               href="/upload"
-              className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-sm"
+              className="bg-[#C8FF00] hover:bg-[#B7EF00] text-[#111111] px-5 py-2 rounded-full text-xs font-bold flex items-center gap-2 transition shadow-[0_2px_8px_rgba(200,255,0,0.25)] transform active:scale-95"
             >
               <UploadCloud className="w-3.5 h-3.5" />
               <span>Ingest Dataset</span>
@@ -280,27 +287,27 @@ export default function ProductsPage() {
       </div>
 
       {/* Filter / Search Bar */}
-      <div className="bg-white border border-[#E2E8F0] rounded-2xl p-4 flex items-center justify-between gap-4 flex-wrap">
-        <div className="relative flex-1 min-w-[240px]">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+      <div className="bg-white border border-[#EAEAEA] rounded-2xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.02)] flex items-center justify-between gap-4 flex-wrap">
+        <div className="relative flex-1 min-w-[260px]">
+          <Search className="w-4 h-4 text-[#929292] absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={search}
             onChange={(e) => handleSearchChange(e.target.value)}
             placeholder="Search by part number, manufacturer, brand, or description..."
-            className="w-full pl-9 pr-4 py-2 bg-[#FAFAFA] border border-[#E2E8F0] rounded-xl text-xs font-medium text-[#000000] focus:outline-none focus:border-[#2563EB]"
+            className="w-full pl-9 pr-4 py-2 bg-[#FAFAFA] border border-[#EAEAEA] rounded-full text-xs font-medium text-[#171717] placeholder:text-[#929292] focus:outline-none focus:border-[#111111] transition-colors"
           />
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <Filter className="w-4 h-4 text-slate-400" />
+          <Filter className="w-4 h-4 text-[#929292]" />
           <select
             value={statusFilter}
             onChange={(e) => {
               setStatusFilter(e.target.value);
               setPage(1);
             }}
-            className="px-3 py-2 bg-[#FAFAFA] border border-[#E2E8F0] rounded-xl text-xs font-bold text-[#000000] focus:outline-none focus:border-[#2563EB]"
+            className="px-4 py-2 bg-[#FAFAFA] border border-[#EAEAEA] rounded-full text-xs font-bold text-[#171717] focus:outline-none focus:border-[#111111] cursor-pointer transition-colors"
           >
             <option value="all">All Statuses</option>
             <option value="published">Published</option>
@@ -322,22 +329,22 @@ export default function ProductsPage() {
       )}
 
       {/* Main Table or Empty State */}
-      <div className="bg-white border border-[#E2E8F0] rounded-2xl overflow-hidden shadow-sm">
+      <div className="bg-white border border-[#EAEAEA] rounded-3xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
         {fetchState === "loading" ? (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-[#F8FAFC] border-b border-[#E2E8F0] text-[10px] font-black uppercase text-slate-500 tracking-wider">
+              <thead className="bg-[#FAFAFA] border-b border-[#EAEAEA] text-[11px] font-bold uppercase text-[#929292] tracking-wider">
                 <tr>
-                  <th className="px-4 py-3.5">Part Number</th>
-                  <th className="px-4 py-3.5">Manufacturer</th>
-                  <th className="px-4 py-3.5">Brand</th>
-                  <th className="px-4 py-3.5">Classpath / Leaf</th>
-                  <th className="px-4 py-3.5">Confidence</th>
-                  <th className="px-4 py-3.5">Status</th>
-                  <th className="px-4 py-3.5 text-right">Actions</th>
+                  <th className="px-5 py-3.5">Part Number</th>
+                  <th className="px-5 py-3.5">Manufacturer</th>
+                  <th className="px-5 py-3.5">Brand</th>
+                  <th className="px-5 py-3.5">Classpath / Leaf</th>
+                  <th className="px-5 py-3.5">Confidence</th>
+                  <th className="px-5 py-3.5">Status</th>
+                  <th className="px-5 py-3.5 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#F1F5F9]">
+              <tbody className="divide-y divide-[#EAEAEA]">
                 {Array.from({ length: 6 }).map((_, i) => (
                   <SkeletonRow key={i} />
                 ))}
@@ -347,40 +354,40 @@ export default function ProductsPage() {
         ) : products.length === 0 ? (
           /* Clean Initial State for New Users */
           <div className="p-12 text-center space-y-4">
-            <div className="w-16 h-16 rounded-2xl bg-blue-50 border border-blue-200 text-[#2563EB] flex items-center justify-center mx-auto shadow-sm">
+            <div className="w-16 h-16 rounded-2xl bg-[#F7F7F7] border border-[#EAEAEA] text-[#111111] flex items-center justify-center mx-auto shadow-sm">
               <Package className="w-8 h-8" />
             </div>
             <div className="max-w-md mx-auto space-y-1.5">
-              <h3 className="text-base font-bold text-[#000000]">Your Catalog is Empty</h3>
-              <p className="text-xs text-[#64748B] leading-relaxed">
+              <h3 className="text-base font-bold text-[#111111]">Your Product Master is Empty</h3>
+              <p className="text-xs text-[#686868] leading-relaxed">
                 No products have been ingested or sourced in your workspace yet. Start by uploading a dataset file or manufacturer PDF.
               </p>
             </div>
             <div className="flex items-center justify-center gap-3 pt-2">
               <Link
                 href="/upload"
-                className="px-4 py-2.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl text-xs font-bold inline-flex items-center gap-2 shadow-sm transition"
+                className="px-5 py-2.5 bg-[#C8FF00] hover:bg-[#B7EF00] text-[#111111] rounded-full text-xs font-bold inline-flex items-center gap-2 shadow-[0_2px_8px_rgba(200,255,0,0.25)] transition transform active:scale-95"
               >
                 <UploadCloud className="w-4 h-4" />
                 <span>Upload CSV / XLSX / PDF</span>
               </Link>
-              </div>
+            </div>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-[#F8FAFC] border-b border-[#E2E8F0] text-[10px] font-black uppercase text-slate-500 tracking-wider">
+              <thead className="bg-[#FAFAFA] border-b border-[#EAEAEA] text-[11px] font-bold uppercase text-[#929292] tracking-wider">
                 <tr>
-                  <th className="px-4 py-3.5">Part Number</th>
-                  <th className="px-4 py-3.5">Manufacturer</th>
-                  <th className="px-4 py-3.5">Brand</th>
-                  <th className="px-4 py-3.5">Classpath / Leaf</th>
-                  <th className="px-4 py-3.5">Confidence</th>
-                  <th className="px-4 py-3.5">Status</th>
-                  <th className="px-4 py-3.5 text-right">Actions</th>
+                  <th className="px-5 py-3.5">Part Number</th>
+                  <th className="px-5 py-3.5">Manufacturer</th>
+                  <th className="px-5 py-3.5">Brand</th>
+                  <th className="px-5 py-3.5">Classpath / Leaf</th>
+                  <th className="px-5 py-3.5">Confidence</th>
+                  <th className="px-5 py-3.5">Status</th>
+                  <th className="px-5 py-3.5 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#F1F5F9]">
+              <tbody className="divide-y divide-[#EAEAEA]">
                 {products.map((product) => {
                   const prodId = product.productId || (product as any).id || product.partNumber;
                   const resolvedMfg = getCleanManufacturerName(product.manufacturerName, product.brandName);
@@ -388,33 +395,33 @@ export default function ProductsPage() {
                   const cleanClasspath = sanitizeText(product.classpath) || "Industrial > General";
 
                   return (
-                    <tr key={prodId} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="px-4 py-3.5 font-mono font-bold text-[#000000]">
+                    <tr key={prodId} className="hover:bg-[#F7F7F7]/60 transition-colors">
+                      <td className="px-5 py-3.5 font-mono font-bold text-[#111111]">
                         <Link
                           href={`/products/${encodeURIComponent(String(prodId))}`}
-                          className="hover:text-[#2563EB] transition-colors"
+                          className="hover:text-black underline-offset-2 hover:underline transition-colors"
                         >
                           {sanitizeText(product.partNumber)}
                         </Link>
                       </td>
-                      <td className="px-4 py-3.5 font-medium text-slate-800">{resolvedMfg}</td>
-                      <td className="px-4 py-3.5 font-medium text-slate-600">{resolvedBrand}</td>
-                      <td className="px-4 py-3.5 text-slate-600 max-w-[220px] truncate" title={cleanClasspath}>
+                      <td className="px-5 py-3.5 font-medium text-[#171717]">{resolvedMfg}</td>
+                      <td className="px-5 py-3.5 font-medium text-[#686868]">{resolvedBrand}</td>
+                      <td className="px-5 py-3.5 text-[#686868] max-w-[220px] truncate" title={cleanClasspath}>
                         {cleanClasspath}
                       </td>
-                      <td className="px-4 py-3.5">
+                      <td className="px-5 py-3.5">
                         <ConfidenceCell product={product} />
                       </td>
-                      <td className="px-4 py-3.5">
+                      <td className="px-5 py-3.5">
                         <StatusBadge status={product.status || "ingested"} />
                       </td>
-                      <td className="px-4 py-3.5 text-right">
+                      <td className="px-5 py-3.5 text-right">
                         <Link
                           href={`/products/${encodeURIComponent(String(prodId))}`}
-                          className="inline-flex items-center gap-1 text-xs font-bold text-[#2563EB] hover:text-[#1D4ED8]"
+                          className="inline-flex items-center gap-1.5 text-xs font-bold text-[#111111] hover:text-black group"
                         >
                           <span>Inspect</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
+                          <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
                         </Link>
                       </td>
                     </tr>

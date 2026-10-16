@@ -63,7 +63,7 @@ export const PreflightSummary: React.FC<PreflightSummaryProps> = ({
   };
 
   return (
-    <div className="bg-white border border-[#E2E8F0] rounded-2xl overflow-hidden">
+    <div className="bg-white border border-[#EAEAEA] rounded-2xl overflow-hidden shadow-sm font-sans">
 
       {/* ── Status Banner ── */}
       <div className={cn(
@@ -76,8 +76,8 @@ export const PreflightSummary: React.FC<PreflightSummaryProps> = ({
       )}>
         <div className="flex items-center gap-3">
           <div className={cn(
-            "w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center shrink-0",
-            isRejected ? "bg-rose-100" : hasWarnings ? "bg-amber-100" : "bg-emerald-100"
+            "w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0",
+            isRejected ? "bg-rose-100 text-rose-600" : hasWarnings ? "bg-amber-100 text-amber-600" : "bg-emerald-100 text-emerald-600"
           )}>
             {isRejected
               ? <XCircle className="w-4 h-4 sm:w-5 sm:h-5 text-rose-600" />
@@ -87,7 +87,7 @@ export const PreflightSummary: React.FC<PreflightSummaryProps> = ({
           </div>
           <div>
             <h3 className={cn(
-              "text-xs sm:text-sm font-bold",
+              "text-xs sm:text-sm font-extrabold",
               isRejected ? "text-rose-900" : hasWarnings ? "text-amber-900" : "text-emerald-900"
             )}>
               {isRejected
@@ -107,7 +107,7 @@ export const PreflightSummary: React.FC<PreflightSummaryProps> = ({
           </div>
         </div>
         <span className={cn(
-          "text-[9px] sm:text-[10px] font-bold px-2.5 sm:px-3 py-1 rounded-full uppercase tracking-wider border self-start sm:self-auto",
+          "text-[9px] sm:text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider border self-start sm:self-auto",
           isRejected
             ? "text-rose-700 border-rose-300 bg-white"
             : hasWarnings
@@ -119,18 +119,18 @@ export const PreflightSummary: React.FC<PreflightSummaryProps> = ({
       </div>
 
       {/* ── Metrics Grid ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-[#F1F5F9] border-b border-[#E2E8F0]">
+      <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-[#EAEAEA] border-b border-[#EAEAEA]">
         {[
           { icon: Layers, label: "Detected Schema", value: result.schema || "Unknown" },
           { icon: Hash, label: "Row Count", value: result.rowCount !== null ? result.rowCount.toLocaleString() : "N/A" },
           { icon: Columns, label: "Column Count", value: result.columnCount !== null ? `${result.columnCount}` : "N/A" },
         ].map(({ icon: Icon, label, value }) => (
-          <div key={label} className="px-5 py-4">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-[#64748B] mb-1.5">
+          <div key={label} className="px-6 py-4">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-[#686868] mb-1.5">
               <Icon className="w-3.5 h-3.5" />
               {label}
             </div>
-            <p className="text-sm font-bold text-[#000000] font-mono">{value}</p>
+            <p className="text-base font-extrabold text-[#171717] font-mono">{value}</p>
           </div>
         ))}
       </div>
@@ -138,15 +138,15 @@ export const PreflightSummary: React.FC<PreflightSummaryProps> = ({
       {/* ── Placeholder Scan ── */}
       <div className="p-6 space-y-4">
         <div>
-          <h4 className="text-sm font-bold text-[#000000] flex items-center gap-2 mb-0.5">
-            <FileCheck2 className="w-4 h-4 text-[#64748B]" />
+          <h4 className="text-sm font-extrabold text-[#171717] flex items-center gap-2 mb-0.5">
+            <FileCheck2 className="w-4 h-4 text-[#171717]" />
             Placeholder &amp; Governance Scan
           </h4>
-          <p className="text-xs text-[#64748B]">
+          <p className="text-xs text-[#686868]">
             Detecting placeholder tokens (e.g.{" "}
-            <code className="bg-[#F1F5F9] px-1.5 py-0.5 rounded text-[#000000] text-[11px]">-- Unbranded --</code>
+            <code className="bg-[#F7F7F7] border border-[#EAEAEA] px-1.5 py-0.5 rounded text-[#171717] text-[11px]">-- Unbranded --</code>
             {", "}
-            <code className="bg-[#F1F5F9] px-1.5 py-0.5 rounded text-[#000000] text-[11px]">-- No Unilog Brand --</code>
+            <code className="bg-[#F7F7F7] border border-[#EAEAEA] px-1.5 py-0.5 rounded text-[#171717] text-[11px]">-- No Unilog Brand --</code>
             ) to prevent invalid brand propagation.
           </p>
         </div>
@@ -168,10 +168,10 @@ export const PreflightSummary: React.FC<PreflightSummaryProps> = ({
               {result.placeholderScan.details.map((item, idx) => (
                 <div
                   key={idx}
-                  className="px-2.5 py-1 rounded-lg bg-white border border-amber-200 text-amber-900 text-xs font-mono flex items-center gap-2"
+                  className="px-2.5 py-1 rounded-full bg-white border border-amber-200 text-amber-900 text-xs font-mono flex items-center gap-2"
                 >
                   <span className="font-bold">{item.placeholder}</span>
-                  <span className="bg-amber-100 text-amber-800 text-[10px] px-1.5 py-0.5 rounded-md font-bold">
+                  <span className="bg-amber-100 text-amber-800 text-[10px] px-1.5 py-0.5 rounded-full font-bold">
                     {item.count}
                   </span>
                 </div>
@@ -182,7 +182,7 @@ export const PreflightSummary: React.FC<PreflightSummaryProps> = ({
             </p>
           </div>
         ) : (
-          <div className="flex items-center gap-2.5 p-3 rounded-xl bg-[#F0FDF4] border border-emerald-200 text-sm font-medium text-emerald-800">
+          <div className="flex items-center gap-2.5 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs sm:text-sm font-semibold text-emerald-800">
             <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
             No brand placeholders detected. All brand fields contain standard data.
           </div>
@@ -224,11 +224,11 @@ export const PreflightSummary: React.FC<PreflightSummaryProps> = ({
       </div>
 
       {/* ── Action Footer ── */}
-      <div className="p-4 sm:px-6 sm:py-4 border-t border-[#E2E8F0] bg-[#FAFAFA] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+      <div className="p-4 sm:px-6 sm:py-4 border-t border-[#EAEAEA] bg-[#FAFAFA] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <button
           type="button"
           onClick={onReset}
-          className="flex items-center justify-center gap-2 text-xs sm:text-sm font-medium text-[#64748B] hover:text-[#000000] transition-colors py-1.5"
+          className="flex items-center justify-center gap-2 text-xs sm:text-sm font-bold text-[#686868] hover:text-[#171717] transition-colors py-1.5"
         >
           <RefreshCw className="w-4 h-4" />
           Upload Another File
@@ -240,7 +240,7 @@ export const PreflightSummary: React.FC<PreflightSummaryProps> = ({
               type="button"
               onClick={handleExportDelivery}
               disabled={isExporting}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold transition-colors shadow-sm disabled:opacity-50 w-full sm:w-auto"
+              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-[#111111] hover:bg-black text-white text-xs sm:text-sm font-bold transition-all shadow-sm disabled:opacity-50 w-full sm:w-auto active:scale-95"
               title="Download 252-column Expected Output Delivery Format (.xlsx)"
             >
               {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSpreadsheet className="w-4 h-4" />}
@@ -249,10 +249,10 @@ export const PreflightSummary: React.FC<PreflightSummaryProps> = ({
             <button
               type="button"
               onClick={onProceed}
-              className="flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl bg-[#3386E7] hover:bg-[#2563EB] text-white text-xs sm:text-sm font-semibold transition-colors shadow-sm w-full sm:w-auto"
+              className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-[#C8FF00] hover:bg-[#B7EF00] text-[#111111] text-xs sm:text-sm font-bold transition-all shadow-sm w-full sm:w-auto active:scale-95"
             >
               <span>View Processed Pipeline</span>
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-4 h-4 stroke-[2.2]" />
             </button>
           </div>
         )}

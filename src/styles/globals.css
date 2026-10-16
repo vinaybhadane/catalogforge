@@ -5,24 +5,28 @@
 @tailwind utilities;
 
 :root {
-  /* White, Blue, Sky Blue, Navy Blue & Black Theme Tokens */
-  --background: #F8FAFC;
+  /* Payline-Inspired Color System Tokens */
+  --background: #F7F7F7;
   --surface: #FFFFFF;
-  --surface-muted: #F1F5F9;
-  --border: #E2E8F0;
-  --border-strong: #CBD5E1;
+  --surface-muted: #F2F2F2;
+  --border: #EAEAEA;
+  --border-strong: #DBDBDB;
   
   /* Text */
-  --primary-text: #000000;
-  --secondary-text: #0F172A;
-  --muted-text: #475569;
+  --primary-text: #171717;
+  --secondary-text: #686868;
+  --muted-text: #8E8E8E;
   
   /* Brand Tones */
-  --navy: #0F172A;
-  --blue: #2563EB;
-  --blue-hover: #1D4ED8;
-  --sky: #38BDF8;
-  --sky-soft: #E0F2FE;
+  --primary-black: #191919;
+  --deep-black: #111111;
+  --lime: #C8FF00;
+  --lime-hover: #B7EF00;
+  --navy: #111111;
+  --blue: #111111;
+  --blue-hover: #000000;
+  --sky: #C8FF00;
+  --sky-soft: #F4FFCE;
 
   /* Semantic Alert Tones */
   --success: #059669;
@@ -31,14 +35,14 @@
   --warning-soft: #FFFBEB;
   --error: #DC2626;
   --error-soft: #FEF2F2;
-  --info: #0284C7;
-  --info-soft: #E0F2FE;
+  --info: #171717;
+  --info-soft: #F2F2F2;
 }
 
-/* Zero shadows globally for general UI */
+/* Payline typography and smooth background */
 body {
-  background-color: #F8FAFC;
-  color: #000000;
+  background-color: #F7F7F7;
+  color: #171717;
   font-family: 'Manrope', 'Plus Jakarta Sans', Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -115,97 +119,108 @@ body {
   }
 
   /* ─────────────────────────────────────────────────────────────
-   * Flat Shadow-Free UI (Workspace & Sub-pages)
+   * Payline-Inspired Minimalist Workspace Tokens
    * ───────────────────────────────────────────────────────────── */
   .flat-card {
     background-color: #FFFFFF;
-    border: 1px solid #E2E8F0;
+    border: 1px solid #EAEAEA;
+    border-radius: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  }
+
+  .flat-card-interactive {
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .flat-card-interactive:hover {
+    border-color: rgba(23, 23, 23, 0.25);
+    box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.06);
+  }
+
+  .flat-well {
+    background-color: #F7F7F7;
+    border: 1px solid #EAEAEA;
     border-radius: 1rem;
     box-shadow: none !important;
   }
 
-  .flat-card-interactive {
-    transition: border-color 0.2s ease, background-color 0.2s ease;
-  }
-  .flat-card-interactive:hover {
-    border-color: #2563EB;
-  }
-
-  .flat-well {
-    background-color: #F1F5F9;
-    border: 1px solid #E2E8F0;
-    border-radius: 0.75rem;
-    box-shadow: none !important;
-  }
-
   .flat-input {
-    background-color: #F8FAFC;
-    border: 1px solid #CBD5E1;
-    border-radius: 0.75rem;
-    color: #000000;
+    background-color: #FFFFFF;
+    border: 1px solid #EAEAEA;
+    border-radius: 9999px;
+    color: #171717;
     font-weight: 500;
     box-shadow: none !important;
-    transition: border-color 0.2s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
   .flat-input:focus {
-    border-color: #2563EB;
+    border-color: #111111;
+    box-shadow: 0 0 0 2px rgba(17, 17, 17, 0.1) !important;
     outline: none;
   }
 
   .flat-btn-primary {
-    background-color: #2563EB;
-    color: #FFFFFF;
-    border: 1px solid #1D4ED8;
-    border-radius: 0.75rem;
+    background-color: #C8FF00;
+    color: #111111;
+    border: 1px solid #B7EF00;
+    border-radius: 9999px;
     font-weight: 700;
-    box-shadow: none !important;
-    transition: background-color 0.2s ease;
+    box-shadow: 0 2px 8px -2px rgba(200, 255, 0, 0.4);
+    transition: all 0.2s ease;
   }
   .flat-btn-primary:hover {
-    background-color: #1D4ED8;
+    background-color: #B7EF00;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px -2px rgba(200, 255, 0, 0.5);
+  }
+  .flat-btn-primary:active {
+    transform: translateY(0);
   }
 
   .flat-btn-navy {
-    background-color: #0F172A;
+    background-color: #111111;
     color: #FFFFFF;
-    border: 1px solid #000000;
-    border-radius: 0.75rem;
+    border: 1px solid #111111;
+    border-radius: 9999px;
     font-weight: 700;
     box-shadow: none !important;
-    transition: background-color 0.2s ease;
+    transition: all 0.2s ease;
   }
   .flat-btn-navy:hover {
-    background-color: #1E293B;
+    background-color: #000000;
+    transform: translateY(-1px);
+  }
+  .flat-btn-navy:active {
+    transform: translateY(0);
   }
 
   .flat-btn-secondary {
     background-color: #FFFFFF;
-    color: #000000;
-    border: 1px solid #CBD5E1;
-    border-radius: 0.75rem;
+    color: #171717;
+    border: 1px solid #EAEAEA;
+    border-radius: 9999px;
     font-weight: 700;
     box-shadow: none !important;
     transition: all 0.2s ease;
   }
   .flat-btn-secondary:hover {
-    background-color: #F1F5F9;
-    border-color: #2563EB;
-    color: #2563EB;
+    background-color: #F7F7F7;
+    border-color: #171717;
+    color: #111111;
   }
 
   .flat-pill {
-    background-color: #F1F5F9;
-    border: 1px solid #CBD5E1;
-    color: #000000;
+    background-color: #F7F7F7;
+    border: 1px solid #EAEAEA;
+    color: #171717;
     border-radius: 9999px;
     font-weight: 700;
     box-shadow: none !important;
   }
 
   .flat-pill-sky {
-    background-color: #E0F2FE;
-    border: 1px solid #38BDF8;
-    color: #0284C7;
+    background-color: rgba(200, 255, 0, 0.15);
+    border: 1px solid rgba(200, 255, 0, 0.35);
+    color: #171717;
     border-radius: 9999px;
     font-weight: 700;
     box-shadow: none !important;

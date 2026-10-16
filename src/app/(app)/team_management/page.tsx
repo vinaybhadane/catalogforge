@@ -323,37 +323,37 @@ export default function TeamManagementPage() {
   const acceptedCount = teamMembers.filter((m) => m.status === "Accepted").length;
 
   return (
-    <div className="max-w-6xl mx-auto pb-16 space-y-6 select-none">
+    <div className="max-w-7xl mx-auto pb-16 space-y-6 select-none">
       {/* ── Page Header ─────────────────────────────────────────────── */}
-      <div className="bg-white border border-[#E2E8F0] rounded-2xl px-6 py-5 flex items-center justify-between flex-wrap gap-4">
+      <div className="bg-white border border-[#EAEAEA] rounded-3xl p-6 md:p-8 shadow-[0_2px_8px_rgba(0,0,0,0.02)] flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-4">
-          <div className="w-11 h-11 rounded-xl bg-[#EFF6FF] border border-[#BFDBFE] flex items-center justify-center shrink-0">
-            <Users className="w-5 h-5 text-[#2563EB]" />
+          <div className="w-12 h-12 rounded-2xl bg-[#111111] text-[#C8FF00] flex items-center justify-center shrink-0 shadow-sm">
+            <Users className="w-6 h-6" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold text-[#000000] tracking-tight">
-                Team Management Studio
+              <h1 className="text-2xl md:text-3xl font-extrabold text-[#111111] tracking-tight">
+                Team Management
               </h1>
-              <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200 flex items-center gap-1">
-                <ShieldCheck className="w-3 h-3 text-blue-600" />
-                Administrator Console
+              <span className="text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full bg-[#111111] text-[#C8FF00] flex items-center gap-1 font-mono">
+                <ShieldCheck className="w-3 h-3 text-[#C8FF00]" />
+                Admin Console
               </span>
             </div>
-            <p className="text-sm text-[#64748B] mt-0.5">
+            <p className="text-xs text-[#686868] font-medium mt-1">
               Manage workspace members, invite collaborators via email, track pending acceptance, and control catalog access.
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs font-bold px-3 py-1.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[#000000]">
-            Accepted: <strong className="text-emerald-700">{acceptedCount}</strong>
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <span className="text-xs font-bold px-3.5 py-1.5 rounded-full bg-[#F7F7F7] border border-[#EAEAEA] text-[#171717]">
+            Active: <strong className="text-emerald-700">{acceptedCount}</strong>
           </span>
           {pendingCount > 0 && (
-            <span className="text-xs font-bold px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 flex items-center gap-1">
+            <span className="text-xs font-bold px-3.5 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5 text-amber-600" />
-              Pending Invites: <strong>{pendingCount}</strong>
+              Pending: <strong>{pendingCount}</strong>
             </span>
           )}
         </div>
@@ -361,22 +361,22 @@ export default function TeamManagementPage() {
 
       {/* ── Notification Banner ─────────────────────────────────────── */}
       {notification && (
-        <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-2xl flex items-center gap-2 text-xs font-bold transition-all shadow-sm">
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-5 py-3 rounded-2xl flex items-center gap-2 text-xs font-bold transition-all shadow-sm">
           <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
           <span>{notification}</span>
         </div>
       )}
 
       {/* ── Invite New Member Card ───────────────────────────────────── */}
-      <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-sm space-y-4">
+      <div className="bg-white border border-[#EAEAEA] rounded-3xl p-6 md:p-8 shadow-[0_2px_8px_rgba(0,0,0,0.02)] space-y-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-[#EFF6FF] border border-[#BFDBFE] flex items-center justify-center">
-              <UserPlus className="w-4 h-4 text-[#2563EB]" />
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#F7F7F7] border border-[#EAEAEA] flex items-center justify-center shrink-0">
+              <UserPlus className="w-5 h-5 text-[#111111]" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-[#000000]">Invite New Team Member via Email</h2>
-              <p className="text-xs text-[#64748B]">
+              <h2 className="text-sm font-extrabold text-[#111111]">Invite New Team Member via Email</h2>
+              <p className="text-xs text-[#686868] font-medium">
                 An invitation email will be dispatched to their inbox. The member remains &quot;Pending&quot; until they accept the invitation.
               </p>
             </div>
@@ -385,46 +385,46 @@ export default function TeamManagementPage() {
 
         <form onSubmit={handleAddMember} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
           <div>
-            <label className="block text-[11px] font-bold text-[#000000] uppercase mb-1">Full Name</label>
+            <label className="block text-[11px] font-bold text-[#686868] uppercase mb-1 tracking-wider">Full Name</label>
             <input
               type="text"
               value={newMemberName}
               onChange={(e) => setNewMemberName(e.target.value)}
               placeholder="e.g. Vinay Bhadane"
-              className="w-full px-3 py-2 bg-[#FAFAFA] border border-[#E2E8F0] rounded-xl text-xs font-medium text-[#000000] focus:outline-none focus:border-[#2563EB]"
+              className="w-full px-4 py-2 bg-[#FAFAFA] border border-[#EAEAEA] rounded-full text-xs font-medium text-[#171717] focus:outline-none focus:border-[#111111] transition-colors"
               required
             />
           </div>
 
           <div>
-            <label className="block text-[11px] font-bold text-[#000000] uppercase mb-1">Email Address</label>
+            <label className="block text-[11px] font-bold text-[#686868] uppercase mb-1 tracking-wider">Email Address</label>
             <input
               type="email"
               value={newMemberEmail}
               onChange={(e) => setNewMemberEmail(e.target.value)}
               placeholder="name@company.com"
-              className="w-full px-3 py-2 bg-[#FAFAFA] border border-[#E2E8F0] rounded-xl text-xs font-medium text-[#000000] focus:outline-none focus:border-[#2563EB]"
+              className="w-full px-4 py-2 bg-[#FAFAFA] border border-[#EAEAEA] rounded-full text-xs font-medium text-[#171717] focus:outline-none focus:border-[#111111] transition-colors"
               required
             />
           </div>
 
           <div>
-            <label className="block text-[11px] font-bold text-[#000000] uppercase mb-1">Department</label>
+            <label className="block text-[11px] font-bold text-[#686868] uppercase mb-1 tracking-wider">Department</label>
             <input
               type="text"
               value={newMemberDepartment}
               onChange={(e) => setNewMemberDepartment(e.target.value)}
               placeholder="e.g. Catalog Operations"
-              className="w-full px-3 py-2 bg-[#FAFAFA] border border-[#E2E8F0] rounded-xl text-xs font-medium text-[#000000] focus:outline-none focus:border-[#2563EB]"
+              className="w-full px-4 py-2 bg-[#FAFAFA] border border-[#EAEAEA] rounded-full text-xs font-medium text-[#171717] focus:outline-none focus:border-[#111111] transition-colors"
             />
           </div>
 
           <div>
-            <label className="block text-[11px] font-bold text-[#000000] uppercase mb-1">Assigned Role</label>
+            <label className="block text-[11px] font-bold text-[#686868] uppercase mb-1 tracking-wider">Assigned Role</label>
             <select
               value={newMemberRole}
               onChange={(e) => setNewMemberRole(e.target.value as any)}
-              className="w-full px-3 py-2 bg-[#FAFAFA] border border-[#E2E8F0] rounded-xl text-xs font-bold text-[#000000] focus:outline-none focus:border-[#2563EB]"
+              className="w-full px-4 py-2 bg-[#FAFAFA] border border-[#EAEAEA] rounded-full text-xs font-bold text-[#171717] focus:outline-none focus:border-[#111111] transition-colors cursor-pointer"
             >
               <option value="Catalog Manager">Catalog Manager (Edit/Publish)</option>
               <option value="Auditor">Auditor (View/Inspect Only)</option>
@@ -436,16 +436,16 @@ export default function TeamManagementPage() {
             <button
               type="submit"
               disabled={isSendingInvite || !newMemberName.trim() || !newMemberEmail.trim()}
-              className="px-5 py-2.5 bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-50 text-white rounded-xl text-xs font-bold flex items-center gap-2 transition shadow-sm"
+              className="px-6 py-2.5 bg-[#C8FF00] hover:bg-[#B7EF00] disabled:opacity-40 text-[#111111] rounded-full text-xs font-bold flex items-center gap-2 transition shadow-[0_2px_8px_rgba(200,255,0,0.25)] transform active:scale-95"
             >
               {isSendingInvite ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin text-[#111111]" />
                   <span>Sending Invitation Email...</span>
                 </>
               ) : (
                 <>
-                  <Send className="w-4 h-4" />
+                  <Send className="w-3.5 h-3.5" />
                   <span>Send Invitation Email</span>
                 </>
               )}
@@ -455,15 +455,15 @@ export default function TeamManagementPage() {
       </div>
 
       {/* ── Search and Role Filter Bar ───────────────────────────────── */}
-      <div className="bg-white border border-[#E2E8F0] rounded-2xl p-4 flex items-center justify-between gap-4 flex-wrap">
+      <div className="bg-white border border-[#EAEAEA] rounded-2xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.02)] flex items-center justify-between gap-4 flex-wrap">
         <div className="relative flex-1 min-w-[240px]">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-[#929292] absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by name, email, or department..."
-            className="w-full pl-9 pr-4 py-2 bg-[#FAFAFA] border border-[#E2E8F0] rounded-xl text-xs font-medium text-[#000000] focus:outline-none focus:border-[#2563EB]"
+            className="w-full pl-9 pr-4 py-2 bg-[#FAFAFA] border border-[#EAEAEA] rounded-full text-xs font-medium text-[#171717] placeholder:text-[#929292] focus:outline-none focus:border-[#111111] transition-colors"
           />
         </div>
 
@@ -471,7 +471,7 @@ export default function TeamManagementPage() {
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
-            className="px-3 py-2 bg-[#FAFAFA] border border-[#E2E8F0] rounded-xl text-xs font-bold text-[#000000] focus:outline-none focus:border-[#2563EB]"
+            className="px-4 py-2 bg-[#FAFAFA] border border-[#EAEAEA] rounded-full text-xs font-bold text-[#171717] focus:outline-none focus:border-[#111111] transition-colors cursor-pointer"
           >
             <option value="all">All Roles</option>
             <option value="Administrator">Administrators</option>
@@ -482,17 +482,17 @@ export default function TeamManagementPage() {
       </div>
 
       {/* ── Team Members Table / List ────────────────────────────────── */}
-      <div className="bg-white border border-[#E2E8F0] rounded-2xl overflow-hidden shadow-sm">
-        <div className="px-6 py-4 border-b border-[#F1F5F9] flex items-center justify-between">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-[#64748B]">
+      <div className="bg-white border border-[#EAEAEA] rounded-3xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+        <div className="px-6 py-4 border-b border-[#EAEAEA] bg-[#FAFAFA] flex items-center justify-between">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-[#111111]">
             Authorized Workspace Members ({filteredMembers.length})
           </h2>
-          <span className="text-[10px] text-[#64748B]">
-            Invitations must be accepted by the invited recipient to activate access
+          <span className="text-[11px] text-[#686868] font-medium">
+            Invitations must be accepted by the recipient to activate access
           </span>
         </div>
 
-        <div className="divide-y divide-[#F1F5F9]">
+        <div className="divide-y divide-[#EAEAEA]">
           {filteredMembers.map((member) => {
             const initial = member.name.charAt(0).toUpperCase() || member.email.charAt(0).toUpperCase();
             const isPending = !member.isCurrentSession && member.status === "Pending";
@@ -502,19 +502,19 @@ export default function TeamManagementPage() {
                 key={member.id}
                 className={cn(
                   "px-6 py-4 flex items-center justify-between gap-4 flex-wrap transition-colors",
-                  member.isCurrentSession ? "bg-blue-50/30" : "hover:bg-slate-50/80"
+                  member.isCurrentSession ? "bg-[#FAFAFA]" : "hover:bg-[#F7F7F7]/60"
                 )}
               >
                 {/* Member Identity */}
                 <div className="flex items-center gap-3.5 min-w-[240px]">
                   <div
                     className={cn(
-                      "w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm shrink-0",
+                      "w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-sm shrink-0",
                       member.isCurrentSession
-                        ? "bg-[#2563EB] text-white shadow-sm"
+                        ? "bg-[#111111] text-[#C8FF00] shadow-sm"
                         : isPending
                         ? "bg-amber-100 text-amber-800 border border-amber-300"
-                        : "bg-slate-100 text-slate-800 border border-slate-200"
+                        : "bg-[#F7F7F7] text-[#171717] border border-[#EAEAEA]"
                     )}
                   >
                     {initial}
@@ -522,15 +522,15 @@ export default function TeamManagementPage() {
 
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-[#000000]">{member.name}</span>
+                      <span className="text-sm font-bold text-[#111111]">{member.name}</span>
                       {member.isCurrentSession && (
-                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-blue-100 text-[#2563EB] border border-blue-200">
-                          Current Session
+                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[#111111] text-[#C8FF00]">
+                          Owner / You
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-[#64748B] mt-0.5">
-                      <Mail className="w-3.5 h-3.5 text-slate-400" />
+                    <div className="flex items-center gap-2 text-xs text-[#686868] mt-0.5">
+                      <Mail className="w-3.5 h-3.5 text-[#929292]" />
                       <span className="font-mono text-[11px]">{member.email}</span>
                       <span>•</span>
                       <span>{member.department || "Catalog Operations"}</span>
@@ -542,16 +542,16 @@ export default function TeamManagementPage() {
                 <div className="flex items-center gap-3 flex-wrap">
                   {/* Status Badge */}
                   {isPending ? (
-                    <div className="flex items-center gap-1.5">
-                      <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200 inline-flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200 inline-flex items-center gap-1.5">
+                        <Clock className="w-3 h-3 text-amber-600 animate-pulse" />
                         <span>Pending Acceptance</span>
                       </span>
 
                       <button
                         type="button"
                         onClick={() => handleCopyInviteLink(member)}
-                        className="p-1.5 text-slate-500 hover:text-[#2563EB] rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition"
+                        className="p-1.5 text-[#686868] hover:text-[#111111] rounded-full border border-[#EAEAEA] bg-white hover:bg-[#F7F7F7] transition shadow-sm"
                         title="Copy direct invitation link"
                       >
                         {copiedMemberId === member.id ? (
@@ -564,29 +564,29 @@ export default function TeamManagementPage() {
                       <button
                         type="button"
                         onClick={() => handleResendInvite(member)}
-                        className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 flex items-center gap-1 transition"
+                        className="px-3 py-1 rounded-full text-[11px] font-bold bg-white hover:bg-[#F7F7F7] text-[#171717] border border-[#EAEAEA] flex items-center gap-1.5 transition shadow-sm"
                         title="Resend invitation email"
                       >
-                        <RefreshCw className="w-3 h-3 text-[#2563EB]" />
-                        <span>Resend Email</span>
+                        <RefreshCw className="w-3 h-3 text-[#111111]" />
+                        <span>Resend</span>
                       </button>
                     </div>
                   ) : (
-                    <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 inline-flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>Accepted / Active</span>
+                    <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 inline-flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                      <span>Active Member</span>
                     </span>
                   )}
 
                   {/* Role Selector (Disabled for current session) */}
                   <div className="flex items-center gap-1.5">
-                    <Shield className="w-3.5 h-3.5 text-[#2563EB]" />
+                    <Shield className="w-3.5 h-3.5 text-[#111111]" />
                     <select
                       value={member.role}
                       onChange={(e) => handleRoleChange(member.id, e.target.value as any)}
                       disabled={member.isCurrentSession}
                       className={cn(
-                        "px-2.5 py-1.5 bg-[#FAFAFA] border border-[#E2E8F0] rounded-xl text-xs font-bold text-[#000000] focus:outline-none focus:border-[#2563EB]",
+                        "px-3 py-1.5 bg-[#FAFAFA] border border-[#EAEAEA] rounded-full text-xs font-bold text-[#171717] focus:outline-none focus:border-[#111111] cursor-pointer transition-colors",
                         member.isCurrentSession && "opacity-75 cursor-not-allowed bg-slate-100"
                       )}
                     >
@@ -601,7 +601,7 @@ export default function TeamManagementPage() {
                     <button
                       type="button"
                       onClick={() => handleRemoveMember(member.id, member.name, member.email)}
-                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                      className="p-1.5 text-[#929292] hover:text-rose-600 hover:bg-rose-50 rounded-full transition-colors"
                       title="Revoke access"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -614,42 +614,42 @@ export default function TeamManagementPage() {
         </div>
       </div>
 
-      {/* ── Help Tip Card ────────────────────────────────────────────── */}
-      <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs text-slate-600 flex items-start gap-3">
-        <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+      {/* ── Help Tip Card ────────────────────────────────────── */}
+      <div className="bg-[#FAFAFA] border border-[#EAEAEA] rounded-2xl p-5 text-xs text-[#686868] flex items-start gap-3">
+        <Info className="w-4 h-4 text-[#111111] shrink-0 mt-0.5" />
         <div className="space-y-1">
-          <p className="font-bold text-slate-800">How Invitation Confirmation Works:</p>
+          <p className="font-bold text-[#111111]">How Invitation Confirmation Works:</p>
           <p className="leading-relaxed">
-            When you send an invitation, an email is delivered to the recipient with an <strong>&quot;Accept Invitation&quot;</strong> link. Once the invited member clicks the link and accepts, their status on this dashboard automatically turns from <strong>Pending Acceptance</strong> to <strong>Accepted / Active</strong>, granting them full workspace access. You can also use the <strong>Copy Link</strong> icon to send the direct invitation link to them via chat.
+            When you send an invitation, an email is delivered to the recipient with an <strong>&quot;Accept Invitation&quot;</strong> link. Once the invited member clicks the link and accepts, their status on this dashboard automatically turns from <strong>Pending Acceptance</strong> to <strong>Active Member</strong>, granting them full workspace access. You can also use the <strong>Copy Link</strong> icon to send the direct invitation link to them via chat.
           </p>
         </div>
       </div>
 
       {/* ── Role Permissions Matrix Reference ────────────────────────── */}
-      <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-sm space-y-4">
-        <h3 className="text-sm font-bold text-[#000000] flex items-center gap-2">
-          <Lock className="w-4 h-4 text-[#2563EB]" />
+      <div className="bg-white border border-[#EAEAEA] rounded-3xl p-6 md:p-8 shadow-[0_2px_8px_rgba(0,0,0,0.02)] space-y-4">
+        <h3 className="text-sm font-extrabold text-[#111111] flex items-center gap-2">
+          <Lock className="w-4 h-4 text-[#111111]" />
           <span>Role Permissions Governance Reference</span>
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-          <div className="p-4 rounded-xl bg-blue-50/50 border border-blue-100 space-y-1.5">
-            <p className="font-bold text-[#2563EB]">Administrator</p>
-            <p className="text-slate-600 leading-relaxed">
+          <div className="p-5 rounded-2xl bg-[#FAFAFA] border border-[#EAEAEA] space-y-1.5">
+            <p className="font-bold text-[#111111]">Administrator</p>
+            <p className="text-[#686868] leading-relaxed">
               Full workspace access. Can invite &amp; remove team members, edit roles, configure governance policies, and publish catalog datasets.
             </p>
           </div>
 
-          <div className="p-4 rounded-xl bg-purple-50/50 border border-purple-100 space-y-1.5">
-            <p className="font-bold text-purple-700">Catalog Manager</p>
-            <p className="text-slate-600 leading-relaxed">
+          <div className="p-5 rounded-2xl bg-[#FAFAFA] border border-[#EAEAEA] space-y-1.5">
+            <p className="font-bold text-[#111111]">Catalog Manager</p>
+            <p className="text-[#686868] leading-relaxed">
               Can ingest datasets, review flagged products, edit attribute fields, and export 252-column schemas.
             </p>
           </div>
 
-          <div className="p-4 rounded-xl bg-emerald-50/50 border border-emerald-100 space-y-1.5">
-            <p className="font-bold text-emerald-700">Auditor</p>
-            <p className="text-slate-600 leading-relaxed">
+          <div className="p-5 rounded-2xl bg-[#FAFAFA] border border-[#EAEAEA] space-y-1.5">
+            <p className="font-bold text-[#111111]">Auditor</p>
+            <p className="text-[#686868] leading-relaxed">
               Read-only compliance access. Can inspect product evidence, verify sourcing origins, check audit logs, and download delivery files.
             </p>
           </div>

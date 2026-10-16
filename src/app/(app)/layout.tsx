@@ -86,16 +86,27 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   // Loading Screen while session is validating
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#0B0F17] text-white select-none">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#111111] text-white select-none">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-[#141B2D] border border-slate-700 p-2.5 flex items-center justify-center shadow-xl animate-pulse">
-            <img src="/logo-icon.png" alt="CatalogForge Logo" className="w-full h-full object-contain" />
+          <div className="w-14 h-14 rounded-2xl bg-[#191919] border border-[#262626] p-3 flex items-center justify-center shadow-2xl relative">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              className="w-7 h-7 text-[#C8FF00] stroke-current animate-pulse"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M4 14.5c2-3 4-3 6 0s4 3 6 0 4-3 6 0" />
+              <path d="M4 9.5c2-3 4-3 6 0s4 3 6 0 4-3 6 0" />
+            </svg>
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#C8FF00] rounded-full animate-ping" />
           </div>
           <div className="text-center space-y-1">
-            <h2 className="text-base font-black tracking-tight text-white">
-              <span className="text-[#38BDF8]">Catalog</span>Forge
+            <h2 className="text-base font-bold tracking-tight text-white">
+              Catalog<span className="text-[#C8FF00]">Forge</span>
             </h2>
-            <p className="text-xs text-slate-400 font-medium">Verifying enterprise session &amp; governance credentials...</p>
+            <p className="text-xs text-[#8E8E8E] font-medium">Verifying enterprise session &amp; governance credentials...</p>
           </div>
         </div>
       </div>
@@ -105,14 +116,14 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   // If unauthenticated, render secure blocking redirect state
   if (!user) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#0B0F17] text-white select-none">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#111111] text-white select-none">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-400 flex items-center justify-center">
+          <div className="w-12 h-12 rounded-2xl bg-[#191919] border border-rose-500/30 text-rose-400 flex items-center justify-center">
             <LogOut className="w-5 h-5" />
           </div>
           <div className="text-center space-y-1">
-            <h2 className="text-sm font-bold text-slate-200">Access Restricted</h2>
-            <p className="text-xs text-slate-400">Redirecting to CatalogForge authentication portal...</p>
+            <h2 className="text-sm font-bold text-neutral-200">Access Restricted</h2>
+            <p className="text-xs text-[#8E8E8E]">Redirecting to CatalogForge authentication portal...</p>
           </div>
         </div>
       </div>
@@ -135,6 +146,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     if (pathname.includes("/products")) return "Product Master Catalog";
     if (pathname.includes("/analytics")) return "Catalog Intelligence & Analytics";
     if (pathname.includes("/audit")) return "Governance Audit Logs";
+    if (pathname.includes("/user-data")) return "User Data Retrieval";
     if (pathname.includes("/team_management")) return "Team Management Studio";
     if (pathname.includes("/settings")) {
       const tab = searchParams?.get("tab");
@@ -169,93 +181,100 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F0F2F5] text-[#0F172A]" suppressHydrationWarning>
+    <div className="min-h-screen flex flex-col bg-[#F7F7F7] text-[#171717] font-sans" suppressHydrationWarning>
 
-      {/* ── Enterprise B2B Top Header (Strictly Responsive) ─────────── */}
-      <header className="sticky top-0 z-40 h-16 bg-[#0B0F17] border-b border-[#1E293B] px-3 sm:px-6 flex items-center justify-between shrink-0 shadow-lg select-none" suppressHydrationWarning>
+      {/* ── Payline-Inspired Premium Global Top Header ─────────── */}
+      <header className="sticky top-0 z-40 h-16 bg-[#111111] border-b border-[#222222] px-4 sm:px-6 flex items-center justify-between shrink-0 shadow-sm select-none" suppressHydrationWarning>
         
-        {/* Left: Mobile Toggle + Brand Logo + Breadcrumb */}
-        <div className="flex items-center gap-2 sm:gap-4 min-w-0" suppressHydrationWarning>
+        {/* Left: Mobile Toggle + Payline Brand Identity + Breadcrumb */}
+        <div className="flex items-center gap-3 sm:gap-4 min-w-0" suppressHydrationWarning>
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors shrink-0"
+            className="md:hidden p-2 text-[#8E8E8E] hover:text-white rounded-xl hover:bg-[#1C1C1C] transition-colors shrink-0"
             aria-label="Toggle navigation"
             suppressHydrationWarning
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
 
-          {/* Logo & Brand Identity using Actual Logo Image */}
-          <Link href="/dashboard" className="flex items-center gap-2 sm:gap-2.5 group py-1 shrink-0" suppressHydrationWarning>
-            <img
-              src="/logo-icon.png"
-              alt="CatalogForge Logo"
-              className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-contain bg-[#141B2D] p-1 border border-slate-700/80 shadow-sm group-hover:scale-105 transition-transform"
-            />
-            <span className="font-black text-base sm:text-lg tracking-tight truncate">
-              <span className="text-[#38BDF8]">Catalog</span>
-              <span className="text-white">Forge</span>
+          {/* Logo & Brand Identity using Payline Wave & Clean Typography */}
+          <Link href="/dashboard" className="flex items-center gap-2.5 group py-1 shrink-0" suppressHydrationWarning>
+            <div className="w-8 h-8 rounded-xl bg-[#191919] border border-[#2D2D2D] flex items-center justify-center p-1.5 shadow-sm group-hover:scale-105 transition-transform">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                className="w-full h-full text-[#C8FF00] stroke-current"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M4 14.5c2-3 4-3 6 0s4 3 6 0 4-3 6 0" />
+                <path d="M4 9.5c2-3 4-3 6 0s4 3 6 0 4-3 6 0" />
+              </svg>
+            </div>
+            <span className="font-bold text-base sm:text-lg tracking-tight text-white truncate">
+              Catalog<span className="text-[#C8FF00]">Forge</span>
             </span>
           </Link>
 
           {/* Divider */}
-          <div className="hidden sm:block w-px h-5 bg-slate-800 shrink-0" />
+          <div className="hidden sm:block w-px h-4 bg-[#262626] shrink-0" />
 
           {/* Current Section Name */}
-          <div className="hidden sm:flex items-center text-xs font-semibold text-slate-400 truncate" suppressHydrationWarning>
+          <div className="hidden sm:flex items-center text-xs font-semibold text-[#8E8E8E] truncate" suppressHydrationWarning>
             <span>{currentSectionName}</span>
           </div>
         </div>
 
         {/* Right: Quick Ingest CTA, Notifications, and User Menu */}
-        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0" suppressHydrationWarning>
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0" suppressHydrationWarning>
           
-          {/* Quick Action: Ingest Dataset CTA */}
+          {/* Quick Action: Ingest Dataset Neon-Lime Pill CTA */}
           <Link
             href="/upload"
-            className="inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold rounded-xl transition shadow-sm border border-blue-400/30"
+            className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 bg-[#C8FF00] hover:bg-[#B7EF00] text-[#111111] text-xs font-bold rounded-full transition-all shadow-sm active:scale-95"
             suppressHydrationWarning
           >
-            <Plus className="w-3.5 h-3.5" />
+            <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
             <span className="hidden xs:inline sm:inline">Ingest Data</span>
           </Link>
 
           {/* Notifications Link */}
           <Link
             href="/settings?tab=notifications"
-            className="p-2 text-slate-400 hover:text-white hover:bg-slate-800/80 rounded-xl transition-colors relative"
+            className="p-2 text-[#8E8E8E] hover:text-white hover:bg-[#1C1C1C] rounded-full transition-colors relative"
             title="Notifications & Alerts"
             aria-label="Notification Settings"
             suppressHydrationWarning
           >
             <Bell className="w-4 h-4" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-emerald-500 rounded-full ring-2 ring-[#0B0F17]" />
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#C8FF00] rounded-full ring-2 ring-[#111111]" />
           </Link>
 
           {/* Vertical Divider */}
-          <div className="w-px h-5 bg-slate-800 mx-0.5 hidden xs:block" />
+          <div className="w-px h-5 bg-[#262626] mx-0.5 hidden xs:block" />
 
           {/* User Profile Dropdown Pill */}
           <div className="relative" suppressHydrationWarning>
             <button
               type="button"
               onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-              className="flex items-center gap-1.5 sm:gap-2 p-1 sm:pl-1.5 sm:pr-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 transition-colors text-left group"
+              className="flex items-center gap-2 p-1 pl-1.5 pr-2.5 rounded-full bg-[#191919] hover:bg-[#222222] border border-[#2B2B2B] transition-colors text-left group"
               suppressHydrationWarning
             >
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] text-white flex items-center justify-center text-xs font-black ring-1 ring-blue-400/30 shadow-sm shrink-0" suppressHydrationWarning>
+              <div className="w-7 h-7 rounded-full bg-[#C8FF00] text-[#111111] flex items-center justify-center text-xs font-black shadow-sm shrink-0" suppressHydrationWarning>
                 {userInitial}
               </div>
-              <div className="hidden md:flex flex-col min-w-0 max-w-[110px]" suppressHydrationWarning>
-                <span className="text-xs font-bold text-slate-200 truncate leading-none" suppressHydrationWarning>
+              <div className="hidden md:flex flex-col min-w-0 max-w-[120px]" suppressHydrationWarning>
+                <span className="text-xs font-bold text-white truncate leading-none" suppressHydrationWarning>
                   {userLabel.split("@")[0]}
                 </span>
-                <span className="text-[9px] text-slate-400 truncate leading-none mt-1">
+                <span className="text-[10px] text-[#8E8E8E] truncate leading-none mt-1">
                   Administrator
                 </span>
               </div>
-              <ChevronDown className="w-3 h-3 text-slate-500 group-hover:text-slate-300 hidden md:block" />
+              <ChevronDown className="w-3.5 h-3.5 text-[#8E8E8E] group-hover:text-white hidden md:block transition-transform duration-200" />
             </button>
 
             {/* Dropdown Menu */}
@@ -265,55 +284,55 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                   className="fixed inset-0 z-40"
                   onClick={() => setUserDropdownOpen(false)}
                 />
-                <div className="absolute right-0 mt-2 w-52 bg-[#0F172A] border border-slate-800 rounded-2xl p-2 shadow-2xl z-50 space-y-1 text-xs text-slate-300" suppressHydrationWarning>
-                  <div className="px-3 py-2 border-b border-slate-800">
+                <div className="absolute right-0 mt-2 w-56 bg-[#161616] border border-[#2B2B2B] rounded-2xl p-2 shadow-2xl z-50 space-y-1 text-xs text-neutral-300 animate-in fade-in slide-in-from-top-2 duration-150" suppressHydrationWarning>
+                  <div className="px-3 py-2.5 border-b border-[#262626]">
                     <p className="font-bold text-white truncate">{userLabel}</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">Administrator Account</p>
+                    <p className="text-[10px] text-[#8E8E8E] mt-0.5">Administrator Account</p>
                   </div>
                   <Link
                     href="/profile"
                     onClick={() => setUserDropdownOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-slate-800 text-slate-200 transition"
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-[#222222] text-neutral-200 hover:text-white transition"
                     suppressHydrationWarning
                   >
-                    <User className="w-3.5 h-3.5 text-blue-400" />
+                    <User className="w-3.5 h-3.5 text-[#C8FF00]" />
                     <span>User Profile</span>
                   </Link>
                   <Link
                     href="/team_management"
                     onClick={() => setUserDropdownOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-slate-800 text-slate-200 transition"
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-[#222222] text-neutral-200 hover:text-white transition"
                     suppressHydrationWarning
                   >
-                    <Users className="w-3.5 h-3.5 text-indigo-400" />
+                    <Users className="w-3.5 h-3.5 text-neutral-400" />
                     <span>Team Management</span>
                   </Link>
                   <Link
                     href="/settings"
                     onClick={() => setUserDropdownOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-slate-800 text-slate-200 transition"
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-[#222222] text-neutral-200 hover:text-white transition"
                     suppressHydrationWarning
                   >
-                    <Settings className="w-3.5 h-3.5 text-slate-400" />
+                    <Settings className="w-3.5 h-3.5 text-neutral-400" />
                     <span>Workspace Settings</span>
                   </Link>
                   <Link
                     href="/audit"
                     onClick={() => setUserDropdownOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-slate-800 text-slate-200 transition"
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-[#222222] text-neutral-200 hover:text-white transition"
                     suppressHydrationWarning
                   >
-                    <FileText className="w-3.5 h-3.5 text-emerald-400" />
+                    <FileText className="w-3.5 h-3.5 text-neutral-400" />
                     <span>Governance Audit Logs</span>
                   </Link>
-                  <div className="border-t border-slate-800 my-1" />
+                  <div className="border-t border-[#262626] my-1" />
                   <button
                     type="button"
                     onClick={() => {
                       setUserDropdownOpen(false);
                       signOut();
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-rose-500/10 text-rose-400 transition text-left font-bold"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-rose-500/10 text-rose-400 transition text-left font-bold"
                     suppressHydrationWarning
                   >
                     <LogOut className="w-3.5 h-3.5" />
@@ -327,21 +346,21 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* ── Modern B2B Desktop Sidebar ───────────────────────────── */}
+        {/* ── Modern B2B Payline-Style Desktop Sidebar ──────────────── */}
         <aside
           className={cn(
-            "hidden md:flex flex-col bg-[#0B0F17] border-r border-[#1E293B] transition-all duration-300 select-none relative z-30 shrink-0",
+            "hidden md:flex flex-col bg-[#111111] border-r border-[#222222] transition-all duration-300 select-none relative z-30 shrink-0",
             collapsed ? "w-[72px]" : "w-[245px] lg:w-[250px]"
           )}
           suppressHydrationWarning
         >
           {/* Nav Sections */}
-          <div className="flex-1 overflow-y-auto py-5 space-y-4 px-3 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto py-5 space-y-5 px-3 custom-scrollbar">
             {NAV_SECTIONS.map((section) => (
-              <div key={section.title} className="space-y-1">
+              <div key={section.title} className="space-y-1.5">
                 {/* Section Header */}
                 {!collapsed && (
-                  <p className="px-3 pb-1.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest select-none">
+                  <p className="px-3 pb-1 text-[10px] font-bold text-[#686868] uppercase tracking-wider select-none">
                     {section.title}
                   </p>
                 )}
@@ -359,26 +378,26 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                         href={item.href}
                         title={collapsed ? item.label : undefined}
                         className={cn(
-                          "flex items-center gap-3 px-2.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 group relative",
+                          "flex items-center gap-3 px-2.5 py-2 rounded-xl text-xs font-semibold transition-all duration-200 group relative",
                           isActive
-                            ? "bg-gradient-to-r from-[#2563EB]/20 via-[#2563EB]/10 to-transparent text-white border border-[#2563EB]/40 shadow-sm shadow-blue-500/10"
-                            : "text-slate-400 hover:text-white hover:bg-slate-900/80 border border-transparent hover:border-slate-800",
+                            ? "bg-[#1C1C1C] text-white border border-[#2D2D2D] shadow-sm"
+                            : "text-[#8E8E8E] hover:text-white hover:bg-[#181818] border border-transparent",
                           collapsed && "justify-center px-1.5"
                         )}
                         suppressHydrationWarning
                       >
                         {/* Left Active Accent Pill */}
                         {isActive && !collapsed && (
-                          <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-[#38BDF8] rounded-r-full shadow-sm shadow-blue-400" />
+                          <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-[#C8FF00] rounded-r-full shadow-sm" />
                         )}
 
-                        {/* Icon Container with glowing active well */}
+                        {/* Icon Container with Payline Lime highlight on active */}
                         <div
                           className={cn(
                             "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all",
                             isActive
-                              ? "bg-[#2563EB] text-white shadow-md shadow-blue-500/30"
-                              : "bg-[#141B2D] border border-slate-800 text-slate-400 group-hover:text-[#38BDF8] group-hover:border-slate-700"
+                              ? "bg-[#C8FF00] text-[#111111] shadow-sm font-bold"
+                              : "bg-[#181818] border border-[#262626] text-[#8E8E8E] group-hover:text-white group-hover:border-[#333333]"
                           )}
                         >
                           <Icon className="w-4 h-4" />
@@ -391,7 +410,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
                         {/* Badge */}
                         {!collapsed && item.badge && (
-                          <span className="ml-auto text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-blue-500/20 text-[#38BDF8] border border-blue-500/30">
+                          <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#C8FF00]/15 text-[#C8FF00] border border-[#C8FF00]/30">
                             {item.badge}
                           </span>
                         )}
@@ -404,19 +423,19 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
           </div>
 
           {/* Sidebar Footer: User mini card + Collapse Toggle */}
-          <div className="border-t border-[#1E293B] p-3 space-y-2 bg-[#0B0F17]" suppressHydrationWarning>
+          <div className="border-t border-[#222222] p-3 space-y-2 bg-[#111111]" suppressHydrationWarning>
             {/* User Mini Card */}
             {!collapsed && (
-              <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-[#141B2D] border border-slate-800/80" suppressHydrationWarning>
+              <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-[#181818] border border-[#262626]" suppressHydrationWarning>
                 <div className="relative">
-                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] text-white flex items-center justify-center text-xs font-black shrink-0 shadow-sm" suppressHydrationWarning>
+                  <div className="w-7 h-7 rounded-full bg-[#C8FF00] text-[#111111] flex items-center justify-center text-xs font-black shrink-0 shadow-sm" suppressHydrationWarning>
                     {userInitial}
                   </div>
-                  <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-500 rounded-full ring-2 ring-[#141B2D]" />
+                  <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-[#C8FF00] rounded-full ring-2 ring-[#181818]" />
                 </div>
                 <div className="flex-1 min-w-0" suppressHydrationWarning>
-                  <p className="text-xs font-bold text-slate-200 truncate leading-none" suppressHydrationWarning>{userLabel.split("@")[0]}</p>
-                  <p className="text-[10px] text-slate-400 truncate leading-none mt-1 font-mono">Administrator</p>
+                  <p className="text-xs font-bold text-white truncate leading-none" suppressHydrationWarning>{userLabel.split("@")[0]}</p>
+                  <p className="text-[10px] text-[#8E8E8E] truncate leading-none mt-1 font-mono">Administrator</p>
                 </div>
               </div>
             )}
@@ -426,17 +445,17 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               type="button"
               onClick={() => setCollapsed(!collapsed)}
               className={cn(
-                "w-full flex items-center gap-2 px-3 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent hover:border-slate-800 transition-all text-xs font-bold",
+                "w-full flex items-center gap-2 px-3 py-2 rounded-xl text-[#8E8E8E] hover:text-white hover:bg-[#181818] border border-transparent hover:border-[#262626] transition-all text-xs font-semibold",
                 collapsed && "justify-center px-0"
               )}
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
               suppressHydrationWarning
             >
               {collapsed ? (
-                <ChevronRight className="w-4 h-4 text-slate-400" />
+                <ChevronRight className="w-4 h-4 text-[#8E8E8E]" />
               ) : (
                 <>
-                  <ChevronLeft className="w-4 h-4 text-slate-400" />
+                  <ChevronLeft className="w-4 h-4 text-[#8E8E8E]" />
                   <span>Collapse Sidebar</span>
                 </>
               )}
@@ -444,7 +463,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
           </div>
         </aside>
 
-        {/* ── Modern Mobile Drawer (Strictly Responsive) ─────────────── */}
+        {/* ── Modern Mobile Drawer ───────────────────────────────── */}
         {mobileMenuOpen && (
           <div className="md:hidden fixed inset-0 z-50 flex" suppressHydrationWarning>
             {/* Backdrop */}
@@ -454,23 +473,31 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             />
 
             {/* Sheet */}
-            <div className="relative w-[280px] max-w-[85vw] bg-[#0B0F17] flex flex-col z-10 border-r border-[#1E293B] shadow-2xl animate-in slide-in-from-left duration-250">
+            <div className="relative w-[280px] max-w-[85vw] bg-[#111111] flex flex-col z-10 border-r border-[#222222] shadow-2xl animate-in slide-in-from-left duration-200">
               {/* Mobile Sheet Header */}
-              <div className="h-16 px-4 flex items-center justify-between border-b border-[#1E293B]">
+              <div className="h-16 px-4 flex items-center justify-between border-b border-[#222222]">
                 <Link href="/dashboard" className="flex items-center gap-2.5" onClick={() => setMobileMenuOpen(false)} suppressHydrationWarning>
-                  <img
-                    src="/logo-icon.png"
-                    alt="CatalogForge Logo"
-                    className="w-7 h-7 rounded-lg object-contain bg-[#141B2D] p-0.5 border border-slate-700"
-                  />
-                  <span className="font-black text-base text-white">
-                    <span className="text-[#38BDF8]">Catalog</span>Forge
+                  <div className="w-7 h-7 rounded-lg bg-[#191919] border border-[#2D2D2D] p-1 flex items-center justify-center">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      className="w-full h-full text-[#C8FF00] stroke-current"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M4 14.5c2-3 4-3 6 0s4 3 6 0 4-3 6 0" />
+                      <path d="M4 9.5c2-3 4-3 6 0s4 3 6 0 4-3 6 0" />
+                    </svg>
+                  </div>
+                  <span className="font-bold text-base text-white">
+                    Catalog<span className="text-[#C8FF00]">Forge</span>
                   </span>
                 </Link>
                 <button
                   type="button"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors"
+                  className="p-2 text-[#8E8E8E] hover:text-white hover:bg-[#1C1C1C] rounded-xl transition-colors"
                   suppressHydrationWarning
                   aria-label="Close navigation"
                 >
@@ -481,8 +508,8 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               {/* Mobile Nav */}
               <div className="flex-1 overflow-y-auto py-4 px-3 space-y-4">
                 {NAV_SECTIONS.map((section) => (
-                  <div key={section.title} className="space-y-1">
-                    <p className="px-3 pb-1 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
+                  <div key={section.title} className="space-y-1.5">
+                    <p className="px-3 pb-1 text-[10px] font-bold text-[#686868] uppercase tracking-wider">
                       {section.title}
                     </p>
                     <div className="space-y-1">
@@ -495,24 +522,24 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                             href={item.href}
                             onClick={() => setMobileMenuOpen(false)}
                             className={cn(
-                              "flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all min-h-[44px] relative",
+                              "flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all min-h-[44px] relative",
                               isActive
-                                ? "bg-[#2563EB]/20 text-white border border-[#2563EB]/40 shadow-sm"
-                                : "text-slate-400 hover:text-white hover:bg-slate-900/80 active:bg-slate-800"
+                                ? "bg-[#1C1C1C] text-white border border-[#2D2D2D] shadow-sm"
+                                : "text-[#8E8E8E] hover:text-white hover:bg-[#181818] active:bg-[#202020]"
                             )}
                             suppressHydrationWarning
                           >
                             <div
                               className={cn(
                                 "w-7 h-7 rounded-lg flex items-center justify-center shrink-0",
-                                isActive ? "bg-[#2563EB] text-white shadow-sm" : "bg-[#141B2D] text-slate-400"
+                                isActive ? "bg-[#C8FF00] text-[#111111]" : "bg-[#181818] border border-[#262626] text-[#8E8E8E]"
                               )}
                             >
                               <Icon className="w-3.5 h-3.5" />
                             </div>
                             <span className="truncate">{item.label}</span>
                             {item.badge && (
-                              <span className="ml-auto text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-blue-500/20 text-[#38BDF8] border border-blue-500/30">
+                              <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#C8FF00]/15 text-[#C8FF00] border border-[#C8FF00]/30">
                                 {item.badge}
                               </span>
                             )}
@@ -525,14 +552,14 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
               </div>
 
               {/* Mobile Sheet Footer */}
-              <div className="border-t border-[#1E293B] p-3 space-y-2">
-                <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-[#141B2D] border border-slate-800" suppressHydrationWarning>
-                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] text-white flex items-center justify-center text-xs font-black" suppressHydrationWarning>
+              <div className="border-t border-[#222222] p-3 space-y-2">
+                <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-[#181818] border border-[#262626]" suppressHydrationWarning>
+                  <div className="w-7 h-7 rounded-full bg-[#C8FF00] text-[#111111] flex items-center justify-center text-xs font-black" suppressHydrationWarning>
                     {userInitial}
                   </div>
                   <div className="flex-1 min-w-0" suppressHydrationWarning>
-                    <p className="text-xs font-bold text-slate-200 truncate" suppressHydrationWarning>{userLabel.split("@")[0]}</p>
-                    <p className="text-[10px] text-slate-400 truncate">Administrator</p>
+                    <p className="text-xs font-bold text-white truncate" suppressHydrationWarning>{userLabel.split("@")[0]}</p>
+                    <p className="text-[10px] text-[#8E8E8E] truncate">Administrator</p>
                   </div>
                 </div>
 
@@ -542,7 +569,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                     setMobileMenuOpen(false);
                     signOut();
                   }}
-                  className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-bold border border-rose-500/20 transition min-h-[40px]"
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-bold border border-rose-500/20 transition min-h-[40px]"
                   suppressHydrationWarning
                 >
                   <LogOut className="w-3.5 h-3.5" />
@@ -554,7 +581,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         )}
 
         {/* ── Main Content Area ─────────────────────────────────────── */}
-        <main className="flex-1 overflow-y-auto min-h-0">
+        <main className="flex-1 overflow-y-auto min-h-0 bg-[#F7F7F7] bg-subtle-grid">
           <div className="p-3 sm:p-5 md:p-6 lg:p-8 max-w-[1400px] mx-auto w-full">
             {children}
           </div>
@@ -566,7 +593,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#F0F2F5]" />}>
+    <Suspense fallback={<div className="min-h-screen bg-[#F7F7F7]" />}>
       <AppLayoutContent>{children}</AppLayoutContent>
     </Suspense>
   );

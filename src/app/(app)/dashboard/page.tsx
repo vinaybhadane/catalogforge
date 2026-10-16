@@ -178,23 +178,25 @@ export default function DashboardPage() {
   const jobsList = summary?.recentJobs || [];
 
   return (
-    <div className="space-y-6 pb-16 text-[#000000] max-w-7xl mx-auto">
+    <div className="space-y-6 pb-16 text-[#171717] max-w-7xl mx-auto font-sans">
       
       {/* ── 1. Page Header & Governance SLA Badge ────────────────────── */}
-      <div className="bg-white border border-[#E2E8F0] rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-7 flex flex-col md:flex-row md:items-center justify-between gap-5 sm:gap-6">
-        <div className="space-y-1.5 max-w-3xl">
+      <div className="bg-white border border-[#EAEAEA] rounded-2xl sm:rounded-3xl p-5 sm:p-7 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-5 sm:gap-6 transition-all">
+        <div className="space-y-2 max-w-3xl">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="bg-[#EFF6FF] border border-[#BFDBFE] text-[#2563EB] px-2.5 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-[11px] font-black uppercase tracking-wider rounded-full flex items-center gap-1.5">
-              <Cpu className="w-3.5 h-3.5" /> Pipeline Active
+            <span className="bg-[#111111] text-[#C8FF00] px-3 py-1 text-[11px] font-bold uppercase tracking-wider rounded-full flex items-center gap-1.5 shadow-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#C8FF00] animate-pulse" />
+              Pipeline Active
             </span>
-            <span className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-2.5 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider rounded-full flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> OEM Sourcing Grounded
+            <span className="bg-[#F7F7F7] border border-[#EAEAEA] text-[#171717] px-3 py-1 text-[11px] font-semibold uppercase tracking-wider rounded-full flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              OEM Sourcing Grounded
             </span>
           </div>
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-[#000000] tracking-tight">
-            AI Product Enrichment &amp; Governance Operations Hub
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#171717] tracking-tight">
+            Product Intelligence Workspace
           </h1>
-          <p className="text-xs sm:text-sm text-[#475569] font-medium leading-relaxed">
+          <p className="text-xs sm:text-sm text-[#686868] font-normal leading-relaxed">
             Multi-modal ingestion, deterministic 8-stage schema transformation, real-time HITL governance, and 252-column export delivery engine.
           </p>
         </div>
@@ -205,42 +207,42 @@ export default function DashboardPage() {
             type="button"
             onClick={refresh}
             disabled={isLoading}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-xl text-xs font-bold text-[#0F172A] bg-white hover:bg-slate-50 border border-[#CBD5E1] transition-all disabled:opacity-50 shadow-sm"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold text-[#171717] bg-white hover:bg-[#F7F7F7] border border-[#EAEAEA] transition-all disabled:opacity-50 shadow-sm active:scale-95"
           >
-            <RefreshCw className={cn("w-4 h-4 text-[#2563EB]", isLoading && "animate-spin")} />
+            <RefreshCw className={cn("w-3.5 h-3.5 text-[#171717]", isLoading && "animate-spin")} />
             <span>Refresh</span>
           </button>
 
           <Link
             href="/upload"
-            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs font-bold bg-[#2563EB] hover:bg-[#1D4ED8] text-white border border-[#1D4ED8] transition-all shadow-sm"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold bg-[#C8FF00] hover:bg-[#B7EF00] text-[#111111] transition-all shadow-sm active:scale-95"
           >
-            <UploadCloud className="w-4 h-4" />
+            <UploadCloud className="w-4 h-4 stroke-[2.2]" />
             <span>Ingest Data</span>
           </Link>
         </div>
       </div>
 
-      {/* ── Welcome Onboarding Banner for Fresh / New Standalone Workspace ── */}
+      {/* ── 2. Welcome Onboarding Banner for Fresh / New Standalone Workspace ── */}
       {summary?.isCleanWorkspace && (
-        <div className="bg-gradient-to-r from-blue-900 via-[#1E293B] to-[#0F172A] border border-blue-800/60 rounded-3xl p-6 lg:p-8 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300 text-xs font-extrabold uppercase tracking-wider">
-              <Sparkles className="w-3.5 h-3.5 text-blue-400" />
-              <span>Clean Slate Workspace Initialized</span>
+        <div className="bg-[#141414] border border-[#262626] rounded-2xl sm:rounded-3xl p-6 lg:p-8 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
+          <div className="space-y-2.5 max-w-2xl relative z-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#202020] border border-[#333333] text-[#C8FF00] text-[11px] font-bold uppercase tracking-wider">
+              <Sparkles className="w-3.5 h-3.5 text-[#C8FF00]" />
+              <span>Workspace Ready</span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
               Welcome to Your CatalogForge Workspace
             </h2>
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-medium">
+            <p className="text-xs sm:text-sm text-[#8E8E8E] leading-relaxed font-normal">
               Your workspace is ready. Any dataset you ingest or PDF you parse will be securely stored and isolated in your private catalog.
             </p>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0 flex-wrap">
+          <div className="flex items-center gap-3 shrink-0 flex-wrap relative z-10">
             <Link
               href="/upload"
-              className="px-5 py-3 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-xl text-xs font-bold transition shadow-lg inline-flex items-center gap-2"
+              className="px-6 py-3 bg-[#C8FF00] hover:bg-[#B7EF00] text-[#111111] rounded-full text-xs font-bold transition-all shadow-sm inline-flex items-center gap-2 active:scale-95"
             >
               <UploadCloud className="w-4 h-4" />
               <span>Ingest First Dataset</span>
@@ -249,102 +251,116 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* ── 2. High-Impact Operational Metric Bar (6 Metrics) ──────────── */}
+      {/* ── 3. High-Impact Operational Metric Bar (6 Metrics) ──────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
         {/* Metric 1: Total SKUs */}
-        <div className="bg-white border border-[#E2E8F0] rounded-2xl p-4 hover:border-[#2563EB] transition-colors">
-          <div className="flex items-center justify-between text-[11px] font-bold uppercase text-slate-500">
+        <div className="bg-white border border-[#EAEAEA] rounded-2xl p-4 sm:p-5 hover:border-[#171717]/30 transition-all shadow-sm hover:shadow-md flex flex-col justify-between group">
+          <div className="flex items-center justify-between text-[11px] font-bold uppercase text-[#686868] tracking-wider">
             <span>Total SKUs</span>
-            <Package className="w-4 h-4 text-[#2563EB]" />
+            <div className="w-7 h-7 rounded-lg bg-[#F7F7F7] group-hover:bg-[#111111] group-hover:text-white transition-colors flex items-center justify-center text-[#171717]">
+              <Package className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <p className="text-2xl font-black font-mono text-[#000000] mt-2">
+          <p className="text-2xl sm:text-3xl font-extrabold font-mono text-[#171717] mt-3 tracking-tight">
             {isLoading ? "—" : summary?.productsProcessed?.toLocaleString() ?? "0"}
           </p>
-          <p className="text-[10px] text-emerald-700 font-bold mt-1">Catalog Master</p>
+          <p className="text-[10px] text-[#686868] font-semibold mt-1">Catalog Master</p>
         </div>
 
         {/* Metric 2: Active Pipeline Jobs */}
-        <div className="bg-white border border-[#E2E8F0] rounded-2xl p-4 hover:border-[#2563EB] transition-colors">
-          <div className="flex items-center justify-between text-[11px] font-bold uppercase text-slate-500">
+        <div className="bg-white border border-[#EAEAEA] rounded-2xl p-4 sm:p-5 hover:border-[#171717]/30 transition-all shadow-sm hover:shadow-md flex flex-col justify-between group">
+          <div className="flex items-center justify-between text-[11px] font-bold uppercase text-[#686868] tracking-wider">
             <span>Pipeline Jobs</span>
-            <Activity className="w-4 h-4 text-purple-600" />
+            <div className="w-7 h-7 rounded-lg bg-[#F7F7F7] group-hover:bg-[#111111] group-hover:text-white transition-colors flex items-center justify-center text-[#171717]">
+              <Activity className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <p className="text-2xl font-black font-mono text-[#000000] mt-2">
+          <p className="text-2xl sm:text-3xl font-extrabold font-mono text-[#171717] mt-3 tracking-tight">
             {isLoading ? "—" : summary?.activeJobs ?? 0}
           </p>
-          <p className="text-[10px] text-purple-700 font-bold mt-1">Batch Executions</p>
+          <p className="text-[10px] text-[#686868] font-semibold mt-1">Batch Executions</p>
         </div>
 
         {/* Metric 3: Pending Review Queue (<85%) */}
-        <div className="bg-white border border-[#E2E8F0] rounded-2xl p-4 hover:border-[#2563EB] transition-colors">
-          <div className="flex items-center justify-between text-[11px] font-bold uppercase text-slate-500">
+        <div className="bg-white border border-[#EAEAEA] rounded-2xl p-4 sm:p-5 hover:border-[#171717]/30 transition-all shadow-sm hover:shadow-md flex flex-col justify-between group">
+          <div className="flex items-center justify-between text-[11px] font-bold uppercase text-[#686868] tracking-wider">
             <span>Pending Review</span>
-            <CheckSquare className="w-4 h-4 text-amber-600" />
+            <div className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600">
+              <CheckSquare className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <p className="text-2xl font-black font-mono text-[#000000] mt-2">
+          <p className="text-2xl sm:text-3xl font-extrabold font-mono text-[#171717] mt-3 tracking-tight">
             {isLoading ? "—" : summary?.needsReview ?? 0}
           </p>
-          <p className="text-[10px] text-amber-700 font-bold mt-1">&lt;85% Conf Boundary</p>
+          <p className="text-[10px] text-amber-700 font-semibold mt-1">&lt;85% Conf Boundary</p>
         </div>
 
         {/* Metric 4: Mean Pipeline Confidence */}
-        <div className="bg-white border border-[#E2E8F0] rounded-2xl p-4 hover:border-[#2563EB] transition-colors">
-          <div className="flex items-center justify-between text-[11px] font-bold uppercase text-slate-500">
+        <div className="bg-white border border-[#EAEAEA] rounded-2xl p-4 sm:p-5 hover:border-[#171717]/30 transition-all shadow-sm hover:shadow-md flex flex-col justify-between group">
+          <div className="flex items-center justify-between text-[11px] font-bold uppercase text-[#686868] tracking-wider">
             <span>Mean Confidence</span>
-            <Sparkles className="w-4 h-4 text-emerald-600" />
+            <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
+              <Sparkles className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <p className="text-2xl font-black font-mono text-emerald-700 mt-2">
+          <p className="text-2xl sm:text-3xl font-extrabold font-mono text-emerald-600 mt-3 tracking-tight">
             {isLoading ? "—" : summary?.averageConfidence ? `${Math.round(summary.averageConfidence * 100)}%` : "0%"}
           </p>
-          <p className="text-[10px] text-emerald-700 font-bold mt-1">AI Extraction SLA</p>
+          <p className="text-[10px] text-emerald-700 font-semibold mt-1">AI Extraction SLA</p>
         </div>
 
         {/* Metric 5: Avg Latency per SKU */}
-        <div className="bg-white border border-[#E2E8F0] rounded-2xl p-4 hover:border-[#2563EB] transition-colors">
-          <div className="flex items-center justify-between text-[11px] font-bold uppercase text-slate-500">
+        <div className="bg-white border border-[#EAEAEA] rounded-2xl p-4 sm:p-5 hover:border-[#171717]/30 transition-all shadow-sm hover:shadow-md flex flex-col justify-between group">
+          <div className="flex items-center justify-between text-[11px] font-bold uppercase text-[#686868] tracking-wider">
             <span>Avg Latency</span>
-            <Clock className="w-4 h-4 text-blue-600" />
+            <div className="w-7 h-7 rounded-lg bg-[#F7F7F7] group-hover:bg-[#111111] group-hover:text-white transition-colors flex items-center justify-center text-[#171717]">
+              <Clock className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <p className="text-2xl font-black font-mono text-[#000000] mt-2">
+          <p className="text-2xl sm:text-3xl font-extrabold font-mono text-[#171717] mt-3 tracking-tight">
             {summary?.avgLatencySec ?? 2.38}s
           </p>
-          <p className="text-[10px] text-blue-700 font-bold mt-1">Per SKU Pipeline</p>
+          <p className="text-[10px] text-[#686868] font-semibold mt-1">Per SKU Pipeline</p>
         </div>
 
         {/* Metric 6: Computed Cost per SKU */}
-        <div className="bg-white border border-[#E2E8F0] rounded-2xl p-4 hover:border-[#2563EB] transition-colors">
-          <div className="flex items-center justify-between text-[11px] font-bold uppercase text-slate-500">
+        <div className="bg-white border border-[#EAEAEA] rounded-2xl p-4 sm:p-5 hover:border-[#171717]/30 transition-all shadow-sm hover:shadow-md flex flex-col justify-between group">
+          <div className="flex items-center justify-between text-[11px] font-bold uppercase text-[#686868] tracking-wider">
             <span>Cost / SKU</span>
-            <Coins className="w-4 h-4 text-emerald-600" />
+            <div className="w-7 h-7 rounded-lg bg-[#F7F7F7] group-hover:bg-[#111111] group-hover:text-white transition-colors flex items-center justify-center text-[#171717]">
+              <Coins className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <p className="text-2xl font-black font-mono text-[#000000] mt-2">
+          <p className="text-2xl sm:text-3xl font-extrabold font-mono text-[#171717] mt-3 tracking-tight">
             ${summary?.costPerSku ? summary.costPerSku.toFixed(4) : "0.0034"}
           </p>
-          <p className="text-[10px] text-emerald-700 font-bold mt-1">Token Telemetry</p>
+          <p className="text-[10px] text-emerald-700 font-semibold mt-1">Token Telemetry</p>
         </div>
       </div>
 
-      {/* ── 3. Live Pipeline Governance & Telemetry Stream (8 Stages) ─── */}
-      <div className="bg-white border border-[#E2E8F0] rounded-3xl p-6 lg:p-7 space-y-4">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div>
-            <h2 className="text-base font-black text-[#000000] tracking-tight flex items-center gap-2">
-              <Cpu className="w-4 h-4 text-[#2563EB]" />
-              Deterministic 8-Stage Pipeline Telemetry &amp; Governance Stream
+      {/* ── 4. Live Pipeline Governance & Telemetry Stream (8 Stages) ─── */}
+      <div className="bg-white border border-[#EAEAEA] rounded-2xl sm:rounded-3xl p-6 lg:p-7 space-y-5 shadow-sm">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="space-y-1">
+            <h2 className="text-base font-extrabold text-[#171717] tracking-tight flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-[#111111] text-[#C8FF00] flex items-center justify-center shrink-0">
+                <Cpu className="w-4 h-4" />
+              </div>
+              <span>Deterministic 8-Stage Pipeline Telemetry &amp; Governance Stream</span>
             </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-[#686868]">
               Real-time progression through deterministic multi-tier sourcing, taxonomy mapping, and schema formatting.
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
+            <span className="text-[11px] font-bold text-[#171717] bg-[#F7F7F7] px-3 py-1 rounded-full border border-[#EAEAEA]">
               Deterministic SLA: &lt; 2.5s
             </span>
           </div>
         </div>
 
         {/* 8-Stage Interactive Visualizer */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
           {DETERMINISTIC_STAGES.map((stg) => {
             const isCompleted = activeSimStage >= stg.id;
             const isCurrent = isStreamingPipeline && activeSimStage === stg.id;
@@ -353,34 +369,51 @@ export default function DashboardPage() {
               <div
                 key={stg.id}
                 className={cn(
-                  "p-3.5 rounded-2xl border transition-all relative flex flex-col justify-between min-h-[105px]",
+                  "p-4 rounded-2xl border transition-all relative flex flex-col justify-between min-h-[110px]",
                   isCurrent
-                    ? "bg-blue-50 border-[#2563EB] shadow-sm ring-2 ring-blue-500/20"
+                    ? "bg-[#111111] text-white border-[#C8FF00] shadow-md ring-1 ring-[#C8FF00]"
                     : isCompleted
-                    ? "bg-[#FAFAFA] border-emerald-200"
-                    : "bg-slate-50/60 border-slate-200 opacity-60"
+                    ? "bg-white border-[#EAEAEA] hover:border-[#171717]/30"
+                    : "bg-[#F7F7F7] border-[#EAEAEA] opacity-60 text-[#686868]"
                 )}
               >
                 <div>
-                  <div className="flex items-center justify-between gap-1 mb-1">
+                  <div className="flex items-center justify-between gap-1 mb-1.5">
                     <span className={cn(
-                      "text-[10px] font-black uppercase px-2 py-0.5 rounded",
-                      isCompleted ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-600"
+                      "text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full",
+                      isCurrent
+                        ? "bg-[#C8FF00] text-[#111111]"
+                        : isCompleted
+                        ? "bg-[#C8FF00]/20 text-[#171717]"
+                        : "bg-[#EAEAEA] text-[#686868]"
                     )}>
                       Stage {stg.id}
                     </span>
                     {isCurrent ? (
-                      <Loader2 className="w-3.5 h-3.5 text-[#2563EB] animate-spin" />
+                      <Loader2 className="w-3.5 h-3.5 text-[#C8FF00] animate-spin" />
                     ) : isCompleted ? (
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                     ) : (
-                      <span className="text-[10px] text-slate-400 font-mono">{stg.avgDurationMs}ms</span>
+                      <span className="text-[10px] text-[#8E8E8E] font-mono">{stg.avgDurationMs}ms</span>
                     )}
                   </div>
-                  <p className="text-xs font-bold text-slate-900 leading-snug">{stg.name}</p>
+                  <p className={cn(
+                    "text-xs font-bold leading-snug",
+                    isCurrent ? "text-white" : "text-[#171717]"
+                  )}>
+                    {stg.name}
+                  </p>
                 </div>
-                <div className="pt-2 border-t border-slate-200/60 mt-1">
-                  <p className="text-[9px] font-bold text-slate-600 truncate">{stg.governanceAssertion}</p>
+                <div className={cn(
+                  "pt-2 border-t mt-2",
+                  isCurrent ? "border-neutral-800" : "border-[#EAEAEA]"
+                )}>
+                  <p className={cn(
+                    "text-[10px] font-medium truncate",
+                    isCurrent ? "text-neutral-400" : "text-[#686868]"
+                  )}>
+                    {stg.governanceAssertion}
+                  </p>
                 </div>
               </div>
             );
@@ -390,24 +423,24 @@ export default function DashboardPage() {
 
       {/* ── 5. Dynamic Product Inspection & Review Workspace ─────────── */}
       {selectedProduct && (
-        <div className="bg-white border border-[#E2E8F0] rounded-3xl p-6 lg:p-7 space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+        <div className="bg-white border border-[#EAEAEA] rounded-2xl sm:rounded-3xl p-6 lg:p-7 space-y-6 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#EAEAEA] pb-4">
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-black text-slate-900 bg-slate-100 px-2.5 py-0.5 rounded font-mono">
+                <span className="text-xs font-bold text-[#171717] bg-[#F7F7F7] border border-[#EAEAEA] px-2.5 py-0.5 rounded-full font-mono">
                   {selectedProduct.partNumber}
                 </span>
-                <span className="text-xs font-bold text-[#2563EB] bg-blue-50 px-2.5 py-0.5 rounded">
+                <span className="text-xs font-bold text-[#171717] bg-[#F2F2F2] px-2.5 py-0.5 rounded-full">
                   {selectedProduct.manufacturerName}
                 </span>
-                <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded border border-emerald-200">
+                <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
                   Confidence: {Math.round((selectedProduct.rowConfidence ?? 0.98) * 100)}%
                 </span>
               </div>
-              <h2 className="text-lg font-black text-[#000000] tracking-tight mt-1.5">
+              <h2 className="text-lg font-extrabold text-[#171717] tracking-tight mt-2">
                 {selectedProduct.descriptions?.retailDescription || selectedProduct.descriptions?.shortDescription || selectedProduct.partNumber}
               </h2>
-              <p className="text-xs text-slate-500 font-mono mt-0.5">
+              <p className="text-xs text-[#686868] font-mono mt-0.5">
                 {selectedProduct.classpath} • UNSPSC {selectedProduct.unspsc || "40151500"}
               </p>
             </div>
@@ -416,7 +449,7 @@ export default function DashboardPage() {
             <div className="flex items-center gap-2 shrink-0">
               <Link
                 href={`/products`}
-                className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition flex items-center gap-1.5 border border-slate-300"
+                className="px-4 py-2 bg-[#111111] hover:bg-black text-white text-xs font-bold rounded-full transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
               >
                 <Eye className="w-3.5 h-3.5" />
                 <span>View in Catalog</span>
@@ -431,13 +464,13 @@ export default function DashboardPage() {
             <div className="lg:col-span-5 space-y-5">
               
               {/* Image Carousel Preview */}
-              <div className="bg-[#FAFAFA] border border-[#E2E8F0] rounded-2xl p-4 space-y-3">
+              <div className="bg-[#F9F9F9] border border-[#EAEAEA] rounded-2xl p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
-                    <ImageIcon className="w-3.5 h-3.5 text-[#2563EB]" />
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-[#686868] flex items-center gap-1.5">
+                    <ImageIcon className="w-3.5 h-3.5 text-[#171717]" />
                     Verified OEM Photos
                   </h3>
-                  <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                  <span className="text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
                     Actual Image: Yes
                   </span>
                 </div>
@@ -450,7 +483,7 @@ export default function DashboardPage() {
 
                   return (
                     <div className="space-y-2">
-                      <div className="w-full h-56 rounded-xl bg-white border border-slate-200 flex items-center justify-center p-3 overflow-hidden relative">
+                      <div className="w-full h-56 rounded-xl bg-white border border-[#EAEAEA] flex items-center justify-center p-3 overflow-hidden relative shadow-sm">
                         {imgUrl ? (
                           <img
                             src={imgUrl}
@@ -459,7 +492,7 @@ export default function DashboardPage() {
                             onError={(e: any) => { e.target.style.display = "none"; }}
                           />
                         ) : (
-                          <div className="text-center text-slate-400 space-y-1">
+                          <div className="text-center text-[#8E8E8E] space-y-1">
                             <ImageIcon className="w-8 h-8 mx-auto" />
                             <p className="text-xs">No direct photo available</p>
                           </div>
@@ -476,7 +509,7 @@ export default function DashboardPage() {
                               onClick={() => setInspectedImageIdx(idx)}
                               className={cn(
                                 "w-14 h-14 rounded-lg bg-white border p-1 flex items-center justify-center shrink-0 transition",
-                                inspectedImageIdx === idx ? "border-[#2563EB] ring-2 ring-blue-400/30" : "border-slate-200 opacity-60 hover:opacity-100"
+                                inspectedImageIdx === idx ? "border-[#111111] ring-2 ring-[#C8FF00]" : "border-[#EAEAEA] opacity-60 hover:opacity-100"
                               )}
                             >
                               <img src={img.previewUrl || img.sourceUrl} alt="thumb" className="max-h-full max-w-full object-contain" />
@@ -490,9 +523,9 @@ export default function DashboardPage() {
               </div>
 
               {/* Verified Documents (Spec Sheets & PDFs) */}
-              <div className="bg-[#FAFAFA] border border-[#E2E8F0] rounded-2xl p-4 space-y-3">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
-                  <FileText className="w-3.5 h-3.5 text-blue-600" />
+              <div className="bg-[#F9F9F9] border border-[#EAEAEA] rounded-2xl p-4 space-y-3">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-[#686868] flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-[#171717]" />
                   Verified Technical Documents (.PDF)
                 </h3>
 
@@ -500,7 +533,7 @@ export default function DashboardPage() {
                   const docs = (selectedProduct.assets || []).filter((a: any) => a.assetType !== "image");
                   if (docs.length === 0) {
                     return (
-                      <p className="text-xs text-slate-500 italic bg-white p-3 rounded-xl border border-slate-200">
+                      <p className="text-xs text-[#8E8E8E] italic bg-white p-3 rounded-xl border border-[#EAEAEA]">
                         No downloadable PDF spec sheets or manuals present for this SKU.
                       </p>
                     );
@@ -509,19 +542,19 @@ export default function DashboardPage() {
                   return (
                     <div className="space-y-2">
                       {docs.map((doc: any, idx: number) => (
-                        <div key={idx} className="bg-white border border-[#E2E8F0] p-3 rounded-xl flex items-center justify-between gap-2">
+                        <div key={idx} className="bg-white border border-[#EAEAEA] p-3 rounded-xl flex items-center justify-between gap-2 shadow-sm">
                           <div className="min-w-0">
-                            <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-blue-100 text-blue-800">
+                            <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-[#F2F2F2] text-[#171717]">
                               {doc.assetType?.replace(/_/g, " ") || "Spec Sheet"}
                             </span>
-                            <p className="text-xs font-bold text-slate-900 truncate mt-1">{doc.fileName}</p>
+                            <p className="text-xs font-bold text-[#171717] truncate mt-1">{doc.fileName}</p>
                           </div>
                           {doc.sourceUrl && (
                             <a
                               href={doc.sourceUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="px-2.5 py-1 rounded bg-[#2563EB] text-white text-[11px] font-bold hover:bg-[#1D4ED8] shrink-0 flex items-center gap-1"
+                              className="px-3 py-1.5 rounded-full bg-[#111111] text-white text-[11px] font-bold hover:bg-black shrink-0 flex items-center gap-1 transition-all"
                             >
                               <span>Open PDF</span>
                               <ExternalLink className="w-2.5 h-2.5" />
@@ -535,20 +568,20 @@ export default function DashboardPage() {
               </div>
 
               {/* Sourcing Provenance Citation */}
-              <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl p-4 space-y-2">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+              <div className="bg-[#F9F9F9] border border-[#EAEAEA] rounded-2xl p-4 space-y-2">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-[#686868] flex items-center gap-1.5">
                   <Globe className="w-3.5 h-3.5 text-emerald-600" />
                   Data Extracted From (Source Provenance)
                 </h3>
-                <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-1">
+                <div className="bg-white p-3 rounded-xl border border-[#EAEAEA] space-y-1 shadow-sm">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                    <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
                       Tier-1 OEM Primary Domain
                     </span>
-                    <span className="text-xs text-[#2563EB] font-bold">100% Grounded</span>
+                    <span className="text-xs text-[#171717] font-bold">100% Grounded</span>
                   </div>
-                  <p className="text-xs text-slate-700 leading-relaxed pt-1">
-                    Grounded directly from manufacturer specifications at <span className="font-mono font-bold text-slate-900">{selectedProduct.manufacturerName} Official CDN</span>. Amazon/eBay/Walmart listings 100% excluded.
+                  <p className="text-xs text-[#686868] leading-relaxed pt-1">
+                    Grounded directly from manufacturer specifications at <span className="font-mono font-bold text-[#171717]">{selectedProduct.manufacturerName} Official CDN</span>. Amazon/eBay/Walmart listings 100% excluded.
                   </p>
                 </div>
               </div>
@@ -558,55 +591,55 @@ export default function DashboardPage() {
             <div className="lg:col-span-7 space-y-5">
               
               {/* 6 Character-Bounded Descriptions */}
-              <div className="bg-[#FAFAFA] border border-[#E2E8F0] rounded-2xl p-4 space-y-3">
+              <div className="bg-[#F9F9F9] border border-[#EAEAEA] rounded-2xl p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-[#686868]">
                     Standardized Character-Bounded Descriptions (6 Formats)
                   </h3>
-                  <span className="text-[10px] font-bold text-slate-500 font-mono">
+                  <span className="text-[10px] font-bold text-[#8E8E8E] font-mono">
                     Short Desc Bounded: &le; 150 chars
                   </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
                   {/* Short Description (<=150) */}
-                  <div className="bg-white border border-[#E2E8F0] p-3 rounded-xl space-y-1 sm:col-span-2">
+                  <div className="bg-white border border-[#EAEAEA] p-3 rounded-xl space-y-1 sm:col-span-2 shadow-sm">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold uppercase text-slate-400">Short Description (Max 150 Char)</span>
-                      <span className="text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+                      <span className="text-[10px] font-bold uppercase text-[#8E8E8E]">Short Description (Max 150 Char)</span>
+                      <span className="text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
                         {(selectedProduct.descriptions?.shortDescription || "").length} / 150 Char
                       </span>
                     </div>
-                    <p className="font-semibold text-slate-900">{selectedProduct.descriptions?.shortDescription || "—"}</p>
+                    <p className="font-semibold text-[#171717]">{selectedProduct.descriptions?.shortDescription || "—"}</p>
                   </div>
 
                   {/* Mobile Description */}
-                  <div className="bg-white border border-[#E2E8F0] p-3 rounded-xl space-y-1">
-                    <span className="text-[10px] font-bold uppercase text-slate-400">Mobile Description</span>
-                    <p className="font-semibold text-slate-900">{selectedProduct.descriptions?.mobileDescription || "—"}</p>
+                  <div className="bg-white border border-[#EAEAEA] p-3 rounded-xl space-y-1 shadow-sm">
+                    <span className="text-[10px] font-bold uppercase text-[#8E8E8E]">Mobile Description</span>
+                    <p className="font-semibold text-[#171717]">{selectedProduct.descriptions?.mobileDescription || "—"}</p>
                   </div>
 
                   {/* Invoice Description */}
-                  <div className="bg-white border border-[#E2E8F0] p-3 rounded-xl space-y-1">
-                    <span className="text-[10px] font-bold uppercase text-slate-400">Invoice / ERP Description</span>
-                    <p className="font-mono font-bold text-slate-900">{selectedProduct.descriptions?.invoiceDescription || "—"}</p>
+                  <div className="bg-white border border-[#EAEAEA] p-3 rounded-xl space-y-1 shadow-sm">
+                    <span className="text-[10px] font-bold uppercase text-[#8E8E8E]">Invoice / ERP Description</span>
+                    <p className="font-mono font-bold text-[#171717]">{selectedProduct.descriptions?.invoiceDescription || "—"}</p>
                   </div>
 
                   {/* Retail Description */}
-                  <div className="bg-white border border-[#E2E8F0] p-3 rounded-xl space-y-1 sm:col-span-2">
-                    <span className="text-[10px] font-bold uppercase text-slate-400">Retail &amp; Marketing Title</span>
-                    <p className="font-semibold text-slate-900">{selectedProduct.descriptions?.retailDescription || "—"}</p>
+                  <div className="bg-white border border-[#EAEAEA] p-3 rounded-xl space-y-1 sm:col-span-2 shadow-sm">
+                    <span className="text-[10px] font-bold uppercase text-[#8E8E8E]">Retail &amp; Marketing Title</span>
+                    <p className="font-semibold text-[#171717]">{selectedProduct.descriptions?.retailDescription || "—"}</p>
                   </div>
                 </div>
               </div>
 
               {/* Dynamic Technical Attribute Grid */}
-              <div className="bg-[#FAFAFA] border border-[#E2E8F0] rounded-2xl p-4 space-y-3">
+              <div className="bg-[#F9F9F9] border border-[#EAEAEA] rounded-2xl p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-[#686868]">
                     Normalized Technical Attributes &amp; UOM Separation
                   </h3>
-                  <span className="text-[10px] font-bold text-slate-500 font-mono">
+                  <span className="text-[10px] font-bold text-[#8E8E8E] font-mono">
                     LOV Verified Terms
                   </span>
                 </div>
@@ -620,32 +653,32 @@ export default function DashboardPage() {
                       <div
                         key={idx}
                         className={cn(
-                          "p-3 rounded-xl border transition-all flex flex-col justify-between gap-1.5",
+                          "p-3 rounded-xl border transition-all flex flex-col justify-between gap-1.5 shadow-sm",
                           isLowConfidence
-                            ? "bg-amber-50/80 border-amber-300 shadow-sm"
-                            : "bg-white border-[#E2E8F0] hover:border-slate-300"
+                            ? "bg-amber-50/80 border-amber-300"
+                            : "bg-white border-[#EAEAEA] hover:border-[#171717]/30"
                         )}
                       >
                         <div className="flex items-start justify-between gap-1.5">
-                          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider truncate">
+                          <p className="text-[10px] text-[#686868] font-bold uppercase tracking-wider truncate">
                             {attr.attributeLabel || attr.label}
                           </p>
                           {isLowConfidence ? (
-                            <span className="inline-flex items-center gap-1 text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300 shrink-0">
+                            <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 shrink-0">
                               <AlertCircle className="w-2.5 h-2.5 text-amber-600 shrink-0" />
                               <span>Flag for Human Review</span>
                             </span>
                           ) : (
-                            <span className="text-[9px] font-mono font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 shrink-0">
+                            <span className="text-[9px] font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 shrink-0">
                               {Math.round(conf * 100)}%
                             </span>
                           )}
                         </div>
                         <div>
-                          <p className="text-xs font-bold text-slate-900">
+                          <p className="text-xs font-bold text-[#171717]">
                             {attr.attributeValue || attr.value}{" "}
                             {(attr.attributeUom || attr.uom) ? (
-                              <span className="text-[10px] text-slate-500 font-normal">
+                              <span className="text-[10px] text-[#686868] font-normal">
                                 ({attr.attributeUom || attr.uom})
                               </span>
                             ) : null}
@@ -667,20 +700,22 @@ export default function DashboardPage() {
       )}
 
       {/* ── 6. Recent Processing Jobs Table ──────────────────────────── */}
-      <div className="bg-white border border-[#E2E8F0] rounded-3xl p-6 lg:p-7 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+      <div className="bg-white border border-[#EAEAEA] rounded-2xl sm:rounded-3xl p-6 lg:p-7 space-y-4 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#EAEAEA] pb-4">
           <div>
-            <h2 className="text-base font-black text-[#000000] tracking-tight flex items-center gap-2">
-              <Layers className="w-4 h-4 text-[#2563EB]" />
-              Recent Pipeline Processing Jobs (dbo.pipeline_jobs)
+            <h2 className="text-base font-extrabold text-[#171717] tracking-tight flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-[#111111] text-[#C8FF00] flex items-center justify-center shrink-0">
+                <Layers className="w-4 h-4" />
+              </div>
+              <span>Recent Pipeline Processing Jobs (dbo.pipeline_jobs)</span>
             </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-[#686868] mt-0.5">
               Active and completed batch catalog ingestions with real-time progression telemetry.
             </p>
           </div>
           <Link
             href="/jobs"
-            className="text-xs text-[#2563EB] hover:underline font-bold flex items-center gap-1 shrink-0"
+            className="text-xs text-[#171717] hover:text-[#C8FF00] bg-[#F7F7F7] hover:bg-[#111111] border border-[#EAEAEA] px-3.5 py-1.5 rounded-full font-bold flex items-center gap-1 shrink-0 transition-colors"
           >
             <span>View All Processing Jobs</span>
             <ChevronRight className="w-3.5 h-3.5" />
@@ -688,49 +723,49 @@ export default function DashboardPage() {
         </div>
 
         {/* Jobs Table */}
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto rounded-xl border border-[#EAEAEA]">
           <table className="w-full text-left text-xs">
             <thead>
-              <tr className="border-b border-slate-200 text-slate-400 font-bold uppercase text-[10px]">
-                <th className="pb-3 pr-4">File Name / Job ID</th>
-                <th className="pb-3 px-3">Source Type</th>
-                <th className="pb-3 px-3">Stage Progression</th>
-                <th className="pb-3 px-3">SKU Count</th>
-                <th className="pb-3 px-3">Progress</th>
-                <th className="pb-3 px-3">Status</th>
-                <th className="pb-3 pl-4 text-right">Actions</th>
+              <tr className="bg-[#FBFBFB] border-b border-[#EAEAEA] text-[#686868] font-bold uppercase text-[10px] tracking-wider">
+                <th className="py-3 px-4">File Name / Job ID</th>
+                <th className="py-3 px-3">Source Type</th>
+                <th className="py-3 px-3">Stage Progression</th>
+                <th className="py-3 px-3">SKU Count</th>
+                <th className="py-3 px-3">Progress</th>
+                <th className="py-3 px-3">Status</th>
+                <th className="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-[#EAEAEA]">
               {jobsList.length > 0 ? (
                 jobsList.map((job) => {
                   const progressVal = job.progress ?? 100;
                   return (
-                    <tr key={job.jobId} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-3.5 pr-4">
-                        <p className="font-bold text-slate-900 truncate max-w-xs">{job.fileName || `Job ${job.jobId.slice(0, 8)}`}</p>
-                        <p className="text-[10px] text-slate-400 font-mono">{job.jobId.slice(0, 13)}…</p>
+                    <tr key={job.jobId} className="hover:bg-[#F9F9F9] transition-colors">
+                      <td className="py-3.5 px-4">
+                        <p className="font-bold text-[#171717] truncate max-w-xs">{job.fileName || `Job ${job.jobId.slice(0, 8)}`}</p>
+                        <p className="text-[10px] text-[#8E8E8E] font-mono">{job.jobId.slice(0, 13)}…</p>
                       </td>
                       <td className="py-3.5 px-3">
-                        <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-mono text-[10px] uppercase font-bold">
+                        <span className="px-2.5 py-0.5 rounded-full bg-[#F2F2F2] text-[#171717] font-mono text-[10px] uppercase font-bold">
                           {(job as any).sourceType || "file_upload"}
                         </span>
                       </td>
                       <td className="py-3.5 px-3">
-                        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-700">
-                          <span className="w-2 h-2 rounded-full bg-[#2563EB]" />
+                        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#171717]">
+                          <span className="w-2 h-2 rounded-full bg-[#111111]" />
                           <span className="capitalize">{job.stage?.replace(/_/g, " ") || "Published"}</span>
                         </span>
                       </td>
-                      <td className="py-3.5 px-3 font-mono font-bold text-slate-900">
+                      <td className="py-3.5 px-3 font-mono font-bold text-[#171717]">
                         {job.rowCount ?? 150} SKUs
                       </td>
                       <td className="py-3.5 px-3 min-w-[120px]">
                         <div className="space-y-1">
-                          <div className="flex justify-between text-[10px] font-bold text-slate-500">
+                          <div className="flex justify-between text-[10px] font-bold text-[#686868]">
                             <span>{progressVal}%</span>
                           </div>
-                          <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="w-full h-1.5 bg-[#EAEAEA] rounded-full overflow-hidden">
                             <div
                               className="h-full bg-emerald-500 rounded-full transition-all"
                               style={{ width: `${progressVal}%` }}
@@ -741,23 +776,23 @@ export default function DashboardPage() {
                       <td className="py-3.5 px-3">
                         <span className={cn(
                           "px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider",
-                          job.status === "completed" ? "bg-emerald-50 text-emerald-800 border border-emerald-200" : "bg-blue-50 text-blue-800 border border-blue-200"
+                          job.status === "completed" ? "bg-emerald-50 text-emerald-800 border border-emerald-200" : "bg-[#F2F2F2] text-[#171717] border border-[#EAEAEA]"
                         )}>
                           {job.status || "Completed"}
                         </span>
                       </td>
-                      <td className="py-3.5 pl-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
+                      <td className="py-3.5 px-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
                           <Link
                             href={`/jobs/${job.jobId}`}
-                            className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-[11px] font-bold transition"
+                            className="px-3 py-1.5 rounded-full bg-white hover:bg-[#F7F7F7] text-[#171717] border border-[#EAEAEA] text-[11px] font-bold transition-all shadow-sm active:scale-95"
                           >
                             Inspect Run
                           </Link>
                           <button
                             type="button"
                             onClick={() => handleExportJob(job, "xlsx")}
-                            className="px-2.5 py-1 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[11px] font-bold transition flex items-center gap-1"
+                            className="px-3 py-1.5 rounded-full bg-[#111111] hover:bg-black text-white text-[11px] font-bold transition-all flex items-center gap-1 shadow-sm active:scale-95"
                           >
                             <Download className="w-3 h-3" />
                             <span>Export</span>
@@ -769,7 +804,7 @@ export default function DashboardPage() {
                 })
               ) : (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-slate-400 italic">
+                  <td colSpan={7} className="py-8 text-center text-[#8E8E8E] italic">
                     No active processing jobs found.
                   </td>
                 </tr>

@@ -589,24 +589,24 @@ export default function UploadPage() {
     <div className="max-w-5xl mx-auto pb-16 space-y-4 sm:space-y-6 px-3 sm:px-4 md:px-6">
 
       {/* ── Page Header ─────────────────────────────────────────────── */}
-      <div className="bg-white border border-[#E2E8F0] rounded-2xl p-4 sm:px-6 sm:py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 shadow-sm">
+      <div className="bg-white border border-[#EAEAEA] rounded-2xl sm:rounded-3xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm font-sans">
         <div className="flex items-center gap-3 sm:gap-4">
-          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#EFF6FF] border border-[#BFDBFE] flex items-center justify-center shrink-0">
-            <UploadCloud className="w-5 h-5 text-[#3386E7]" />
+          <div className="w-11 h-11 rounded-xl bg-[#111111] text-[#C8FF00] flex items-center justify-center shrink-0 shadow-sm">
+            <UploadCloud className="w-5 h-5 stroke-[2.2]" />
           </div>
           <div>
-            <h1 className="text-lg sm:text-xl font-bold text-[#000000] tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-extrabold text-[#171717] tracking-tight">
               Dataset Upload &amp; Ingestion
             </h1>
-            <p className="text-xs sm:text-sm text-[#64748B] mt-0.5 leading-snug">
+            <p className="text-xs sm:text-sm text-[#686868] mt-0.5 leading-snug">
               Extract verified specifications via Manufacturer PDF &amp; batch file uploads, Manufacturer URLs, or Product Image / Label OCR.
             </p>
           </div>
         </div>
       </div>
 
-      {/* ── Upload Mode Tabs (Responsive 2x2 Grid on Mobile / Flex Row on Desktop) ── */}
-      <div className="bg-white border border-[#E2E8F0] rounded-2xl p-1.5 sm:p-2 grid grid-cols-2 sm:flex sm:overflow-x-auto gap-1.5 sm:gap-2 shadow-sm">
+      {/* ── Upload Mode Tabs (Pill Style) ── */}
+      <div className="bg-white border border-[#EAEAEA] rounded-2xl sm:rounded-full p-1.5 grid grid-cols-1 sm:flex sm:overflow-x-auto gap-1.5 shadow-sm font-sans">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTabMode === tab.id;
@@ -623,15 +623,15 @@ export default function UploadPage() {
               }}
               disabled={isProcessing}
               className={cn(
-                "flex items-center justify-center sm:flex-1 gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2.5 sm:py-2.5 rounded-xl text-xs font-bold transition-all text-center",
+                "flex items-center justify-center sm:flex-1 gap-2 px-4 py-2.5 rounded-full text-xs font-bold transition-all text-center",
                 isActive
-                  ? "bg-[#2563EB] text-white shadow-sm ring-1 ring-[#2563EB]"
-                  : "bg-slate-50/80 sm:bg-transparent text-[#475569] hover:bg-[#F1F5F9] hover:text-[#000000] border border-slate-200/60 sm:border-transparent",
+                  ? "bg-[#111111] text-white shadow-sm"
+                  : "bg-transparent text-[#686868] hover:bg-[#F7F7F7] hover:text-[#171717]",
                 isProcessing && "opacity-50 cursor-not-allowed"
               )}
               suppressHydrationWarning
             >
-              <Icon className={cn("w-4 h-4 shrink-0", isActive ? "text-white" : "text-[#2563EB]")} />
+              <Icon className={cn("w-4 h-4 shrink-0", isActive ? "text-[#C8FF00]" : "text-[#171717]")} />
               <span className="sm:hidden truncate">{tab.shortLabel}</span>
               <span className="hidden sm:inline whitespace-nowrap">{tab.label}</span>
             </button>
@@ -802,7 +802,7 @@ export default function UploadPage() {
                   }
                 }}
                 disabled={!selectedOcrFile || isProcessingOcr}
-                className="px-5 py-2.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold flex items-center gap-2 transition-all disabled:opacity-50"
+                className="px-6 py-2.5 rounded-full bg-[#C8FF00] hover:bg-[#B7EF00] text-[#111111] text-xs font-bold flex items-center gap-2 transition-all disabled:opacity-50 shadow-sm active:scale-95"
               >
                 {isProcessingOcr ? (
                   <>
@@ -811,7 +811,7 @@ export default function UploadPage() {
                   </>
                 ) : (
                   <>
-                    <ScanText className="w-3.5 h-3.5" />
+                    <ScanText className="w-3.5 h-3.5 stroke-[2.2]" />
                     <span>Inspect Label &amp; Ingest</span>
                   </>
                 )}
@@ -821,14 +821,14 @@ export default function UploadPage() {
 
           {/* OCR Processing Stage Banner */}
           {isProcessingOcr && (
-            <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 space-y-4">
+            <div className="bg-white border border-[#EAEAEA] rounded-2xl p-6 space-y-4 shadow-sm">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center text-[#2563EB]">
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                <div className="w-8 h-8 rounded-xl bg-[#111111] text-[#C8FF00] flex items-center justify-center">
+                  <Loader2 className="w-4 h-4 animate-spin stroke-[2.2]" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-slate-900">Multi-Modal Vision Inspection in Progress</h4>
-                  <p className="text-xs text-slate-500">
+                  <h4 className="text-sm font-extrabold text-[#171717]">Multi-Modal Vision Inspection in Progress</h4>
+                  <p className="text-xs text-[#686868]">
                     Extracting visible text, identifying MPN and brand provenance, and applying 80% Gatekeeper...
                   </p>
                 </div>
@@ -1448,14 +1448,14 @@ export default function UploadPage() {
                 <button
                   type="button"
                   onClick={() => setMfrUrlInput("https://www.3m.com/3M/en_US/p/d/b40065688/")}
-                  className="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-800 text-[11px] font-mono transition"
+                  className="px-3 py-1 rounded-full bg-[#F7F7F7] hover:bg-[#EAEAEA] text-[#171717] border border-[#EAEAEA] text-[11px] font-mono transition"
                 >
                   3M Cubitron II
                 </button>
                 <button
                   type="button"
                   onClick={() => setMfrUrlInput("https://www.se.com/us/en/product/QO120/mini-circuit-breaker-qo-20a-1p-120-240v-10ka-plug-in/")}
-                  className="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-800 text-[11px] font-mono transition"
+                  className="px-3 py-1 rounded-full bg-[#F7F7F7] hover:bg-[#EAEAEA] text-[#171717] border border-[#EAEAEA] text-[11px] font-mono transition"
                 >
                   Square D Breaker
                 </button>
@@ -1465,7 +1465,7 @@ export default function UploadPage() {
                 <button
                   type="submit"
                   disabled={!mfrUrlInput.trim() || isExtractingUrl}
-                  className="px-6 py-2.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold flex items-center gap-2 transition-all disabled:opacity-50 shadow-sm"
+                  className="px-6 py-2.5 rounded-full bg-[#C8FF00] hover:bg-[#B7EF00] text-[#111111] text-xs font-bold flex items-center gap-2 transition-all disabled:opacity-50 shadow-sm active:scale-95"
                   suppressHydrationWarning
                 >
                   {isExtractingUrl ? (
@@ -1475,7 +1475,7 @@ export default function UploadPage() {
                     </>
                   ) : (
                     <>
-                      <Sparkles className="w-4 h-4" />
+                      <Sparkles className="w-4 h-4 stroke-[2.2]" />
                       <span>Extract 252-Column Specs</span>
                     </>
                   )}
@@ -1486,15 +1486,15 @@ export default function UploadPage() {
 
           {/* Loading Animation Card */}
           {isExtractingUrl && (
-            <div className="bg-white border border-[#E2E8F0] rounded-2xl p-8 flex flex-col items-center gap-5 text-center">
-              <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center">
-                <Loader2 className="w-6 h-6 text-[#2563EB] animate-spin" />
+            <div className="bg-white border border-[#EAEAEA] rounded-2xl p-8 flex flex-col items-center gap-5 text-center shadow-sm">
+              <div className="w-12 h-12 rounded-2xl bg-[#111111] text-[#C8FF00] flex items-center justify-center shadow-md">
+                <Loader2 className="w-6 h-6 animate-spin stroke-[2.2]" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-base font-bold text-[#000000]">
+                <h3 className="text-base font-extrabold text-[#171717]">
                   Extracting Product Intelligence from URL…
                 </h3>
-                <p className="text-xs text-[#64748B] max-w-md">
+                <p className="text-xs text-[#686868] max-w-md">
                   Fetching live HTML content, scraping high-res OEM images, and parsing technical specifications with deep AI extraction.
                 </p>
               </div>

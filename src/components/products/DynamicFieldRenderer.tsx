@@ -77,7 +77,7 @@ export function DynamicFieldRenderer({
                 href={sourceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-[11px] text-blue-600 hover:text-blue-800 hover:underline w-fit font-medium"
+                className="inline-flex items-center gap-1.5 text-[11px] text-[#111111] hover:text-black underline w-fit font-bold"
               >
                 <ExternalLink className="w-3 h-3" />
                 {sourceTitle || "Verified OEM Citation"}
@@ -111,7 +111,7 @@ export function DynamicFieldRenderer({
             href={String(value)}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm text-[#1D4ED8] hover:underline flex items-center gap-1 break-all"
+            className="text-sm text-[#111111] hover:text-black underline flex items-center gap-1.5 break-all font-bold"
           >
             <ExternalLink className="w-3.5 h-3.5 shrink-0" />
             {String(value).length > 60 ? `${String(value).slice(0, 60)}…` : String(value)}
@@ -181,18 +181,18 @@ export function DynamicFieldRenderer({
   };
 
   return (
-    <div className="py-3 border-b border-[#F1F5F9] last:border-b-0">
+    <div className="py-3 border-b border-[#EAEAEA] last:border-b-0">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+            <span className="text-[11px] font-semibold text-[#686868] uppercase tracking-wider">
               {field.label}
             </span>
             {field.required && (
               <span className="text-[10px] text-red-500 font-bold">REQUIRED</span>
             )}
             {field.editable && (
-              <span className="text-[10px] text-[#1D4ED8] font-bold">EDITABLE</span>
+              <span className="text-[10px] text-[#111111] bg-[#F7F7F7] border border-[#EAEAEA] px-2 py-0.5 rounded-full font-bold">EDITABLE</span>
             )}
           </div>
           {renderValue()}
